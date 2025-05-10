@@ -1,0 +1,32 @@
+{
+  "name": "backend",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "dotenvx run -f .env.dev -- nodemon ./bin/www",
+    "test": "dotenvx run -f .env.test -- mocha",
+    "test:watch": "nodemon --watch \"*/*.js\" --exec \"npm test\"",
+    "serve:prod": "./bin/www",
+    "browse": "mongodb-compass"
+  },
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "connect-mongodb-session": "^5.0.0",
+    "debug": "~4.4.0",
+    "express": "~5.1.0",
+    "express-session": "^1.18.1",
+    "http-errors": "~2.0.0",
+    "mongodb": "^6.16.0",
+    "morgan": "~1.10.0",
+    "passport": "^0.7.0",
+    "passport-local": "^1.0.0"
+  },
+  "devDependencies": {
+    "@dotenvx/dotenvx": "^1.43.0",
+    "chai": "^5.2.0",
+    "mocha": "^11.2.2",
+    "nodemon": "^3.1.10",
+    "supertest": "^7.1.0"
+  }
+}

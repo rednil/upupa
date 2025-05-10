@@ -1,0 +1,76 @@
+name: Node CI
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    services:
+      mongodb:
+        image: mongo:latest
+        env:
+          MONGO_INITDB_ROOT_USERNAME: admin
+          MONGO_INITDB_ROOT_PASSWORD: admin
+          MONGO_INITDB_DATABASE: project-test
+        ports:
+          - 27017:27017
+
+    strategy:
+      matrix:
+        node-version: [22.14.0]
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Tag GIT with version from package.json
+      id: autotag
+      uses: butlerlogic/action-autotag@1.1.2
+      env:
+        GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+      with:
+        strategy: package
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+    - name: npm install
+      run: |
+        npm run cleaninstall
+    - name: npm test
+      run: |
+        npm run test
+    - name: npm build
+      run: |
+        npm run build
+    - name: Build Docker image
+      run: npm run docker:build
+    - name: Log in to the Container registry
+      uses: docker/login-action@v2
+      with:
+        registry: "ghcr.io"
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Push image to github repository
+      run: |
+        IMAGE_ID=ghcr.io/${{ github.repository }}
+        # Strip git ref prefix from version
+        VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+        # Strip "v" prefix from tag name
+        [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
+        # Use Docker `latest` tag convention
+        [ "$VERSION" == "main" ] && VERSION=latest
+        echo IMAGE_ID=$IMAGE_ID
+        echo VERSION=$VERSION
+        docker tag express-passport-mongo-lit $IMAGE_ID:${{ steps.autotag.outputs.version }}
+        docker tag express-passport-mongo-lit $IMAGE_ID:$VERSION
+        docker push $IMAGE_ID:$VERSION
+        docker push $IMAGE_ID:${{ steps.autotag.outputs.version }}
+        
+      env:
+        CI: true

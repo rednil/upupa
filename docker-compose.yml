@@ -1,0 +1,13 @@
+services:
+  mongo:
+    image: mongo:latest
+    ports:
+      - 27017:27017
+    restart: no
+    logging:
+      options:
+        max-size: 100m
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin
+      MONGO_INITDB_DATABASE: project-dev
