@@ -2,7 +2,7 @@ const environment = process.env.NODE_ENV = process.env.NODE_ENV || 'development'
 
 import express from 'express'
 import createHttpError from 'http-errors'
-import { uri, databaseName } from './db.js'
+import { uri, DATABASE_NAME } from './db.js'
 import morgan from 'morgan'
 import session from 'express-session'
 import passport from 'passport'
@@ -20,7 +20,7 @@ import inspectionsRouter from './routes/inspections.js'
 const MongoDBStore = ConnectMongoDBSession(session)
 const store = new MongoDBStore({
   uri,
-	databaseName,
+	databaseName: DATABASE_NAME,
   collection: 'sessions'
 })
 
