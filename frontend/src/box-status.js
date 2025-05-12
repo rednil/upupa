@@ -20,6 +20,8 @@ export class BoxStatus extends LitElement {
 				display: flex;
 				flex-direction: column;
 				min-height: 0;
+				width: 100%;
+				max-width: 40em;
 			}
 			.inspection {
 				padding: 0.5em;
@@ -38,6 +40,7 @@ export class BoxStatus extends LitElement {
 			}
 			.list {
 				overflow-y: scroll;
+				
 			}
     `
   }
@@ -78,14 +81,11 @@ export class BoxStatus extends LitElement {
   }
 	_boxSelectCb(evt){
 		const box_id = evt.target.value
-		console.log('boxSelectCb', box_id)
 		this._fetchInspections(box_id)
-		
 	}
 	async _fetchInspections(box_id){
 		const response = await fetch(`/api/inspections?box_id=${box_id}`)
 		this.inspections = await response.json()
-		console.log('inspections', this.inspections)
 	}
 }
 

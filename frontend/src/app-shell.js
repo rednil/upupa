@@ -152,7 +152,7 @@ export class AppShell extends LitElement {
     return html`
 			<div class="top ${this.self?'logged-in':'logged-out'}">
 				<button class="menutoggle" @click=${this.toggleNav}>☰</button>
-				<span class="title">Codename: Upupa</span>
+				<span class="title">Upupa</span>
 				${this.self?html`
 					<select class="logout">
 						<option selected>${this.self?.username}</option>

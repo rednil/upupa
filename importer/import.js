@@ -3,20 +3,27 @@ import path from 'path'
 import { MongoClient } from 'mongodb'
 import { fileURLToPath } from 'url'
 
-const databaseName = 'upupa-dev'
-const uri = "mongodb://admin:admin@localhost:27017"
-const client = new MongoClient(uri)
+const {
+	DATABASE_HOST,
+	DATABASE_PORT,
+	DATABASE_ROOT_USERNAME,
+	DATABASE_ROOT_PASSWORD,
+	DATABASE_NAME,
+} = process.env
 
+const uri = `mongodb://${DATABASE_ROOT_USERNAME}:${DATABASE_ROOT_PASSWORD}@${DATABASE_HOST}:${DATABASE_PORT}`
+
+const client = new MongoClient(uri)
 
 // Get the directory name using import.meta.url
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Construct the full path to the 'data.ods' file
-const filePath = path.join(__dirname, 'data.ods');
+const filePath = path.join(__dirname, 'data/data.ods');
 
 await client.connect()
-const db = client.db(databaseName)
+const db = client.db(DATABASE_NAME)
 
 // Read the .ods file
 const workbook = XLSX.readFile(filePath);
