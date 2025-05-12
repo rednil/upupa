@@ -6,13 +6,17 @@ import { uri, databaseName } from './db.js'
 import morgan from 'morgan'
 import session from 'express-session'
 import passport from 'passport'
-import selfRouter from './routes/self.js'
-import authRouter from './routes/auth.js'
-import usersRouter from './routes/users.js'
 import { fileURLToPath } from 'url'
 import path from 'path'
 import ConnectMongoDBSession from 'connect-mongodb-session'
 import { attachDb } from './middleware/attachDb.js'
+
+import selfRouter from './routes/self.js'
+import authRouter from './routes/auth.js'
+import usersRouter from './routes/users.js'
+import boxesRouter from './routes/boxes.js'
+import inspectionsRouter from './routes/inspections.js'
+
 const MongoDBStore = ConnectMongoDBSession(session)
 const store = new MongoDBStore({
   uri,
@@ -42,10 +46,10 @@ app.use(passport.initialize())
 app.use(passport.session())
 
 app.use('/api/self', selfRouter)
-
 app.use('/api/auth', authRouter)
-
 app.use('/api/users', usersRouter)
+app.use('/api/boxes', boxesRouter)
+app.use('/api/inspections', inspectionsRouter)
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

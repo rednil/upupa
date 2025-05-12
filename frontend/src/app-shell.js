@@ -5,6 +5,8 @@ import './app-main'
 import './app-login'
 import './app-menu'
 import './app-users'
+import './box-list'
+import './box-status'
 
 /* 
 Routing can be done via hashed or non-hashed URL paths
@@ -53,6 +55,7 @@ export class AppShell extends LitElement {
 				display: flex;
 				flex-direction: row;
 				flex: 1;
+				min-height: 0;
 			}
 			.drawer {
 				display: flex;
@@ -75,6 +78,7 @@ export class AppShell extends LitElement {
 				display: flex;
 				flex: 1;
 				padding: 1em;
+				
 			}
 			.bottom {
 				background-color: red;
@@ -105,7 +109,9 @@ export class AppShell extends LitElement {
     this.routes = new Routes(this, [
       { path: '',        render: () => html`<app-main .user=${this.self}></app-main>` },
       { path: '#/login', render: () => html`<app-login @login=${this.requestUserInfo}></app-login>` },
-      { path: '#/users', render: () => html`<app-users .self=${this.self}></app-users>` }
+      { path: '#/users', render: () => html`<app-users .self=${this.self}></app-users>` },
+			{ path: '#/box-list', render: () => html`<box-list></box-list>` },
+			{ path: '#/box-status', render: () => html`<box-status></box-status>` }
     ])
     window.onpopstate = e => {
       this.drawer = false
@@ -141,34 +147,12 @@ export class AppShell extends LitElement {
   toggleNav(){
     this.drawer = !this.drawer
   }
-
-	/*
-
-	<mwc-drawer class=${this.self?'logged_in':'logged_out'} hasHeader ${ref(this.drawer)} type="modal">
-        <span slot="title">My App</span>
-        <span slot="subtitle">Navigation</span>
-        <app-menu></app-menu>
-        <div class="appContent" slot="appContent">
-            <mwc-top-app-bar role="toolbar">
-              <mwc-icon-button @click=${this.toggleNav} icon="menu" slot="navigationIcon"></mwc-icon-button>
-              <div slot="title">My App</div>
-              <mwc-item slot="actionItems">${this.self?.username}</mwc-item>
-              <mwc-icon-button icon="logout" @click=${this.requestLogout} slot="actionItems"></mwc-icon-button>
-            </mwc-top-app-bar>
-            <main>${this.routes.outlet()}</main>
-        </div>
-      </mwc-drawer>
-      <mwc-snackbar @MDCSnackbar:closed=${()=>this.error=''} labelText=${this.error} ${ref(this.snackbar)}>
-        <mwc-icon-button icon="close" slot="dismiss"></mwc-icon-button>
-      </mwc-snackbar>
-
-			*/
  
   render() {
     return html`
 			<div class="top ${this.self?'logged-in':'logged-out'}">
 				<button class="menutoggle" @click=${this.toggleNav}>☰</button>
-				<span class="title">My App</span>
+				<span class="title">Codename: Upupa</span>
 				${this.self?html`
 					<select class="logout">
 						<option selected>${this.self?.username}</option>

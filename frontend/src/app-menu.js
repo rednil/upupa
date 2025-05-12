@@ -30,7 +30,9 @@ export class AppMenu extends LitElement {
 	getMenu(){
 		return [
 			['Main Page', ''],
-			['Users', '#/users']
+			['Users', '#/users'],
+			['Nest Box List', '#/box-list'],
+			['Nest Box Status', '#/box-status']
 		]
 	}
 	
