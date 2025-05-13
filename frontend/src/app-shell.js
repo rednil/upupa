@@ -7,6 +7,7 @@ import './app-menu'
 import './app-users'
 import './box-list'
 import './box-status'
+import './box-map'
 
 /* 
 Routing can be done via hashed or non-hashed URL paths
@@ -64,6 +65,7 @@ export class AppShell extends LitElement {
 				left: -10em;
 				transition: left 0.3s ease-in-out;
 				box-shadow: rgba(0, 0, 0, 0.1) 0px 6px 24px 0px;
+				z-index: 10000;
 			}
       .logged-out button, .logged-out select {
         display: none;
@@ -111,6 +113,7 @@ export class AppShell extends LitElement {
       { path: '#/login', render: () => html`<app-login @login=${this.requestUserInfo}></app-login>` },
       { path: '#/users', render: () => html`<app-users .self=${this.self}></app-users>` },
 			{ path: '#/box-list', render: () => html`<box-list></box-list>` },
+			{ path: '#/box-map', render: () => html`<box-map></box-map>` },
 			{ path: '#/box-status', render: () => html`<box-status></box-status>` }
     ])
     window.onpopstate = e => {
