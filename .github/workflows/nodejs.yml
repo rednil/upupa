@@ -67,8 +67,8 @@ jobs:
         [ "$VERSION" == "main" ] && VERSION=latest
         echo IMAGE_ID=$IMAGE_ID
         echo VERSION=$VERSION
-        docker tag express-passport-mongo-lit $IMAGE_ID:${{ steps.autotag.outputs.version }}
-        docker tag express-passport-mongo-lit $IMAGE_ID:$VERSION
+        docker tag $IMAGE_ID:${{ steps.autotag.outputs.version }}
+        docker tag $IMAGE_ID:$VERSION
         docker push $IMAGE_ID:$VERSION
         docker push $IMAGE_ID:${{ steps.autotag.outputs.version }}
         
