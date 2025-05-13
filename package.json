@@ -1,7 +1,7 @@
 {
-  "name": "express-passport-mongo-lit",
-  "version": "0.0.1",
-  "description": "A fullstack starter for little projects requiring authentication and user management. Based on express, passport, mongo and lit, automatically packed into a docker container using a github action.",
+  "name": "Upupa",
+  "version": "0.0.2",
+  "description": "Server and client for bird projects",
   "main": "index.js",
   "scripts": {
     "test": "npm run test:frontend; npm run test:backend",
@@ -9,14 +9,14 @@
     "test:backend": "cd backend; npm run test",
     "build": "cd frontend; npm run build",
     "start": "cd frontend; npm start & cd ../backend; npm start",
-    "docker:build": "cp -a frontend/dist backend/public; docker build backend --tag express-passport-mongo-lit --file Dockerfile",
-    "docker:serve-local": "docker run -it -p 8080:80 express-passport-mongo-lit; xdg-open http://localhost:8080",
-    "docker:serve-repo": "docker run -it -p 8080:80 ghcr.io/rednil/express-passport-mongo-lit:latest; xdg-open http://localhost:8080",
+    "docker:build": "cp -a frontend/dist backend/public; docker build backend --tag upupa --file Dockerfile",
+    "docker:serve-local": "docker run -it -p 8080:80 upupa; xdg-open http://localhost:8080",
+    "docker:serve-repo": "docker run -it -p 8080:80 ghcr.io/rednil/upupa:latest; xdg-open http://localhost:8080",
     "cleaninstall": "cd frontend; npm ci && cd ../backend; npm ci"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/rednil/express-passport-mongo-lit.git"
+    "url": "git+https://github.com/rednil/upupa.git"
   },
   "keywords": [
     "express",
@@ -28,7 +28,7 @@
   "author": "rednil",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/rednil/express-passport-mongo-lit/issues"
+    "url": "https://github.com/rednil/upupa/issues"
   },
-  "homepage": "https://github.com/rednil/express-passport-mongo-lit#readme"
+  "homepage": "https://github.com/rednil/upupa#readme"
 }
