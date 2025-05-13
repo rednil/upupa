@@ -4,7 +4,8 @@ export class BoxStatus extends LitElement {
   static get properties() {
     return {
       boxes: { type: Array },
-			inspections: { type: Array }
+			inspections: { type: Array },
+			box_id: { type: String }
     }
   }
 
@@ -56,7 +57,7 @@ export class BoxStatus extends LitElement {
 				<label for="box-select">Nest Box</label>
 				<select id="box-select" @change=${this._boxSelectCb}>
 					${this.boxes.map(({label, _id}) => html`
-						<option value="${_id}">${label}</option>
+						<option ?selected=${_id==this.box_id} value="${_id}">${label}</option>
 					`)}
 				</select>
 				<div class="list">

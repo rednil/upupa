@@ -31,10 +31,31 @@ class Routes {
     this.routes = routes
   }
   outlet(){
+		
     const path = window.location.hash
-    return this.routes.find(route => route.path == path).render()
+    const route = 
+			this.routes.find(route => path.search(route.path) == 0) ||
+			this.routes.find(route => route.default) ||
+			this.routes[0]
+		const params = this.getParams()
+		console.log('outlet', path, route, params)
+		return route.render(params)
   }
+	getParams(){
+		const params = {}
+		const { hash } = window.location
+		if(hash.indexOf('?') < 0) return params
+		const paramStr = window.location.hash.split('?')[1]
+		const paramArr = paramStr.split('&')
+		paramArr.forEach(param => {
+			const [key, value] = param.split('=')
+			params[decodeURIComponent(key)] = decodeURIComponent(value)
+		})
+		return params
+	}
 }
+
+
 
 export class AppShell extends LitElement {
   static get properties() {
@@ -109,16 +130,17 @@ export class AppShell extends LitElement {
   constructor() {
     super()
     this.routes = new Routes(this, [
-      { path: '',        render: () => html`<app-main .user=${this.self}></app-main>` },
+      //{ path: '',        render: () => html`<app-main .user=${this.self}></app-main>` },
       { path: '#/login', render: () => html`<app-login @login=${this.requestUserInfo}></app-login>` },
       { path: '#/users', render: () => html`<app-users .self=${this.self}></app-users>` },
 			{ path: '#/box-list', render: () => html`<box-list></box-list>` },
-			{ path: '#/box-map', render: () => html`<box-map></box-map>` },
-			{ path: '#/box-status', render: () => html`<box-status></box-status>` }
+			{ path: '#/box-map', default: true, render: (params) => html`<box-map box_id=${params.box_id}></box-map>` },
+			{ path: '#/box-status', render: (params) => html`<box-status box_id=${params.box_id}></box-status>` }
     ])
     window.onpopstate = e => {
-      this.drawer = false
-      //this.requestUpdate()
+			console.log('onpopstate', window.location.hash)
+      if(this.drawer) this.drawer = false
+      else this.requestUpdate()
     }
     this.addEventListener('fetch-error', evt => this.handleFetchError(evt.detail))
     this.requestUserInfo()

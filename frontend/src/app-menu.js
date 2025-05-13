@@ -31,7 +31,7 @@ export class AppMenu extends LitElement {
 		return [
 			//['Main Page', ''],
 			['Map', '#/box-map'],
-			//['Nest Box List', '#/box-list'],
+			['List', '#/box-list'],
 			['Status', '#/box-status'],
 			['Users', '#/users'],
 		]

@@ -9,6 +9,7 @@
   "scripts": {
 		"import-prod": "dotenvx run -f ../backend/.env.prod -- node ./import.js",
 		"import-test": "dotenvx run -f ../backend/.env.test -- node ./import.js",
+		"import-dev": "dotenvx run -f ../backend/.env.dev -- node ./import.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {

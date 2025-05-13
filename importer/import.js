@@ -11,6 +11,33 @@ const {
 	DATABASE_NAME,
 } = process.env
 
+const eggRegExp = new RegExp(/(\d+)\s*Eier/)
+
+const names = [
+	{ key: 'Blaumeise', match: ['BM'] },
+	{ key: 'Kleiber', match: ['Kleiber', 'KL'] },
+	{ key: 'Kohlmeise', match: ['KM'] },
+	{ key: 'Sumpfmeise', match: ['SM'] },
+	{ key: 'Wasseramsel', match: ['WA']}
+]
+const states = [
+	{ key: 'EMPTY', match: ['leer'] },
+	{ key: 'NEST_BUILDING', match: ['halbfertiges Nest', 'Nestanfang'] },
+	{ key: 'NEST_READY', match: ['legebereit'] },
+	{ key: 'LAYING', match: ['Ei'] },
+	{ key: 'BREEDING', match: ['brütet'] },
+	{ key: 'FEEDING', match: ['Nestling'] }
+]
+
+function parseGeneric(str, options){
+	for(var i in options){
+		const {key, match} = options[i]
+		for(var j in match){
+			if(str.match(match[j]) || str.match(key)) return key
+		}
+	}
+}
+
 const uri = `mongodb://${DATABASE_ROOT_USERNAME}:${DATABASE_ROOT_PASSWORD}@${DATABASE_HOST}:${DATABASE_PORT}`
 
 const client = new MongoClient(uri)
@@ -65,23 +92,64 @@ async function importInspections(json){
 		const header = entries.shift()
 		const boxLabel = header[1]
 		const box = await db.collection('boxes').findOne({label: boxLabel})
-		if(!box) {
-			console.error(`Inspection of unknown box: ${boxLabel}`)
-			continue
+		var box_id 
+		if(box) {
+			box_id = box._id
 		}
-		const inspections = entries.map(([dateStr, note]) => {
+		else{
+			console.error(`Inspection of unknown box: ${boxLabel}`)
+			const result = await db.collection('boxes').insertOne({label: boxLabel})
+			box_id = result.insertedId
+		}
+		var nameDefault = null
+		var hasNestlings = false
+		for(var x in entries){
+			const [dateStr, note] = entries[x]
 			const date = new Date(dateStr.replace(/(.*)\.(.*)\.(.*)/, '$3-$2-$1'))
 			const inspection = {
 				date,
 				note,
-				box_id: box._id,
+				box_id,
 			}
-			const eggMatch = note.match(/(\d+)\s*Eier/)
+			const eggMatch = note.match(eggRegExp)
 			if(eggMatch) inspection.eggs = Number(eggMatch[1])
-			const nestlingsMatch = note.match(/(\d+)\s*Nestlinge/)
-			if(nestlingsMatch) inspection.nestlings = Number(nestlingsMatch[1])
-			return inspection
-		})
-		db.collection('inspections').insertMany(inspections)
+			const nestlingsMatch = note.match(/(\d+)\s*Nestling/)
+			if(nestlingsMatch) {
+				inspection.nestlings = Number(nestlingsMatch[1])
+				hasNestlings = true
+			}
+			inspection.state = parseGeneric(note, states)
+			if(inspection.state != 'EMPTY') {
+				var name = parseGeneric(note, names)
+				if(name){
+					if(nameDefault && nameDefault!=name){
+						console.error(`name conflict ${date.toLocaleDateString()}`, nameDefault, entries)
+					}
+					nameDefault = name
+				}
+				else if(nameDefault){
+					console.log(`No name found, but formerly noted as ${nameDefault}`)
+					name = nameDefault
+				}
+				if(name){
+					const species = await db.collection('species').findOne({name})
+					var species_id
+					if(species){
+						species_id = species._id
+					}
+					else{
+						const result = await db.collection('species').insertOne({name})
+						species_id = result.insertedId
+					}
+					inspection.species_id = species_id
+				}
+			}
+			await db.collection('inspections').insertOne(inspection)
+		}
+		if(hasNestlings && !nameDefault) {
+			console.error(`Nestlings of unknown species`, entries)
+		}
 	}
 }
+
+

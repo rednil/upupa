@@ -3,7 +3,8 @@ import { map, tileLayer, tooltip } from 'leaflet/dist/leaflet-src.esm.js'
 export class BoxMap extends LitElement {
   static get properties() {
     return {
-      boxes: { type: Array }
+      boxes: { type: Array },
+			box_id: { type: String }
     }
   }
 
@@ -18,7 +19,9 @@ export class BoxMap extends LitElement {
 				height: 100%;
 				width: 100%;
 			}
-			
+			.selected {
+				border: 2px solid red;
+			}
     `
   }
 	constructor(){
@@ -48,20 +51,36 @@ export class BoxMap extends LitElement {
 	async fetchBoxes(){
     const response = await fetch('/api/boxes')
     this.boxes = await response.json()
-		const coors = this.boxes.map(box => [box.lat, box.lon])
-		this.map.fitBounds(coors)
+		this.boxes = this.boxes.filter(box => box.lat && box.lon)
 		this.boxes.forEach(box => {
 			tooltip({
-				color: 'red',
-				permanent: true
+				permanent: true,
+				interactive: true,
+				className: box._id == this.box_id ? 'selected' : ''
 			})
 			.setLatLng([box.lat, box.lon])
 			.setContent(box.label)
+			.on('click', this.getBoxSelector(box))
 			.addTo(this.map)
+			
 		})
-    
+		if(this.box_id){
+			const box = this.boxes.find(box => box._id == this.box_id)
+			this.map.setView([box.lat, box.lon],17)
+		}
+    else{
+			const coors = this.boxes.map(box => [box.lat, box.lon])
+			this.map.fitBounds(coors)
+		}
   }
-
+	getBoxSelector(box){
+		return () => {
+			console.log('click', box, this)
+			window.location.hash = `#/box-map?box_id=${box._id}`
+			window.location.hash = `#/box-status?box_id=${box._id}`
+		}
+		
+	}
 }
 
 customElements.define('box-map', BoxMap)
