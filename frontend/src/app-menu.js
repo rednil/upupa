@@ -29,11 +29,11 @@ export class AppMenu extends LitElement {
 
 	getMenu(){
 		return [
-			['Main Page', ''],
-			['Users', '#/users'],
+			//['Main Page', ''],
 			['Map', '#/box-map'],
-			['Nest Box List', '#/box-list'],
-			['Nest Box Status', '#/box-status']
+			//['Nest Box List', '#/box-list'],
+			['Status', '#/box-status'],
+			['Users', '#/users'],
 		]
 	}
 	
