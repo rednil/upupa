@@ -16,6 +16,8 @@ import authRouter from './routes/auth.js'
 import usersRouter from './routes/users.js'
 import boxesRouter from './routes/boxes.js'
 import inspectionsRouter from './routes/inspections.js'
+import summariesRouter from './routes/summaries.js'
+import speciesRouter from './routes/species.js'
 
 const MongoDBStore = ConnectMongoDBSession(session)
 const store = new MongoDBStore({
@@ -50,6 +52,9 @@ app.use('/api/auth', authRouter)
 app.use('/api/users', usersRouter)
 app.use('/api/boxes', boxesRouter)
 app.use('/api/inspections', inspectionsRouter)
+app.use('/api/summaries', summariesRouter)
+app.use('/api/species', speciesRouter)
+
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

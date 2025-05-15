@@ -5,7 +5,8 @@ import { importMetaAssets } from '@web/rollup-plugin-import-meta-assets';
 import esbuild from 'rollup-plugin-esbuild';
 import { generateSW } from 'rollup-plugin-workbox';
 import path from 'path';
-
+import css from 'rollup-plugin-import-css';
+import copy from 'rollup-plugin-copy';
 export default {
   input: 'index.html',
   output: {
@@ -24,6 +25,16 @@ export default {
       injectServiceWorker: true,
       serviceWorkerPath: 'dist/sw.js',
     }),
+		copy({
+      targets: [
+        // Copies images from node_modules to your output 'dist/images' directory
+        { 
+					src: 'node_modules/leaflet/dist/images/*',
+					dest: 'dist/node_modules/leaflet/dist/images'
+				}
+        // Adjust 'dist' if your rollup output directory is different.
+      ]
+    }),
     /** Resolve bare module imports */
     nodeResolve(),
     /** Minify JS, compile JS to a lower language target */
@@ -31,6 +42,7 @@ export default {
       minify: true,
       target: ['chrome64', 'firefox67', 'safari11.1'],
     }),
+		css(),
     /** Bundle assets references via import.meta.url */
     importMetaAssets(),
     /** Minify html and css tagged template literals */
