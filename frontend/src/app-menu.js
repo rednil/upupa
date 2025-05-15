@@ -13,7 +13,8 @@ export class AppMenu extends LitElement {
 			button {
 				white-space: nowrap;
 				border: 0;
-				padding: 0.5em;
+				padding: 1em;
+				text-align: left;
 			}
 			.selected{
 				
@@ -30,10 +31,11 @@ export class AppMenu extends LitElement {
 	getMenu(){
 		return [
 			//['Main Page', ''],
-			['Map', '#/box-map'],
-			['List', '#/box-list'],
-			['Status', '#/box-status'],
-			['Users', '#/users'],
+			['Karte', '#/map'],
+			['Status', '#/status'],
+			['Kalender', '#/calendar'],
+			['Nistkästen', '#/boxes'],
+			['Benutzer', '#/users'],
 		]
 	}
 	

@@ -9,10 +9,12 @@ leaflet marker icons, because by default it searches them in the root folder
 */
 
 import { LitElement, html, css, unsafeCSS } from 'lit'
-import { map, tileLayer, tooltip, marker, Icon } from 'leaflet/dist/leaflet-src.esm.js'
+import { map, tileLayer, tooltip, marker, Icon, layerGroup } from 'leaflet/dist/leaflet-src.esm.js'
 import { proxy } from './proxy'
 import leafletCSS from 'leaflet/dist/leaflet.css'
 
+const tileUrl = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
+const attribution = '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
 const leafletIconPath = 'node_modules/leaflet/dist/images'
 delete Icon.Default.prototype._getIconUrl
 
@@ -26,7 +28,8 @@ export class BoxMap extends LitElement {
   static get properties() {
     return {
       boxes: { type: Array },
-			box_id: { type: String }
+			box_id: { type: String },
+			type: { type: String }
     }
   }
 
@@ -46,33 +49,52 @@ export class BoxMap extends LitElement {
 			.selected {
 				border: 2px solid red;
 			}
+			select {
+				width: fit-content;
+				margin-bottom: 0.5em;
+			}
     `]
   }
 	constructor(){
 		super()
 		this.boxes = []
+		this.type = 'LABEL'
 		this.fetchData()
 	}
 	
   render() {
     return html`
-		
-			<div id="map">
-				
-			</div>
+			<select @change=${this.typeChangeCb}>
+				<option value="LABEL">Bezeichnung</option>
+				<option value="STATUS">Aktueller Status</option>
+				<option value="LAST_INSPECTION">Letzte Inspektion</option>
+				<option value="BAND_STATUS_NESTLINGS">Beringung Jungvögel</option>
+				<option value="BAND_STATUS_MOTHER">Beringung Altvogel</option>
+			</select>
+			<div id="map"></div>
     `
   }
-
+	typeChangeCb(evt){
+		this.type = evt.target.value
+	}
 	firstUpdated(){
 		const mapContainer = this.shadowRoot.querySelector('#map')
 		this.map = map(mapContainer)
-		tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+		tileLayer(tileUrl, {
 			maxZoom: 22,
-			attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-		}).addTo(this.map);
+			attribution
+		})
+		.addTo(this.map)
+		this.markerGroup = layerGroup()
+		.addTo(this.map)
 	}
 	async fetchData(){
-		var [boxes, summaries] = await proxy.fetch([{path: 'boxes'}, {path: 'summaries'}])
+		var [boxes, summaries, species] = await proxy.fetch([
+			{path: 'boxes'},
+			{path: 'summaries'},
+			{path: 'species'}
+		])
+		this.species = species.reduce((obj, entry) => Object.assign(obj, {[entry._id]: entry.name}), {})
 		this.boxes = boxes
 		.filter(box => box.lat && box.lon)
 		.map(box => {
@@ -82,32 +104,39 @@ export class BoxMap extends LitElement {
 			return box
 		})
 	}
-
-	updated(){
+	clear(){
+		console.log('cvlear')
+		this.markerGroup.clearLayers()
+	}
+	getTooltipText(box){
+		switch (this.type){
+			case 'LABEL': return box.label
+			case 'STATUS':
+				if(box.summaries.length == 0) return 'Keine Inspektion'
+				const summary = box.summaries[0]
+				if(summary.state == 'EMPTY') return 'Leer'
+				const species = this.getSpeciesName(summary.species_id)
+				return `${summary.state}: ${species}`
+			case 'LAST_INSPECTION':
+				if(box.summaries.length == 0) return 'Keine'
+				return new Date(box.summaries[0].lastInspection).toLocaleDateString()
+		}
+	}
+	getSpeciesName(id){
+		return this.species[id] || 'Unbekannt'
+	}
+	updated(changed){
+		console.log('changed', changed)
 		if(!this.boxes.length) return
+		if(changed.has('boxes')) this.createMarkers()
+		this.createTooltips()
+	}
+	createMarkers(){
 		this.boxes.forEach(box => {
-			/*
-			tooltip({
-				permanent: true,
-				interactive: true,
-				className: box._id == this.box_id ? 'selected' : ''
-			})
-			.setLatLng([box.lat, box.lon])
-			.setContent(box.label)
-			.on('click', this.getBoxSelector(box))
-			.addTo(this.map)
-			*/
-			marker({
-			})
+			box.marker = marker({})
 			.setLatLng([box.lat, box.lon])
 			.on('click', this.getBoxSelector(box))
-			.bindTooltip(box.label, {
-				permanent: true,
-				interactive: true,
-				className: box._id == this.box_id ? 'selected' : ''
-			}).openTooltip()
-			.addTo(this.map)
-			
+			this.markerGroup.addLayer(box.marker)
 		})
 		if(this.box_id){
 			const box = this.boxes.find(box => box._id == this.box_id)
@@ -118,6 +147,16 @@ export class BoxMap extends LitElement {
 			this.map.fitBounds(coors)
 		}
   }
+	createTooltips(){
+		this.boxes.forEach(box => {
+			box.marker.bindTooltip(this.getTooltipText(box), {
+				permanent: true,
+				interactive: true,
+				className: box._id == this.box_id ? 'selected' : ''
+			})
+			.openTooltip()
+		})
+	}
 	getBoxSelector(box){
 		return () => {
 			console.log('click', box, this)

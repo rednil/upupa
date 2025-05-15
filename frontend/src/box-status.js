@@ -1,5 +1,6 @@
 import { LitElement, html, css } from 'lit'
 import './forms/select-id.js'
+import { proxy } from './proxy.js'
 
 function getDateValue(date){
 	return (date || '').split('T')[0]
@@ -93,21 +94,22 @@ export class BoxStatus extends LitElement {
 			</div>
     `
   }
-
-	async fetchBoxes(){
-    const response = await fetch('/api/boxes')
-    this.boxes = await response.json()
-    await this._fetchInspections(this.boxes[0]._id)
-  }
+	firstUpdated(){
+		if(this.box_id){
+			this._fetchInspections(this.box_id)
+		}
+	}
+	
 	_boxSelectCb(evt){
 		const box_id = evt.target.value
 		this._fetchInspections(box_id)
 	}
 	async _fetchInspections(box_id){
-		const inspectionsResponse = await fetch(`/api/inspections?box_id=${box_id}`)
-		const summariesResponse = await fetch(`/api/summaries?box_id=${box_id}`)
-		const inspections = await inspectionsResponse.json()
-		const summaries = await summariesResponse.json()
+		var [inspections, summaries] = await proxy.fetch([
+			{path: 'inspections', query: { box_id }},
+			{path: 'summaries', query: { box_id }}
+		])
+		
 		this.inspections = inspections
 		this.summaries = summaries 
 	}

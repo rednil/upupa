@@ -8,6 +8,7 @@ import './app-users'
 import './box-list'
 import './box-status'
 import './box-map'
+import './page-calendar'
 
 /* 
 Routing can be done via hashed or non-hashed URL paths
@@ -100,7 +101,8 @@ export class AppShell extends LitElement {
 			main {
 				display: flex;
 				flex: 1;
-				padding: 1em;
+				padding: 0.5em;
+				width: 100%;
 				
 			}
 			.bottom {
@@ -133,9 +135,10 @@ export class AppShell extends LitElement {
       //{ path: '',        render: () => html`<app-main .user=${this.self}></app-main>` },
       { path: '#/login', render: () => html`<app-login @login=${this.requestUserInfo}></app-login>` },
       { path: '#/users', render: () => html`<app-users .self=${this.self}></app-users>` },
-			{ path: '#/box-list', render: () => html`<box-list></box-list>` },
-			{ path: '#/box-map', default: true, render: (params) => html`<box-map box_id=${params.box_id}></box-map>` },
-			{ path: '#/box-status', render: (params) => html`<box-status box_id=${params.box_id}></box-status>` }
+			{ path: '#/boxes', render: () => html`<box-list></box-list>` },
+			{ path: '#/calendar', render: () => html`<page-calendar></page-calendar>` },
+			{ path: '#/map', default: true, render: (params) => html`<box-map box_id=${params.box_id}></box-map>` },
+			{ path: '#/status', render: (params) => html`<box-status box_id=${params.box_id}></box-status>` }
     ])
     window.onpopstate = e => {
 			console.log('onpopstate', window.location.hash)

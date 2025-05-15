@@ -132,6 +132,7 @@ async function importInspections(json){
 		for(var x in entries){
 			const [dateStr, note] = entries[x]
 			const date = new Date(dateStr.replace(/(.*)\.(.*)\.(.*)/, '$3-$2-$1'))
+			summary.lastInspection = date
 			var eggs = 0
 			var nestlings = 0
 			
@@ -154,9 +155,10 @@ async function importInspections(json){
 					}
 					name = _name
 				}
-				
-				
 			}
+			// if there is no state noted, but there was one before, fallback
+			if(!state && summary.state) state = summary.state
+			summary.state = state
 			const inspection = {
 				date,
 				note,
