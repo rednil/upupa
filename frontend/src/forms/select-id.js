@@ -15,7 +15,8 @@ export class SelectId extends LitElement {
 			options: { type: Array }, // the api response 
 			key: { type: String }, // the key used to name each option, e.g. "name"
 			autoselect: { type: Boolean },
-			disabled: { type: Boolean }
+			disabled: { type: Boolean },
+			label: { type: String }
 		}
 	}
 
@@ -35,7 +36,7 @@ export class SelectId extends LitElement {
 	render() {
 		console.log('render', this.value, typeof this.value)
 		return html`
-			<label for="select">${labels[this.type] || this.type}</label>
+			${this.label ? html`<label for="select">${this.label}</label>` : ''}
 			<select ?disabled=${this.disabled} id="select" @change=${this._changeCb}>
 				${this.autoselect ? '' : html`<option>---</option>`}
 				${this.options.map(option => html`

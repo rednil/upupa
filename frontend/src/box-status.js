@@ -30,7 +30,7 @@ export class BoxStatus extends LitElement {
 				max-width: 40em;
 			}
 			.inspection, .summary {
-				padding: 0.5em 0;
+				padding: 0.5em;
 				border-radius: 5px;
 				box-shadow: rgba(0, 0, 0, 0.1) 0px 6px 24px 0px;
 			}
@@ -42,8 +42,8 @@ export class BoxStatus extends LitElement {
 				justify-content: space-between;
 			}
 
-			#select-box {
-				flex: 1;
+			#select-box, button {
+				margin: 0.5em;
 			}
 			
 			.list {
@@ -72,7 +72,7 @@ export class BoxStatus extends LitElement {
 					${this.summaries.map(({hatchDate, breedingStart, layingStart, species_id, occupancy, clutchSize }) => html`
 						<div class="summary">
 							<div><span>Belegung</span><span>${occupancy}</span></div>
-							<select-id disabled type="species" key="name" value=${species_id}></select-id>
+							<select-id label="Vogelart" disabled type="species" key="name" value=${species_id}></select-id>
 							<div><span>Gelegegröße</span><span>${clutchSize}</span></div>
 							<div class="date"><label for="layingStart">Legebeginn</label><input id="layingStart" type="date" value=${getDateValue(layingStart)}></div>
 							<div class="date"><label for="breedingStart">Brutbeginn</label><input id="breedingStart" type="date" value=${getDateValue(breedingStart)}></div>

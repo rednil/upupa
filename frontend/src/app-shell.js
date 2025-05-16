@@ -1,5 +1,4 @@
 import { LitElement, html, css } from 'lit'
-import {ref, createRef} from 'lit/directives/ref.js'
 
 import './app-main'
 import './app-login'
@@ -9,6 +8,7 @@ import './box-list'
 import './box-status'
 import './box-map'
 import './page-calendar'
+import './forms/select-route'
 
 /* 
 Routing can be done via hashed or non-hashed URL paths
@@ -26,7 +26,8 @@ When using non-hashed URLs,
 // minimalistic router until the lit router works
 // see https://github.com/lit/lit/tree/main/packages/labs/router
 
-class Routes { 
+/*
+class Router { 
   constructor (host, routes){
     this.host = host
     this.routes = routes
@@ -34,12 +35,9 @@ class Routes {
   outlet(){
 		
     const path = window.location.hash
-    const route = 
-			this.routes.find(route => path.search(route.path) == 0) ||
-			this.routes.find(route => route.default) ||
-			this.routes[0]
+    const route = this.routes.find(route => path.search(route.path) == 0)
+		if(!route) return console.error(`Unknown route: ${path}`)
 		const params = this.getParams()
-		console.log('outlet', path, route, params)
 		return route.render(params)
   }
 	getParams(){
@@ -55,15 +53,26 @@ class Routes {
 		return params
 	}
 }
-
-
+*/
+function getUrlParams(){
+	const params = {}
+	const { hash } = window.location
+	if(hash.indexOf('?') < 0) return params
+	const paramStr = window.location.hash.split('?')[1]
+	const paramArr = paramStr.split('&')
+	paramArr.forEach(param => {
+		const [key, value] = param.split('=')
+		params[decodeURIComponent(key)] = decodeURIComponent(value)
+	})
+	return params
+}
 
 export class AppShell extends LitElement {
   static get properties() {
     return {
       self: { type: Object },
       error: { type: String },
-			drawer: { type: Boolean }
+			route: { type: Object }
     }
   }
 
@@ -74,20 +83,12 @@ export class AppShell extends LitElement {
         flex-direction: column;
         height: 100%;
       }
-			.center {
+			main {
 				display: flex;
-				flex-direction: row;
 				flex: 1;
+				width: 100%;
 				min-height: 0;
-			}
-			.drawer {
-				display: flex;
-				flex-direction: column;
-				position: fixed;
-				left: -10em;
-				transition: left 0.3s ease-in-out;
-				box-shadow: rgba(0, 0, 0, 0.1) 0px 6px 24px 0px;
-				z-index: 10000;
+				
 			}
       .logged-out button, .logged-out select {
         display: none;
@@ -97,60 +98,100 @@ export class AppShell extends LitElement {
 				flex-direction: row;
 				justify-content: space-between;
 				box-shadow: rgba(0, 0, 0, 0.1) 0px 6px 24px 0px;
+				height: 2em;
 			}
-			main {
-				display: flex;
-				flex: 1;
-				padding: 0.5em;
-				width: 100%;
-				
-			}
+			
 			.bottom {
 				background-color: red;
 			}
-			.title {
-				margin: auto;
-				
-			}
-			.drawer.open {
-				left: 0;
-			}
-			.menutoggle{
-				border: 0;
-				padding: 0.5em 1em;
-			}
+		
 			select{
 				border: 0;
 			}
+			select-route{
+				display: flex;
+			}
+		
     `
   }
 
-  // create references to the DOM nodes we need to access
-  //drawer = createRef()
-  //snackbar = createRef()
-
   constructor() {
     super()
-    this.routes = new Routes(this, [
-      //{ path: '',        render: () => html`<app-main .user=${this.self}></app-main>` },
-      { path: '#/login', render: () => html`<app-login @login=${this.requestUserInfo}></app-login>` },
-      { path: '#/users', render: () => html`<app-users .self=${this.self}></app-users>` },
-			{ path: '#/boxes', render: () => html`<box-list></box-list>` },
-			{ path: '#/calendar', render: () => html`<page-calendar></page-calendar>` },
-			{ path: '#/map', default: true, render: (params) => html`<box-map box_id=${params.box_id}></box-map>` },
-			{ path: '#/status', render: (params) => html`<box-status box_id=${params.box_id}></box-status>` }
-    ])
-    window.onpopstate = e => {
+    this.routes = [
+			{
+				path: '#/overview',
+				default: true,
+				menu: true,
+				render: (params) => html`
+					<box-map box_id=${params.box_id}></box-map>
+				`
+			},
+			{
+				path: '#/detail',
+				menu: true,
+				render: (params) => html`
+					<box-status box_id=${params.box_id}></box-status>
+				`
+			},
+			{
+				path: '#/calendar',
+				menu: true,
+				render: () => html`
+					<page-calendar></page-calendar>
+				`
+			},
+			{ 
+				path: '#/users',
+				menu: true,
+				render: () => html`
+					<app-users .self=${this.self}></app-users>
+				`
+			},
+      { 
+				path: '#/login',
+				render: () => html`
+					<app-login @login=${this.requestUserInfo}></app-login>
+				` 
+			},
+     
+			{
+				path: '#/boxes',
+				render: () => html`
+					<box-list></box-list>
+				`
+			}
+    ]
+    window.onpopstate = this.navigate.bind(this)
+		/*
+		window.onpopstate = e => {
 			console.log('onpopstate', window.location.hash)
+			
       if(this.drawer) this.drawer = false
       else this.requestUpdate()
     }
+		*/
     this.addEventListener('fetch-error', evt => this.handleFetchError(evt.detail))
     this.requestUserInfo()
     this.error = ''
-		this.drawer = false
   }
-  
+	navigate(){
+		console.log('navigate')
+		this.route = this.routes.find(route => window.location.hash.search(route.path) == 0)
+		if(!this.route) {
+			console.error(`Unknown route: ${window.location.hash}`)
+			return this.navigateDefault()
+		}
+		this.params = getUrlParams()
+		//return route.render(params)
+	}
+  connectedCallback(){
+		super.connectedCallback()
+		if(window.location.hash) this.navigate()
+		else this.navigateDefault()
+	}
+	navigateDefault(){
+		window.location.hash = this.routes[0].path
+	}
   updated(changedProps){
     //if(changedProps.has('error') && this.error) this.snackbar.value.show()
   }
@@ -172,15 +213,17 @@ export class AppShell extends LitElement {
     }
   }
 
-  toggleNav(){
-    this.drawer = !this.drawer
-  }
  
+	shouldUpdate(){
+		return this.route
+	}
   render() {
     return html`
 			<div class="top ${this.self?'logged-in':'logged-out'}">
-				<button class="menutoggle" @click=${this.toggleNav}>☰</button>
-				<span class="title">Upupa</span>
+				<select-route .routes=${this.routes} selected=${this.route.path}></select-route>
+				<select disabled>
+					<option>2025</option>
+				</select>
 				${this.self?html`
 					<select class="logout">
 						<option selected>${this.self?.username}</option>
@@ -188,10 +231,7 @@ export class AppShell extends LitElement {
 					</select>
 				`:''}
 			</div>
-			<div class="center ">
-				<app-menu class="drawer ${this.drawer ? "open" : "closed"}"></app-menu>
-				<main>${this.routes.outlet()}</main>
-			</div>
+			<main>${this.route.render(this.params)}</main>
       <div class="bottom">${this.error}</div>
     `
   }

@@ -51,7 +51,27 @@ export class BoxMap extends LitElement {
 			}
 			select {
 				width: fit-content;
-				margin-bottom: 0.5em;
+				padding: 0.5em 0;
+				direction: rtl;
+				text-align: left;
+				border: 0;
+			}
+			select option {
+				direction: ltr;
+			}
+			.controls {
+				display: flex;
+				flex-direction: row;
+				justify-content: space-between;
+			}
+			.mode input, .mode label {
+				margin: auto;
+			}
+			.mode label {
+				padding: 0 0.5em;
+			}
+			.mode{
+				display: flex;
 			}
     `]
   }
@@ -64,14 +84,23 @@ export class BoxMap extends LitElement {
 	
   render() {
     return html`
-			<select @change=${this.typeChangeCb}>
-				<option value="LABEL">Bezeichnung</option>
-				<option value="STATUS">Aktueller Status</option>
-				<option value="LAST_INSPECTION">Letzte Inspektion</option>
-				<option value="BAND_STATUS_NESTLINGS">Beringung Jungvögel</option>
-				<option value="BAND_STATUS_MOTHER">Beringung Altvogel</option>
-			</select>
+			
 			<div id="map"></div>
+			<div class=controls>
+				<select @change=${this.typeChangeCb}>
+					<option value="LABEL">Bezeichnung</option>
+					<option value="STATUS">Aktueller Status</option>
+					<option value="LAST_INSPECTION">Letzte Inspektion</option>
+					<option value="BAND_STATUS_NESTLINGS">Beringung Jungvögel</option>
+					<option value="BAND_STATUS_MOTHER">Beringung Altvogel</option>
+				</select>
+				<div class="mode">
+					<input type="radio" name="mode" value="MAP">
+					<label for="html">Map</label>
+					<input type="radio" name="mode" value="LIST">
+					<label for="css">List</label>
+				</div>
+			</div>
     `
   }
 	typeChangeCb(evt){
@@ -104,10 +133,7 @@ export class BoxMap extends LitElement {
 			return box
 		})
 	}
-	clear(){
-		console.log('cvlear')
-		this.markerGroup.clearLayers()
-	}
+
 	getTooltipText(box){
 		switch (this.type){
 			case 'LABEL': return box.label
@@ -160,8 +186,8 @@ export class BoxMap extends LitElement {
 	getBoxSelector(box){
 		return () => {
 			console.log('click', box, this)
-			window.location.hash = `#/box-map?box_id=${box._id}`
-			window.location.hash = `#/box-status?box_id=${box._id}`
+			window.location.hash = `#/overview?box_id=${box._id}`
+			window.location.hash = `#/detail?box_id=${box._id}`
 		}
 		
 	}
