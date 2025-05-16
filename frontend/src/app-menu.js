@@ -31,9 +31,9 @@ export class AppMenu extends LitElement {
 	getMenu(){
 		return [
 			//['Main Page', ''],
-			['Karte', '#/map'],
-			['Status', '#/status'],
-			['Kalender', '#/calendar'],
+			['Übersicht', '#/map'],
+			['Nistkastenkontrolle', '#/status'],
+			['Beringungskalender', '#/calendar'],
 			['Nistkästen', '#/boxes'],
 			['Benutzer', '#/users'],
 		]

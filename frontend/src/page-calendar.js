@@ -1,6 +1,17 @@
 import { LitElement, html, css } from 'lit'
 import { proxy } from './proxy'
 
+function formatDate(date){
+	return date.toLocaleString(window.navigator.language,{
+		weekday: 'short',
+		month: 'short',
+		day: 'numeric'
+	})
+}
+function dateClass(date){
+	const day = date.getDay()
+	if(day == 6 || day == 0) return 'weekend'
+}
 export class PageCalendar extends LitElement {
 	static get properties() {
 		return {
@@ -18,28 +29,40 @@ export class PageCalendar extends LitElement {
 			}
 			:host > div {
 			}
+			.dates {
+				padding-right: 0.5em;
+			}
 			.date, .banding {
 				padding: 0.5em;
+				white-space: nowrap;
+			}
+			.date.weekend {
+				background-color: rgba(0,200,0,0.5)
 			}
 			.banding {
 				display: inline-block;
 				width: 3em;
 				text-align: center;
+				color: rgba(0,0,0,0);
 			}
-			.banding.content_true {
-				background-color: grey;
-			}
+			
 			.banding.day_0 {
-				padding-top: 0.5em;
+				background-image: linear-gradient(to bottom, rgba(0,200,0,0), rgba(0,200,0,0.5));
 			}
-			.banding.day_0, .banding.day_4 {
-				opacity: 0.5;
-				color: grey;
+			.banding.day_1 {
+				background-image: linear-gradient(to bottom, rgba(0,200,0,0.5), rgba(0,200,0,1));
 			}
-			.banding.day_1, .banding.day_3 {
-				opacity: 0.75;
-				color: grey;
+			.banding.day_2 {
+				background-image: linear-gradient(to bottom, rgba(00,200,0,1), rgba(200,200,0,1));
+				color: black;
 			}
+			.banding.day_3 {
+				background-image: linear-gradient(to bottom, rgba(200,200,00,1), rgba(200,100,00,1));
+			}
+			.banding.day_4 {
+				background-image: linear-gradient(to bottom, rgba(200,100,00,1), rgba(200,00,00,1));
+			}
+			
 			.days {
 				overflow-x: scroll;
 				white-space: nowrap;
@@ -60,9 +83,9 @@ export class PageCalendar extends LitElement {
 	
 	render() {
 		return html`
-			<div>
+			<div class="dates">
 				${this.calendar.map(day => html`
-					<div class="date">${day.date.toLocaleDateString()}</div>
+					<div class="date ${dateClass(day.date)}">${formatDate(day.date)}</div>
 				`)}
 			</div>
 			<div class="days">
@@ -70,7 +93,7 @@ export class PageCalendar extends LitElement {
 				${this.calendar.map(day => html`
 					<div class="day">
 						${day.bandings.map(banding => html`
-							<div class="banding content_${banding!=null} day_${banding?banding.day:0}">${banding?banding.box_name:''}</div>	
+							<div class="banding day_${banding?banding.day:'false'}">${banding?banding.box_name:''}</div>	
 						`)}
 					</div>
 				`)}
