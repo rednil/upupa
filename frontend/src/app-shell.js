@@ -23,34 +23,6 @@ When using non-hashed URLs,
 // minimalistic router until the lit router works
 // see https://github.com/lit/lit/tree/main/packages/labs/router
 
-/*
-class Router { 
-  constructor (host, routes){
-    this.host = host
-    this.routes = routes
-  }
-  outlet(){
-		
-    const path = window.location.hash
-    const route = this.routes.find(route => path.search(route.path) == 0)
-		if(!route) return console.error(`Unknown route: ${path}`)
-		const params = this.getParams()
-		return route.render(params)
-  }
-	getParams(){
-		const params = {}
-		const { hash } = window.location
-		if(hash.indexOf('?') < 0) return params
-		const paramStr = window.location.hash.split('?')[1]
-		const paramArr = paramStr.split('&')
-		paramArr.forEach(param => {
-			const [key, value] = param.split('=')
-			params[decodeURIComponent(key)] = decodeURIComponent(value)
-		})
-		return params
-	}
-}
-*/
 function getUrlParams(){
 	const params = {}
 	const { hash } = window.location

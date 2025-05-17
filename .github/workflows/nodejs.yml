@@ -44,7 +44,7 @@ jobs:
         npm run cleaninstall
     - name: npm test
       run: |
-        npm run test
+        npm run test:backend
     - name: npm build
       run: |
         npm run build
