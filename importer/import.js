@@ -28,12 +28,12 @@ const names = [
 	{ key: 'Tannenmeise', match: ['TM']}
 ]
 const states = [
-	{ key: 'EMPTY', match: ['leer'] },
-	{ key: 'NEST_BUILDING', match: ['halbfertiges Nest', 'Nestanfang'] },
-	{ key: 'NEST_READY', match: ['legebereit'] },
-	{ key: 'LAYING', match: ['Ei'] },
-	{ key: 'BREEDING', match: ['brütet'] },
-	{ key: 'FEEDING', match: ['Nestling'] }
+	{ key: 'STATE_EMPTY', match: ['leer'] },
+	{ key: 'STATE_NEST_BUILDING', match: ['halbfertiges Nest', 'Nestanfang'] },
+	{ key: 'STATE_NEST_READY', match: ['legebereit'] },
+	{ key: 'STATE_EGGS', match: ['Ei'] },
+	{ key: 'STATE_BREEDING', match: ['brütet'] },
+	{ key: 'STATE_NESTLINGS', match: ['Nestling'] }
 ]
 
 function parseGeneric(str, options){

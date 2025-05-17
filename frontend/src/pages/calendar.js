@@ -1,5 +1,5 @@
 import { LitElement, html, css } from 'lit'
-import { proxy } from './proxy'
+import { proxy } from '../proxy'
 
 function formatDate(date){
 	return date.toLocaleString(window.navigator.language,{
@@ -26,8 +26,6 @@ export class PageCalendar extends LitElement {
 				display: block;
 				flex-direction: row;
 				display: flex;
-			}
-			:host > div {
 			}
 			.dates {
 				padding-right: 0.5em;

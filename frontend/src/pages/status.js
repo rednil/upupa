@@ -1,11 +1,11 @@
 import { LitElement, html, css } from 'lit'
-import './forms/select-id.js'
-import { proxy } from './proxy.js'
+import '../forms/select-id.js'
+import { proxy } from '../proxy.js'
 
 function getDateValue(date){
 	return (date || '').split('T')[0]
 }
-export class BoxStatus extends LitElement {
+export class PageStatus extends LitElement {
   static get properties() {
     return {
       boxes: { type: Array },
@@ -115,4 +115,4 @@ export class BoxStatus extends LitElement {
 	}
 }
 
-customElements.define('box-status', BoxStatus)
+customElements.define('page-status', PageStatus)

@@ -38,10 +38,9 @@ async function getDb() {
 }
 
 async function ensureAdmin(){
-	const username = ADMIN_USERNAME
-  const password = ADMIN_PASSWORD
-	if(await db.collection('users').findOne({ role: 'ADMIN' })) return
-	await createUser({username, password, role: 'ADMIN'})
+	const admin = await db.collection('users').findOne({ role: 'ADMIN' })
+	if(admin) return
+	await createUser({ADMIN_USERNAME, ADMIN_PASSWORD, role: 'ADMIN'})
 }
 
 async function createUser({username, password, role}){

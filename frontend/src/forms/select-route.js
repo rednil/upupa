@@ -51,9 +51,10 @@ export class SelectRoute extends LitElement {
 
 const translations = {
 	'#/overview': 'Übersicht',
-	'#/detail': 'Nistkastenkontrolle',
+	'#/status': 'Nistkastenkontrolle',
 	'#/calendar': 'Beringungskalender',
 	'#/users': 'Benutzer',
+	'#/map': 'Karte'
 }
 
 function translate(key){

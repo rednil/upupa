@@ -1,14 +1,11 @@
 import { LitElement, html, css } from 'lit'
 
-import './app-main'
 import './app-login'
-import './app-menu'
 import './app-users'
-import './box-list'
-import './box-status'
-import './box-map'
-import './page-calendar'
+import './pages/status'
+import './pages/calendar'
 import './forms/select-route'
+import './pages/overview'
 
 /* 
 Routing can be done via hashed or non-hashed URL paths
@@ -72,7 +69,8 @@ export class AppShell extends LitElement {
     return {
       self: { type: Object },
       error: { type: String },
-			route: { type: Object }
+			route: { type: Object },
+			params: { type: Object }
     }
   }
 
@@ -122,54 +120,41 @@ export class AppShell extends LitElement {
 				path: '#/overview',
 				default: true,
 				menu: true,
-				render: (params) => html`
-					<box-map box_id=${params.box_id}></box-map>
-				`
+				render: () => {
+					return html`
+					<page-overview id="page"></page-overview>
+				`}
 			},
 			{
-				path: '#/detail',
+				path: '#/status',
 				menu: true,
-				render: (params) => html`
-					<box-status box_id=${params.box_id}></box-status>
+				render: () => html`
+					<page-status id="page"></page-status>
 				`
 			},
 			{
 				path: '#/calendar',
 				menu: true,
 				render: () => html`
-					<page-calendar></page-calendar>
+					<page-calendar id="page"></page-calendar>
 				`
 			},
 			{ 
 				path: '#/users',
 				menu: true,
 				render: () => html`
-					<app-users .self=${this.self}></app-users>
+					<app-users id="page" .self=${this.self}></app-users>
 				`
 			},
       { 
 				path: '#/login',
 				render: () => html`
-					<app-login @login=${this.requestUserInfo}></app-login>
+					<app-login id="page" @login=${this.requestUserInfo}></app-login>
 				` 
-			},
-     
-			{
-				path: '#/boxes',
-				render: () => html`
-					<box-list></box-list>
-				`
 			}
     ]
+		this.params = {}
     window.onpopstate = this.navigate.bind(this)
-		/*
-		window.onpopstate = e => {
-			console.log('onpopstate', window.location.hash)
-			
-      if(this.drawer) this.drawer = false
-      else this.requestUpdate()
-    }
-		*/
     this.addEventListener('fetch-error', evt => this.handleFetchError(evt.detail))
     this.requestUserInfo()
     this.error = ''
@@ -182,7 +167,6 @@ export class AppShell extends LitElement {
 			return this.navigateDefault()
 		}
 		this.params = getUrlParams()
-		//return route.render(params)
 	}
   connectedCallback(){
 		super.connectedCallback()
@@ -192,8 +176,8 @@ export class AppShell extends LitElement {
 	navigateDefault(){
 		window.location.hash = this.routes[0].path
 	}
-  updated(changedProps){
-    //if(changedProps.has('error') && this.error) this.snackbar.value.show()
+  updated(){
+		Object.assign(this.shadowRoot.querySelector('#page'), this.params)
   }
 
   async requestUserInfo(){
