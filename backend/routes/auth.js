@@ -3,6 +3,7 @@ const router = express.Router()
 import { createUser, loginRequired } from '../auth/tools.js'
 import passport from '../auth/local.js'
 
+/*
 router.post('/register', async (req, res, next)  => {
 	try{
 		await createUser(req, res)
@@ -11,7 +12,7 @@ router.post('/register', async (req, res, next)  => {
     errorResponse(res, 400, (typeof err == 'string') ? err : 'REGISTRATION_FAILED', err.stack)
   }
 })
-
+*/
 function login(req, res, next){
   passport.authenticate('local', (err, user, info) => {
     if (err) { errorResponse(res, 500, 'AUTHENTICATION_FAILED', err); }

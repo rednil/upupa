@@ -56,7 +56,7 @@ export class AppAuth extends LitElement {
       <input id="password" type="password" placeholder=${this.user?._id?'Keep existing':''} >
       ${this.mode == AppAuth.CREATE || this.mode == AppAuth.EDIT ? html`
 				<label for="role">Role</label>
-        <select id="role" label="Role" ${ref(this.roleRef)} value=${this.user?.role || 'USER'}>
+        <select id="role" label="Role" ${ref(this.roleRef)} .value=${this.user?.role || 'USER'}>
           <option value='USER'>User</option>
           <option value='ADMIN'>Admin</option>   
         </select>

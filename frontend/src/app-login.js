@@ -42,7 +42,9 @@ export class AppLogin extends LitElement {
       <div>
         <app-auth mode=${this.mode}></app-auth>
         <button @click=${this.signIn}>Sign In</button>
+				<!--
         <button @click=${this.signUp}>Create Account</button>
+				-->
       </div>
     `
   }

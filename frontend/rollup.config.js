@@ -31,7 +31,11 @@ export default {
         { 
 					src: 'node_modules/leaflet/dist/images/*',
 					dest: 'dist/node_modules/leaflet/dist/images'
-				}
+				},
+        {
+          src: 'manifest.json',
+          dest: 'dist/'
+        }
         // Adjust 'dist' if your rollup output directory is different.
       ]
     }),
