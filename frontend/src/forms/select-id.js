@@ -34,7 +34,6 @@ export class SelectId extends LitElement {
 	}
 	
 	render() {
-		console.log('render', this.value, typeof this.value)
 		return html`
 			${this.label ? html`<label for="select">${this.label}</label>` : ''}
 			<select ?disabled=${this.disabled} id="select" @change=${this._changeCb}>
@@ -61,7 +60,6 @@ export class SelectId extends LitElement {
 		}
 		promises[this.type].then(options => {
 			this.options = options
-			console.log('autoselect', this.autoselect, this.value)
 			if(this.autoselect && !this.value && options.length>0){
 				this.value = options[0]._id
 				this.dispatchEvent(new Event('change'))

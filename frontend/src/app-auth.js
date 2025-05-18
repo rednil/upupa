@@ -51,7 +51,7 @@ export class AppAuth extends LitElement {
   render() {
     return html`
 			<label for="username">Username</label>
-      <input type="email" id="username" value=${this.user?.username} >
+      <input type="email" id="username" .value=${this.user?.username || ''} >
 			<label for="password">Password</label>
       <input id="password" type="password" placeholder=${this.user?._id?'Keep existing':''} >
       ${this.mode == AppAuth.CREATE || this.mode == AppAuth.EDIT ? html`
@@ -66,10 +66,10 @@ export class AppAuth extends LitElement {
   }
 
   getUserData(){
-    const data = {...this.user}
+    const data = {} //...this.user}
     ;['username', 'password', 'role'].forEach(prop => {
       const dom = this.shadowRoot.querySelector('#'+prop)
-      if(dom?.value) data[prop] = dom.value 
+      if(dom?.value && (dom.value != this.user[prop])) data[prop] = dom.value 
     })
     return data
   }

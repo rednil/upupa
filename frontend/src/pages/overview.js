@@ -76,7 +76,6 @@ export class PageOverview extends LitElement {
 	}
 	
   render() {
-		console.log('overview render', this.mode, this.mode == 'MAP')
     return html`
 			${this.mode == 'MAP' ? html`
 				<box-map class=${this.mode} id="map" .boxes=${this.boxes} info=${this.info} box_id=${this.box_id}></box-map>
@@ -140,7 +139,6 @@ export class PageOverview extends LitElement {
 		return this.species[id] || 'Unbekannt'
 	}
 	willUpdate(changedProps){
-		console.log('overview willUpdate', changedProps, this.mode)
 		if(changedProps.has('info') || changedProps.has('boxes')) this.addInfo()
 	}
 	addInfo(){
@@ -151,7 +149,6 @@ export class PageOverview extends LitElement {
 
 	getBoxSelector(box){
 		return () => {
-			console.log('click', box, this)
 			window.location.hash = `#/overview?box_id=${box._id}`
 			window.location.hash = `#/detail?box_id=${box._id}`
 		}

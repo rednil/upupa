@@ -32,9 +32,7 @@ export class SelectRoute extends LitElement {
 		window.location.hash = this.selected = evt.target.value
 	}
 	
-	
   render() {
-		console.log('render selecte-route', this.selected)
     return html`
       <select @change=${this.nav}>
 				${this.routes.filter(({menu}) => menu).map(({path}) => html`

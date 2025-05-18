@@ -146,7 +146,7 @@ export class AppUsers extends LitElement {
   noError(response){
     if(response.status == 200) return true
     else {
-      this.dispatchEvent(new CustomEvent('error', { detail: response }))
+      this.dispatchEvent(new CustomEvent('fetch-error', { detail: response }))
     }
   }
   
@@ -155,7 +155,8 @@ export class AppUsers extends LitElement {
     const response = await fetch(`/api/users/${id}`, { method: 'DELETE' })
     if(this.noError(response)) {
       this.users.splice(this.users.findIndex(user => user._id == id),1)
-      this.requestUpdate()
+      this.deleteDialog.open = false
+			this.requestUpdate()
     }
   }
   
@@ -163,9 +164,9 @@ export class AppUsers extends LitElement {
     const response = await this.shadowRoot.querySelector('app-auth').send()
     if(this.noError(response)) {
       const updatedUsers = await response.json()
+			this.userDialog.open = false
       this.mergeUsers(updatedUsers)
     }
-
   }
 
   mergeUsers(updatedUsers = []){

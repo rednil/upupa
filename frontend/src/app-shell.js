@@ -6,6 +6,7 @@ import './pages/status'
 import './pages/calendar'
 import './forms/select-route'
 import './pages/overview'
+import './forms/button-logout'
 
 /* 
 Routing can be done via hashed or non-hashed URL paths
@@ -60,9 +61,20 @@ export class AppShell extends LitElement {
 				min-height: 0;
 				
 			}
-      .logged-out button, .logged-out select {
+      .logged-out .user, .logged-out select-route {
         display: none;
       }
+			.user {
+				display: flex;
+				
+			}
+			.user > * {
+				margin: auto;
+			}
+			button-logout {
+				display: flex;
+				padding-left: 0.5em;
+			}
 			.top {
 				display: flex;
 				flex-direction: row;
@@ -132,7 +144,6 @@ export class AppShell extends LitElement {
     this.error = ''
   }
 	navigate(){
-		console.log('navigate')
 		this.route = this.routes.find(route => window.location.hash.search(route.path) == 0)
 		if(!this.route) {
 			console.error(`Unknown route: ${window.location.hash}`)
@@ -177,15 +188,10 @@ export class AppShell extends LitElement {
     return html`
 			<div class="top ${this.self?'logged-in':'logged-out'}">
 				<select-route .routes=${this.routes} selected=${this.route.path}></select-route>
-				<select disabled>
-					<option>2025</option>
-				</select>
-				${this.self?html`
-					<select class="logout">
-						<option selected>${this.self?.username}</option>
-						<option @click=${this.requestLogout}>Logout</option>
-					</select>
-				`:''}
+				<div class="user">
+					<span>${this.self?.username}</span>
+					<button-logout @click=${this.requestLogout}></button-logout>
+				</div>
 			</div>
 			<main>${this.route.render(this.params)}</main>
       <div class="bottom">${this.error}</div>
@@ -202,7 +208,6 @@ export class AppShell extends LitElement {
   logout(){
     this.self = null
     window.location.hash = "#/login"
-		this.drawer = false
   }
   async handleFetchError(response){
     let content, jsonError

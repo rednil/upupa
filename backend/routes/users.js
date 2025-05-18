@@ -15,7 +15,7 @@ router.get('/', loginRequired, async (req, res, next) => {
 		const query = (role == 'ADMIN') ? {} : {username}
     const users = await req.db
 		.collection('users')
-		.find(query, userProjection)
+		.find(query, {projection: userProjection})
 		.toArray()
     return res.json(users);
   
@@ -58,7 +58,7 @@ router.put('/:id', adminRequired, async (req, res, next) => {
 		$currentDate: { updatedAt: true }
 	})
 	if(result.acknowledged) {
-		const modifiedUser = await users.findOne(idQuery(req), userProjection)
+		const modifiedUser = await users.findOne(idQuery(req), {projection: userProjection})
 		res.json(modifiedUser)
 	}
 	else throw('WRITE_FAILED')

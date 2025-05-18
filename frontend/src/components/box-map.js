@@ -102,7 +102,6 @@ export class BoxMap extends LitElement {
 
 
 	updated(changed){
-		console.log('changed', changed)
 		if(!this.boxes.length) return
 		if(changed.has('boxes')) this.createMarkers()
 		this.createTooltips()
