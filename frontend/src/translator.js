@@ -6,6 +6,8 @@ const translations = {
 	"STATE_EGGS": "Eier",
 	"STATE_BREEDING": "Brütend",
 	"STATE_NESTLINGS": "Nestlinge",
+	"STATE_FAILURE": "Misserfolg",
+	"STATE_SUCCESS": "Erfolg",
 	"BAND_STATUS_FEMALE": "Beringungsstatus Weibchen",
 	"BAND_STATUS_NESTLINGS": "Beringungsstatus Nestlinge",
 	"BOXES": "Nistkästen",

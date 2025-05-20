@@ -17,6 +17,8 @@ const regExp = {
 	breedingStart: new RegExp(/Bb[^\d]*(\d+).(\d+)/),
 	layingStart: new RegExp(/Lb[^\d]*(\d+).(\d+)/),
 	hatchDate: new RegExp(/H[^\d]*(\d+).(\d+)/),
+	nestlingsBandDate: new RegExp(/Nestlinge.*ring.[^\d]+(\d+).(\d+)/),
+	nestlingsBanded: new RegExp(/(\d+).*Nestlinge.*ringt/)
 }
 const names = [
 	{ key: 'Blaumeise', match: ['BM'] },
@@ -96,7 +98,35 @@ async function importBoxes(json){
 
 function dateParser(str, regExp){
 	const match = str.match(regExp)
-	if(match) return new Date(`${year}-${match[2]}-${match[1]}`)
+	if(match) {
+		const month = ('0' + match[2]).slice(-2)
+		const date = ('0' + match[1]).slice(-2)
+		const dateStr = `${year}-${month}-${date}T00:00:00Z`
+		console.log('match', match,dateStr)
+		return new Date(dateStr)
+	}
+}
+function eggParser(str){
+	const eggMatch = str.match(regExp.eggs)
+	return eggMatch ? Number(eggMatch[1]) : 0
+}
+function nestlingsParser(str){
+	const nestlingsMatch = str.match(regExp.nestlings)
+	return nestlingsMatch ? Number(nestlingsMatch[1]) : 0
+}
+function getEmptySummary(box_id, occupancy = 0){
+	return {
+		year,
+		box_id,
+		occupancy,
+		breedingStart: null,
+		layingStart: null,
+		hatchDate: null,
+		species_id: null,
+		clutchSize: 0,
+		nestlingsBandDate: null,
+		motherBandDate: null,
+	}
 }
 async function importInspections(json){
 	db.collection('inspections').drop()
@@ -116,44 +146,35 @@ async function importInspections(json){
 			const result = await db.collection('boxes').insertOne({label: boxLabel})
 			box_id = result.insertedId
 		}
-		const summary = {
-			year,
-			box_id,
-			occupancy: 0,
-			breedingStart: null,
-			layingStart: null,
-			hatchDate: null,
-			species_id: null,
-			clutchSize: 0,
-			nestlingsBandDate: null,
-			motherBandDate: null,
-		}
-		var name = null
+		var summary = getEmptySummary(box_id)
 		for(var x in entries){
 			const [dateStr, note] = entries[x]
 			const date = new Date(dateStr.replace(/(.*)\.(.*)\.(.*)/, '$3-$2-$1'))
-			summary.lastInspection = date
-			var eggs = 0
-			var nestlings = 0
 			
-			const eggMatch = note.match(regExp.eggs)
-			if(eggMatch) {
-				eggs = Number(eggMatch[1])
-				if(eggs > summary.clutchSize) summary.clutchSize = eggs
+			if(note.search('Nest-Okkupation') >= 0){
+				console.log('Nest-Occupation', boxLabel)
+				summary.state = 'STATE_FAILURE'
+				summary.reasonForFailure = 'NEST_OCCUPATION'
+				await db.collection('summaries').insertOne(clean(summary))
+				var summary = getEmptySummary(box_id, summary.occupancy + 1)
 			}
-			const nestlingsMatch = note.match(regExp.nestlings)
-			if(nestlingsMatch) {
-				nestlings = Number(nestlingsMatch[1])
-				if(nestlings > summary.clutchSize) summary.clutchSize = nestlings
-			}
+
+			summary.lastInspection = date
+			var eggs = eggParser(note)
+			var nestlings = nestlingsParser(note)
+			
+			if(eggs > summary.clutchSize) summary.clutchSize = eggs
+			if(nestlings > summary.clutchSize) summary.clutchSize = nestlings
+			var species_id
 			var state = parseGeneric(note, states)
-			if(state != 'EMPTY') {
-				var _name = parseGeneric(note, names)
-				if(_name){
-					if(name && name!=_name){
-						console.error(`name conflict ${date.toLocaleDateString()}`, name, entries)
+			if(state != 'STATE_EMPTY') {
+				species_id = await speciesParser(note)
+				if(species_id){
+					if(summary.species_id && summary.species_id != species_id){
+						console.error(`Different species without occupation: ${date.toLocaleDateString()}`, entries)
 					}
-					name = _name
+					summary.species_id = species_id
+					if(summary.occupancy == 0) summary.occupancy = 1
 				}
 			}
 			// if there is no state noted, but there was one before, fallback
@@ -165,36 +186,50 @@ async function importInspections(json){
 				box_id,
 				eggs,
 				nestlings,
-				state
+				state,
+				species_id
 			}
-			const _breedingStart = dateParser(note, regExp.breedingStart)
-			if(_breedingStart) summary.breedingStart = _breedingStart
-			const _layingStart = dateParser(note, regExp.layingStart)
-			if(_layingStart) summary.layingStart = _layingStart
-			const _hatchDate = dateParser(note, regExp.hatchDate)
-			if(_hatchDate) summary.hatchDate = _hatchDate
-			await db.collection('inspections').insertOne(inspection)
+			summary.breedingStart = dateParser(note, regExp.breedingStart)
+			summary.layingStart = dateParser(note, regExp.layingStart)
+			summary.hatchDate = dateParser(note, regExp.hatchDate)
+			const nestlingsBandedMatch = note.match(regExp.nestlingsBanded)
+			if(nestlingsBandedMatch) {
+				summary.nestlingsBanded = nestlingsBandedMatch[1]
+			}
+			else if(note.search('W beringt')>=0) {
+				summary.femaleBanded = true
+			}
+			else if(note.search("beide Altvögel beringt")){
+				summary.femaleBanded = true
+				summary.maleBanded = true
+			}
+			else if(note.match(/ring/)){
+				console.log('unknown "ring" match', note)
+			}
+			await db.collection('inspections').insertOne(clean(inspection))
 		}
 		if(summary.clutchSize > 0){
-			if(!name) console.error(`Nestlings of unknown species`, entries)
-			if(summary.occupancy == 0) summary.occupancy = 1
+			if(!summary.species_id) console.error(`Nestlings of unknown species`, entries)
 		}
 		
-		if(name){
-			const species = await db.collection('species').findOne({name})
-			var species_id
-			if(species){
-				species_id = species._id
-			}
-			else{
-				const result = await db.collection('species').insertOne({name})
-				species_id = result.insertedId
-			}
-			summary.species_id = species_id
-		}
-		
-		await db.collection('summaries').insertOne(summary)
+		await db.collection('summaries').insertOne(clean(summary))}
+}
+function clean(obj){
+	Object.keys(obj).forEach(key => {
+		if(obj[key] === null) delete obj[key]
+	})
+	return obj
+}
+async function speciesParser(str){
+	const name = parseGeneric(str, names)
+	if(name){
+		const species = await db
+		.collection('species')
+		.findOne({name})
+		if(species) return species._id.toString()
+		const response = await db
+		.collection('species')
+		.insertOne({name})
+		return response.insertedId.toString()
 	}
 }
-
-

@@ -10,6 +10,7 @@ router.get('/', loginRequired, async (req, res, next) => {
 	const summaries = await req.db
 	.collection('summaries')
 	.find(query)
+	.sort({occupancy: -1})
 	.toArray()
 	return res.json(summaries)
 })

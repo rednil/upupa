@@ -2,11 +2,6 @@ import { LitElement, html, css } from 'lit'
 
 const promises = {}
 
-const labels = {
-	species: 'Vogelart',
-	boxes: 'Nistkasten'
-}
-
 export class SelectId extends LitElement {
 	static get properties() {
 		return {
@@ -16,7 +11,6 @@ export class SelectId extends LitElement {
 			key: { type: String }, // the key used to name each option, e.g. "name"
 			autoselect: { type: Boolean },
 			disabled: { type: Boolean },
-			label: { type: String }
 		}
 	}
 
@@ -32,10 +26,15 @@ export class SelectId extends LitElement {
 		super()
 		this.options = []
 	}
+
+	getKeyOfSelected(){
+		const option = this.options.find(option => option._id == this.value)
+		if(option) return option[this.key]
+		return '---'
+	}
 	
 	render() {
 		return html`
-			${this.label ? html`<label for="select">${this.label}</label>` : ''}
 			<select ?disabled=${this.disabled} id="select" @change=${this._changeCb}>
 				${this.autoselect ? '' : html`<option>---</option>`}
 				${this.options.map(option => html`
@@ -60,7 +59,10 @@ export class SelectId extends LitElement {
 		}
 		promises[this.type].then(options => {
 			this.options = options
-			if(this.autoselect && !this.value && options.length>0){
+			if(
+				(this.value && !this.options.find(option => option._id == this.value)) ||
+				(this.autoselect && !this.value && options.length>0)
+			){
 				this.value = options[0]._id
 				this.dispatchEvent(new Event('change'))
 			}

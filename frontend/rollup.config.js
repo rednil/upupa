@@ -41,6 +41,16 @@ export default {
     }),
     /** Resolve bare module imports */
     nodeResolve(),
+		{
+			name: 'version-injector',
+			renderChunk(code, chunk, options) {
+				const appVersion = process.env.VERSION || 'DEV'; // Get version from env var
+				const appVersion2 = process.env.version || 'DEV';  
+				return code
+				.replace('__APP_VERSION__', appVersion)
+				.replace('__APP_VERSION2__', appVersion2);
+			}
+		},
     /** Minify JS, compile JS to a lower language target */
     esbuild({
       minify: true,

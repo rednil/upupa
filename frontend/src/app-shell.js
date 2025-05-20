@@ -152,6 +152,7 @@ export class AppShell extends LitElement {
 		this.params = getUrlParams()
 	}
   connectedCallback(){
+		console.log('__APP_VERSION2__')
 		super.connectedCallback()
 		if(window.location.hash) this.navigate()
 		else this.navigateDefault()
@@ -188,6 +189,7 @@ export class AppShell extends LitElement {
     return html`
 			<div class="top ${this.self?'logged-in':'logged-out'}">
 				<select-route .routes=${this.routes} selected=${this.route.path}></select-route>
+				<span>__APP_VERSION__</span>
 				<div class="user">
 					<span>${this.self?.username}</span>
 					<button-logout @click=${this.requestLogout}></button-logout>
