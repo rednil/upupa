@@ -95,7 +95,9 @@ export class PageStatus extends LitElement {
 							<div class="date"><label for="layingStart">Legebeginn</label><input id="layingStart" type="date" value=${getDateValue(summary.layingStart)}></div>
 							<div class="date"><label for="breedingStart">Brutbeginn</label><input id="breedingStart" type="date" value=${getDateValue(summary.breedingStart)}></div>
 							<div class="date"><label for="hatchDate">Schlüpfdatum</label><input id="hatchDate" type="date" value=${getDateValue(summary.hatchDate)}></div>
-							<div><span>Beringungszeitfenster</span><span>${getShortDate(summary.bandingWindowStart)}-${getShortDate(summary.bandingWindowEnd)}</span></div>	
+							${summary.hatchDate ? html`
+								<div><span>Beringungszeitfenster</span><span>${getShortDate(summary.bandingWindowStart)}-${getShortDate(summary.bandingWindowEnd)}</span></div>	
+							`:''}
 							<div><span>Weibchen beringt</span><span>${summary.femaleBanded ? 'ja' : 'nein'}</span></div>
 							<div><span>Männchen beringt</span><span>${summary.maleBanded ? 'ja' : 'nein'}</span></div>
 							${summary.state == 'STATE_FAILURE' ? html`

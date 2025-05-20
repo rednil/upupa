@@ -18,7 +18,7 @@ const regExp = {
 	layingStart: new RegExp(/Lb[^\d]*(\d+).(\d+)/),
 	hatchDate: new RegExp(/H[^\d]*(\d+).(\d+)/),
 	nestlingsBandDate: new RegExp(/Nestlinge.*ring.[^\d]+(\d+).(\d+)/),
-	nestlingsBanded: new RegExp(/(\d+)\s*Nestlinge.*ringt/)
+	nestlingsBanded: new RegExp(/(\d+)[^\d]*Nestlinge.*ringt/)
 }
 const names = [
 	{ key: 'Blaumeise', match: ['BM'] },
@@ -37,7 +37,7 @@ const states = [
 	{ key: 'STATE_EGGS', match: ['Ei'], noMatch: ['Eichhörnchen', 'Keine Eier'] },
 	{ key: 'STATE_BREEDING', match: ['brütet'] },
 	{ key: 'STATE_NESTLINGS', match: ['Nestling'] },
-	{ key: 'STATE_FAILURE', match: ['Nest-Okkupation', 'Prädation']},
+	{ key: 'STATE_FAILURE', match: ['Nest-Okkupation', 'Prädation', 'Nestprädation']},
 	
 ]
 
@@ -176,8 +176,8 @@ async function importInspections(json){
 				else if(note.search('Nest-Okkupation') >= 0) {
 					summary.reasonForFailure = 'NEST_OCCUPATION'
 				}
-				await db.collection('summaries').insertOne(clean(summary))
-				var summary = getEmptySummary(box_id, summary.occupancy + 1)
+				
+				
 			}
 
 			summary.lastInspection = date
@@ -211,7 +211,10 @@ async function importInspections(json){
 			actualizeDate(summary, 'breedingStart', note)
 			actualizeDate(summary, 'layingStart', note)
 			actualizeDate(summary, 'hatchDate', note)
-
+			if(summary.hatchDate){
+				summary.bandingWindowStart = incDate(summary.hatchDate, bandingStartAge)
+				summary.bandingWindowEnd = incDate(summary.hatchDate, bandingEndAge)
+			}
 			
 	
 			const nestlingsBandedMatch = note.match(regExp.nestlingsBanded)
@@ -237,12 +240,12 @@ async function importInspections(json){
 		if(summary.clutchSize > 0){
 			if(!summary.species_id) console.error(`Nestlings of unknown species`, entries)
 		}
-		if(summary.hatchDate){
-			summary.bandingWindowStart = incDate(summary.hatchDate, bandingStartAge)
-			summary.bandingWindowEnd = incDate(summary.hatchDate, bandingEndAge)
-		}
+		
 		if(summary.occupancy > 0 && summary.state == 'STATE_EMPTY') continue
 		await db.collection('summaries').insertOne(clean(summary))
+		if(summary.state=='STATE_SUCCESS' || summary.state=='STATE_FAILURE'){
+			summary = getEmptySummary(box_id, summary.occupancy + 1)
+		}
 	}
 }
 function clean(obj){

@@ -109,7 +109,7 @@ export class PageCalendar extends LitElement {
 			{path: 'boxes'}
 		])
 		const events = summaries
-		.filter(summary => summary.hatchDate)
+		.filter(summary => summary.hatchDate && ((summary.state == 'STATE_EGGS') || (summary.state == 'STATE_NESTLINGS')))
 		.map(({box_id, hatchDate}) => ({
 			box_name: boxes.find(box => box._id == box_id).label,
 			hatchDate: new Date(hatchDate)
@@ -118,7 +118,6 @@ export class PageCalendar extends LitElement {
 
 		const bandingStartAge = 7
 		const bandingEndAge = 12
-
 		const firstEvent = incDate(events[0].hatchDate, bandingStartAge)
 		const lastEvent = incDate(events[events.length - 1].hatchDate, bandingEndAge)
 		const calendar = []
