@@ -82,7 +82,7 @@ export class PageStatus extends LitElement {
 							<div><span>Gelegegröße</span><span>${clutchSize}</span></div>
 							<div class="date"><label for="layingStart">Legebeginn</label><input id="layingStart" type="date" value=${getDateValue(layingStart)}></div>
 							<div class="date"><label for="breedingStart">Brutbeginn</label><input id="breedingStart" type="date" value=${getDateValue(breedingStart)}></div>
-							<div class="date"><label for="hatchDate">Schlüpfdatum ${hatchDate}</label><input id="hatchDate" type="date" value=${getDateValue(hatchDate)}></div>
+							<div class="date"><label for="hatchDate">Schlüpfdatum</label><input id="hatchDate" type="date" value=${getDateValue(hatchDate)}></div>
 
 							
 						</div>

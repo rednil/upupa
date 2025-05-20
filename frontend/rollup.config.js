@@ -44,11 +44,8 @@ export default {
 		{
 			name: 'version-injector',
 			renderChunk(code, chunk, options) {
-				const appVersion = process.env.VERSION || 'DEV'; // Get version from env var
-				const appVersion2 = process.env.version || 'DEV';  
-				return code
-				.replace('__APP_VERSION__', appVersion)
-				.replace('__APP_VERSION2__', appVersion2);
+				const appVersion = process.env.APP_VERSION || 'DEV'; // Get version from env var
+				return code.replace('__APP_VERSION__', appVersion)
 			}
 		},
     /** Minify JS, compile JS to a lower language target */

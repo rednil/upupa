@@ -46,8 +46,9 @@ jobs:
       run: |
         npm run test:backend
     - name: npm build
-      run: |
-        npm run build
+      run: npm run build
+      env:
+        APP_VERSION: ${{ steps.autotag.outputs.version }}
     - name: Build Docker image
       run: npm run docker:build
     - name: Log in to the Container registry

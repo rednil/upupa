@@ -3,7 +3,6 @@ class Proxy {
 		return Promise.all(requests.map(async ({path, query={}}) => {
 			const response = await fetch(`/api/${path}${getQueryString(query)}`)
 			const json = await response.json()
-			console.log('path', path, json)
 			return json
 		}))
 	}
