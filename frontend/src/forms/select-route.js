@@ -39,7 +39,7 @@ export class SelectRoute extends LitElement {
 				${this.routes.filter(({menu}) => menu).map(({path}) => html`
 					<option value="${path}">${translate(path)}</option>
 				`)}
-				<option disabled>Version: __APP_VERSION__ (${this.self?.version})</option>
+				<option disabled>Version __APP_VERSION__</option>
 			</select>
     `
   }
@@ -51,8 +51,8 @@ export class SelectRoute extends LitElement {
 
 const translations = {
 	'#/overview': 'Übersicht',
-	'#/status': 'Nistkastenkontrolle',
-	'#/calendar': 'Beringungskalender',
+	'#/status': 'Status',
+	'#/calendar': 'Kalender',
 	'#/users': 'Benutzer',
 	'#/map': 'Karte'
 }

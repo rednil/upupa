@@ -83,9 +83,9 @@ export class PageOverview extends LitElement {
 				<box-list class=${this.mode} id="list" .boxes=${this.boxes} info=${this.info}></box-list>
 			`}
 			<div class=controls>
-				<select @change=${this.infoChangeCb}>
+				<select @change=${this.infoChangeCb} .value=${this.info}>
 					${infoOptions.map(option => html`
-						<option value=${option}>${translate(option)}</option>
+						<option ?selected=${option == this.info} value=${option}>${translate(option)}</option>
 					`)}
 				</select>
 				<div class="mode">
@@ -116,24 +116,68 @@ export class PageOverview extends LitElement {
 		.map(box => {
 			box.summaries = summaries
 			.filter(summary => summary.box_id == box._id)
-			.sort((a,b) => b.occupancy - a.occupancy)
+			//.sort((a,b) => b.occupancy - a.occupancy) is done by backend
 			return box
 		})
 	}
 
 	getInfoText(box){
+		const summary = box.summaries[0]
+		var text = ''
+		var className = ''
 		switch (this.info){
-			case 'BOXES': return box.label
+			case 'BOXES':
+				text = box.label
+				break
+			case 'BAND_STATUS_NESTLINGS':
+				if(!summary) text = 'Keine Inspektion'
+				else if(summary.state == 'STATE_NESTLINGS'){
+					if(summary.nestlingsBanded > 0){
+						text = `Beringt: ${summary.nestlingsBanded}`,
+						className = 'banded'
+					}
+					else {
+						const now = new Date()
+						const daysRemaining = (new Date(summary.bandingWindowEnd).getTime() - now.getTime()) / 86400000
+						if(now > new Date(summary.bandingWindowStart)){
+							className = 'banding'
+							if(daysRemaining < 0) {
+								text = 'Verpasst'
+								className += ' overdue'
+							}
+							else if(daysRemaining < 2) {
+								className += ' urgent'
+								text = 'Dringend'
+							}
+							else if(daysRemaining < 4) {
+								className += ' required'
+								text = 'Erforderlich'
+							}
+							else {
+								className += ' possible'
+								text = 'Möglich'
+							}
+						}
+					}
+				}
+				// if we have another state, display that other state
+				if(text.length) break 
 			case 'STATUS':
-				if(box.summaries.length == 0) return 'Keine Inspektion'
-				const summary = box.summaries[0]
-				if(summary.state == 'STATE_EMPTY') return 'Leer'
-				const species = this.getSpeciesName(summary.species_id)
-				return `${species}: ${translate(summary.state)}`
+				if(!summary) text = 'Keine Inspektion'
+				else if(summary.state == 'STATE_EMPTY') {
+					text = 'Leer'
+				}
+				else {
+					const species = this.getSpeciesName(summary.species_id)
+					text = `${species}: ${translate(summary.state)}`
+				}
+				break
 			case 'LAST_INSPECTION':
-				if(box.summaries.length == 0) return 'Keine'
-				return new Date(box.summaries[0].lastInspection).toLocaleDateString()
+				if(box.summaries.length == 0) text = 'Keine'
+				else text = new Date(box.summaries[0].lastInspection).toLocaleDateString()
+				break
 		}
+		return { text, className }
 	}
 	getSpeciesName(id){
 		return this.species[id] || 'Unbekannt'

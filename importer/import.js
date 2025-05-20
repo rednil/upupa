@@ -13,12 +13,12 @@ const {
 
 const regExp = {
 	eggs: new RegExp(/(\d+)\s*Eier/),
-	nestlings: new RegExp(/(\d+).*Nestling/),
+	nestlings: new RegExp(/(\d+)\s*Nestling/),
 	breedingStart: new RegExp(/Bb[^\d]*(\d+).(\d+)/),
 	layingStart: new RegExp(/Lb[^\d]*(\d+).(\d+)/),
 	hatchDate: new RegExp(/H[^\d]*(\d+).(\d+)/),
 	nestlingsBandDate: new RegExp(/Nestlinge.*ring.[^\d]+(\d+).(\d+)/),
-	nestlingsBanded: new RegExp(/(\d+).*Nestlinge.*ringt/)
+	nestlingsBanded: new RegExp(/(\d+)\s*Nestlinge.*ringt/)
 }
 const names = [
 	{ key: 'Blaumeise', match: ['BM'] },
@@ -30,17 +30,28 @@ const names = [
 	{ key: 'Tannenmeise', match: ['TM']}
 ]
 const states = [
+	{ key: 'STATE_SUCCESS', match: ['ausgeflogen']},
 	{ key: 'STATE_EMPTY', match: ['leer'] },
 	{ key: 'STATE_NEST_BUILDING', match: ['halbfertiges Nest', 'Nestanfang'] },
 	{ key: 'STATE_NEST_READY', match: ['legebereit'] },
-	{ key: 'STATE_EGGS', match: ['Ei'] },
+	{ key: 'STATE_EGGS', match: ['Ei'], noMatch: ['Eichhörnchen', 'Keine Eier'] },
 	{ key: 'STATE_BREEDING', match: ['brütet'] },
-	{ key: 'STATE_NESTLINGS', match: ['Nestling'] }
+	{ key: 'STATE_NESTLINGS', match: ['Nestling'] },
+	{ key: 'STATE_FAILURE', match: ['Nest-Okkupation', 'Prädation']},
+	
 ]
 
 function parseGeneric(str, options){
 	for(var i in options){
-		const {key, match} = options[i]
+		const {key, match, noMatch = []} = options[i]
+		var abort = false
+		for(var j in noMatch){
+			if(str.match(noMatch[j])) {
+				abort = true
+				break
+			}
+		}
+		if(abort) continue
 		if(str.match(key)) return key
 		for(var j in match){
 			if(str.match(match[j])) return key
@@ -49,7 +60,8 @@ function parseGeneric(str, options){
 }
 
 const year = 2025
-
+const bandingStartAge = 7
+const bandingEndAge = 12
 const uri = `mongodb://${DATABASE_ROOT_USERNAME}:${DATABASE_ROOT_PASSWORD}@${DATABASE_HOST}:${DATABASE_PORT}`
 
 const client = new MongoClient(uri)
@@ -59,7 +71,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Construct the full path to the 'data.ods' file
-const filePath = path.join(__dirname, 'data/data.ods');
+const filePath = path.join(__dirname, 'data/2025.ods');
 
 await client.connect()
 const db = client.db(DATABASE_NAME)
@@ -102,9 +114,12 @@ function dateParser(str, regExp){
 		const month = ('0' + match[2]).slice(-2)
 		const date = ('0' + match[1]).slice(-2)
 		const dateStr = `${year}-${month}-${date}T00:00:00Z`
-		console.log('match', match,dateStr)
 		return new Date(dateStr)
 	}
+}
+function actualizeDate(target, key, str){
+	const date = dateParser(str, regExp[key])
+	if(date) target[key] = date
 }
 function eggParser(str){
 	const eggMatch = str.match(regExp.eggs)
@@ -119,13 +134,8 @@ function getEmptySummary(box_id, occupancy = 0){
 		year,
 		box_id,
 		occupancy,
-		breedingStart: null,
-		layingStart: null,
-		hatchDate: null,
-		species_id: null,
 		clutchSize: 0,
-		nestlingsBandDate: null,
-		motherBandDate: null,
+		nestlingsBanded: 0
 	}
 }
 async function importInspections(json){
@@ -150,11 +160,22 @@ async function importInspections(json){
 		for(var x in entries){
 			const [dateStr, note] = entries[x]
 			const date = new Date(dateStr.replace(/(.*)\.(.*)\.(.*)/, '$3-$2-$1'))
-			
-			if(note.search('Nest-Okkupation') >= 0){
-				console.log('Nest-Occupation', boxLabel)
-				summary.state = 'STATE_FAILURE'
-				summary.reasonForFailure = 'NEST_OCCUPATION'
+			var state = parseGeneric(note, states)
+			// if there is no state noted, but there was one before, fallback
+			if(!state && summary.state) state = summary.state
+			summary.state = state
+			if(state == 'STATE_FAILURE'){
+				if(note.search('Siebenschläfer')>=0) {
+					summary.reasonForFailure = 'PREDATION'
+					summary.predator = 'Siebenschläfer'
+				}
+				if(note.search('Eichhörnchen')>=0) {
+					summary.reasonForFailure = 'PREDATION'
+					summary.predator = 'Eichhörnchen'
+				}
+				else if(note.search('Nest-Okkupation') >= 0) {
+					summary.reasonForFailure = 'NEST_OCCUPATION'
+				}
 				await db.collection('summaries').insertOne(clean(summary))
 				var summary = getEmptySummary(box_id, summary.occupancy + 1)
 			}
@@ -166,7 +187,7 @@ async function importInspections(json){
 			if(eggs > summary.clutchSize) summary.clutchSize = eggs
 			if(nestlings > summary.clutchSize) summary.clutchSize = nestlings
 			var species_id
-			var state = parseGeneric(note, states)
+			
 			if(state != 'STATE_EMPTY') {
 				species_id = await speciesParser(note)
 				if(species_id){
@@ -177,9 +198,7 @@ async function importInspections(json){
 					if(summary.occupancy == 0) summary.occupancy = 1
 				}
 			}
-			// if there is no state noted, but there was one before, fallback
-			if(!state && summary.state) state = summary.state
-			summary.state = state
+			
 			const inspection = {
 				date,
 				note,
@@ -189,21 +208,28 @@ async function importInspections(json){
 				state,
 				species_id
 			}
-			summary.breedingStart = dateParser(note, regExp.breedingStart)
-			summary.layingStart = dateParser(note, regExp.layingStart)
-			summary.hatchDate = dateParser(note, regExp.hatchDate)
+			actualizeDate(summary, 'breedingStart', note)
+			actualizeDate(summary, 'layingStart', note)
+			actualizeDate(summary, 'hatchDate', note)
+
+			
+	
 			const nestlingsBandedMatch = note.match(regExp.nestlingsBanded)
+			var knownRingMatch = false
 			if(nestlingsBandedMatch) {
-				summary.nestlingsBanded = nestlingsBandedMatch[1]
+				summary.nestlingsBanded = Number(nestlingsBandedMatch[1])
+				knownRingMatch = true
 			}
-			else if(note.search('W beringt')>=0) {
+			if(note.search('W beringt')>=0) {
 				summary.femaleBanded = true
+				knownRingMatch = true
 			}
-			else if(note.search("beide Altvögel beringt")){
+			if(note.search("beide Altvögel beringt")>=0){
 				summary.femaleBanded = true
 				summary.maleBanded = true
+				knownRingMatch = true
 			}
-			else if(note.match(/ring/)){
+			if(note.match(/ring/) && !knownRingMatch){
 				console.log('unknown "ring" match', note)
 			}
 			await db.collection('inspections').insertOne(clean(inspection))
@@ -211,8 +237,13 @@ async function importInspections(json){
 		if(summary.clutchSize > 0){
 			if(!summary.species_id) console.error(`Nestlings of unknown species`, entries)
 		}
-		
-		await db.collection('summaries').insertOne(clean(summary))}
+		if(summary.hatchDate){
+			summary.bandingWindowStart = incDate(summary.hatchDate, bandingStartAge)
+			summary.bandingWindowEnd = incDate(summary.hatchDate, bandingEndAge)
+		}
+		if(summary.occupancy > 0 && summary.state == 'STATE_EMPTY') continue
+		await db.collection('summaries').insertOne(clean(summary))
+	}
 }
 function clean(obj){
 	Object.keys(obj).forEach(key => {
@@ -232,4 +263,9 @@ async function speciesParser(str){
 		.insertOne({name})
 		return response.insertedId.toString()
 	}
+}
+function incDate(date, days){
+	const newDate = new Date(date)
+	newDate.setDate(date.getDate() + days)
+	return newDate
 }

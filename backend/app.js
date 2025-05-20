@@ -10,7 +10,7 @@ import { fileURLToPath } from 'url'
 import path from 'path'
 import ConnectMongoDBSession from 'connect-mongodb-session'
 import { attachDb } from './middleware/attachDb.js'
-
+import { objectIdConverter } from './middleware/objectIdConverter.js'
 import selfRouter from './routes/self.js'
 import authRouter from './routes/auth.js'
 import usersRouter from './routes/users.js'
@@ -44,6 +44,7 @@ app.use(session({
   store
 }))
 app.use(attachDb)
+app.use(objectIdConverter)
 app.use(passport.initialize())
 app.use(passport.session())
 

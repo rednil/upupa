@@ -105,7 +105,7 @@ export class PageCalendar extends LitElement {
 	}
 	async fetchData(){
 		var [summaries, boxes] = await proxy.fetch([
-			{path: 'summaries'},
+			{path: 'summaries', query: {nestlingsBanded: 0}},
 			{path: 'boxes'}
 		])
 		const events = summaries

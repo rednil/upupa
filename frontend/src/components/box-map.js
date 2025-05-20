@@ -49,6 +49,7 @@ export class BoxMap extends LitElement {
 				border: 2px solid red;
 				z-index: 1000;
 			}
+
 			select {
 				width: fit-content;
 				padding: 0.5em 0;
@@ -72,6 +73,20 @@ export class BoxMap extends LitElement {
 			}
 			.mode{
 				display: flex;
+			}
+			.banding.possible {
+				background-color: green;
+				color: white;
+			}
+			.banding.required {
+				background-color: yellow;
+			}
+			.banding.urgent {
+				background-color: orange;
+			}
+			.banding.overdue {
+				background-color: red;
+				color: white;
 			}
     `]
   }
@@ -128,10 +143,13 @@ export class BoxMap extends LitElement {
 		this.boxes
 		.filter(box => box.lat && box.lon)
 		.forEach(box => {
-			box.marker.bindTooltip(box._info, {
+			var { text, className } = box._info
+			//text = `${box.label}: ${text}`
+			if(box._id == this.box_id) className += ' selected'
+			box.marker.bindTooltip(text, {
 				permanent: true,
 				interactive: true,
-				className: box._id == this.box_id ? 'selected' : ''
+				className
 			})
 			.openTooltip()
 		})
