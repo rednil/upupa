@@ -42,6 +42,15 @@ export class PageStatus extends LitElement {
 				display: flex;
 				justify-content: space-between;
 			}
+			.head > * {
+				flex: 1;
+			}
+			.head > *:nth-child(2){
+				text-align: center;
+			}
+			.head > *:nth-child(3){
+				text-align: right;
+			}
 
 			#select-box, button {
 				margin: 0.5em;
@@ -64,7 +73,6 @@ export class PageStatus extends LitElement {
 	}
 	
   render() {
-		console.log('render', this.summaries)
     return html`
 			<div>
 				<div class="title">
@@ -118,14 +126,12 @@ export class PageStatus extends LitElement {
 		this._fetchData(this.box_id)
 	}
 	async _fetchData(box_id){
-		console.log('_fetchData', box_id)
 		var [inspections, summaries, species, boxes] = await proxy.fetch([
 			{path: 'inspections', query: { box_id }},
 			{path: 'summaries', query: { box_id }},
 			{path: 'species'},
 			{path: 'boxes'}
 		])
-		console.log('_fetchData', summaries)
 		Object.assign(this, {inspections, summaries, species, boxes})
 		this.requestUpdate()
 	}

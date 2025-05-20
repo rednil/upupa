@@ -78,12 +78,11 @@ export class AppShell extends LitElement {
 			.top {
 				display: flex;
 				flex-direction: row;
+				justify-content: space-between;
 				box-shadow: rgba(0, 0, 0, 0.1) 0px 6px 24px 0px;
 				height: 2em;
 			}
-			.version {
-				margin: auto;
-			}
+			
 			.bottom {
 				background-color: red;
 			}
@@ -189,8 +188,7 @@ export class AppShell extends LitElement {
   render() {
     return html`
 			<div class="top ${this.self?'logged-in':'logged-out'}">
-				<select-route .routes=${this.routes} selected=${this.route.path}></select-route>
-				<span class="version">__APP_VERSION__</span>
+				<select-route .self=${this.self} .routes=${this.routes} selected=${this.route.path}></select-route>
 				<div class="user">
 					<span>${this.self?.username}</span>
 					<button-logout @click=${this.requestLogout}></button-logout>

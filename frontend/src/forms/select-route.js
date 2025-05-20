@@ -5,7 +5,8 @@ export class SelectRoute extends LitElement {
   static get properties() {
     return {
       routes: { Type: Array },
-			selected: { Type: String }
+			selected: { Type: String },
+			self: { Type: Object }
     }
   }
 
@@ -38,6 +39,7 @@ export class SelectRoute extends LitElement {
 				${this.routes.filter(({menu}) => menu).map(({path}) => html`
 					<option value="${path}">${translate(path)}</option>
 				`)}
+				<option disabled>Version: __APP_VERSION__ (${this.self?.version})</option>
 			</select>
     `
   }
