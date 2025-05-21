@@ -77,7 +77,7 @@ await client.connect()
 const db = client.db(DATABASE_NAME)
 
 // Read the .ods file
-const workbook = XLSX.readFile(filePath);
+const workbook = XLSX.readFile(filePath)
 
 
 await importBoxes(XLSX.utils.sheet_to_json(workbook.Sheets.Box_Status))
@@ -233,20 +233,31 @@ async function importInspections(json){
 				knownRingMatch = true
 			}
 			if(note.match(/ring/) && !knownRingMatch){
-				console.log('unknown "ring" match', note)
+				console.error('unknown "ring" match', note)
 			}
+			log(inspection, { _box: boxLabel})
 			await db.collection('inspections').insertOne(clean(inspection))
+			if(summary.state=='STATE_SUCCESS' || summary.state=='STATE_FAILURE'){
+				log(summary, { _box: boxLabel})
+				await db.collection('summaries').insertOne(clean(summary))
+				summary = getEmptySummary(box_id, summary.occupancy + 1)
+				continue
+			}
 		}
 		if(summary.clutchSize > 0){
 			if(!summary.species_id) console.error(`Nestlings of unknown species`, entries)
 		}
-		
-		if(summary.occupancy > 0 && summary.state == 'STATE_EMPTY') continue
+		if((summary.occupancy > 0 && summary.state == 'STATE_EMPTY') || !summary.lastInspection) continue
+		log(summary, { _box: boxLabel})
 		await db.collection('summaries').insertOne(clean(summary))
-		if(summary.state=='STATE_SUCCESS' || summary.state=='STATE_FAILURE'){
-			summary = getEmptySummary(box_id, summary.occupancy + 1)
-		}
 	}
+}
+function log(obj, attachments = {}){
+	obj = Object.assign(attachments, obj)
+	Object.entries(obj).forEach(([key, value]) => {
+		if(key.endsWith('_id')) delete obj[key]
+	})
+	console.log(obj)
 }
 function clean(obj){
 	Object.keys(obj).forEach(key => {

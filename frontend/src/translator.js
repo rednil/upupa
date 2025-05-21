@@ -8,11 +8,12 @@ const translations = {
 	"STATE_NESTLINGS": "Nestlinge",
 	"STATE_FAILURE": "Misserfolg",
 	"STATE_SUCCESS": "Erfolg",
-	"BAND_STATUS_FEMALE": "Beringungsstatus Weibchen",
-	"BAND_STATUS_NESTLINGS": "Beringungsstatus Nestlinge",
+	"BAND_STATUS_FEMALE": "Beringung Altvögel",
+	"BAND_STATUS_NESTLINGS": "Beringung Nestlinge",
 	"BOXES": "Nistkästen",
 	"LAST_INSPECTION": "Letzte Inspektion",
-	"STATUS": "Status"
+	"STATUS": "Status",
+	"SPECIES": "Vogelart"
 }
 
 export function translate(str){

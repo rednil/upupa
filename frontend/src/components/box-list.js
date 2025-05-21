@@ -73,6 +73,20 @@ export class BoxList extends LitElement {
 			img {
 				color: black;
 			}
+			.banding.possible {
+				background-color: green;
+				color: white;
+			}
+			.banding.required {
+				background-color: yellow;
+			}
+			.banding.urgent {
+				background-color: orange;
+			}
+			.banding.overdue {
+				background-color: red;
+				color: white;
+			}
     `
   }
 	constructor(){
@@ -100,7 +114,7 @@ export class BoxList extends LitElement {
 									<link-boxconfig box_id=${_id} ></link-boxconfig>
 								</span>
 							</span>
-							<span class="body cell right">${this.info=='BOXES'?'':_info}</span>
+							<span class="body cell right ${_info.className}">${this.info=='BOXES'?'':_info.text}</span>
 						</div>
 					`)}
 				</div>

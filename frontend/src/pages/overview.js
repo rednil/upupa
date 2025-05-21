@@ -7,6 +7,7 @@ import {translate} from '../translator'
 
 const infoOptions = [
 	'BOXES',
+	'SPECIES',
 	'STATUS',
 	'LAST_INSPECTION',
 	'BAND_STATUS_NESTLINGS',
@@ -129,9 +130,18 @@ export class PageOverview extends LitElement {
 			case 'BOXES':
 				text = box.label
 				break
+			case 'SPECIES':
+				if(!summary) text = '---'
+				else if(summary.state == 'STATE_EMPTY') {
+					text = 'Leer'
+				}
+				else {
+					text = this.getSpeciesName(summary.species_id)
+				}
+				break
 			case 'BAND_STATUS_NESTLINGS':
-				if(!summary) text = 'Keine Inspektion'
-				else if(summary.state == 'STATE_NESTLINGS'){
+				if(!summary) text = '---'
+				else if(summary.state == 'STATE_NESTLINGS' || summary.state == 'STATE_SUCCESS'){
 					if(summary.nestlingsBanded > 0){
 						text = `Beringt: ${summary.nestlingsBanded}`,
 						className = 'banded'
@@ -163,13 +173,13 @@ export class PageOverview extends LitElement {
 				// if we have another state, display that other state
 				if(text.length) break 
 			case 'STATUS':
-				if(!summary) text = 'Keine Inspektion'
+				if(!summary) text = '---'
 				else if(summary.state == 'STATE_EMPTY') {
 					text = 'Leer'
 				}
 				else {
 					const species = this.getSpeciesName(summary.species_id)
-					text = `${species}: ${translate(summary.state)}`
+					text = translate(summary.state)
 				}
 				break
 			case 'LAST_INSPECTION':
