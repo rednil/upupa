@@ -1,5 +1,5 @@
 import { LitElement, html, css } from 'lit'
-
+import { translate } from '../translator'
 export class SelectRoute extends LitElement {
 
   static get properties() {
@@ -47,18 +47,6 @@ export class SelectRoute extends LitElement {
 		// the select is not changing its value automatically
     this.shadowRoot.querySelector('select').value = this.selected
   }
-}
-
-const translations = {
-	'#/overview': 'Übersicht',
-	'#/status': 'Status',
-	'#/calendar': 'Kalender',
-	'#/users': 'Benutzer',
-	'#/map': 'Karte'
-}
-
-function translate(key){
-	return translations[key]
 }
 
 customElements.define('select-route', SelectRoute)

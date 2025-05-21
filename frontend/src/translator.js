@@ -1,4 +1,9 @@
 const translations = {
+	'#/overview': 'Übersicht',
+	'#/status': 'Status',
+	'#/calendar': 'Kalender',
+	'#/users': 'Benutzer',
+	'#/map': 'Karte',
 	"NAME": "Name",
 	"STATE_EMPTY": "Leer",
 	"STATE_NEST_BUILDING": "Nestbau",

@@ -2,6 +2,8 @@ import { LitElement, html, css } from 'lit'
 import '../forms/select-id.js'
 import { proxy } from '../proxy.js'
 import { translate } from '../translator.js'
+import '../forms/link-map.js'
+import '../forms/link-boxconfig.js'
 
 function getDateValue(date){
 	return (date || '').split('T')[0]
@@ -12,8 +14,10 @@ function getShortDate(date){
 export class PageStatus extends LitElement {
   static get properties() {
     return {
-      //boxes: { type: Array },
-			//inspections: { type: Array },
+      boxes: { type: Array },
+			inspections: { type: Array },
+			species: { type: Array },
+			summaries: { type: Array },
 			box_id: { type: String }
     }
   }
@@ -63,7 +67,16 @@ export class PageStatus extends LitElement {
 				overflow-y: scroll;
 				
 			}
-			
+			.title > div {
+				display: flex;
+			}
+			link-map, link-boxconfig {
+				margin: auto;
+			}
+			.nodata {
+				text-align: center;
+				padding: 1em;
+			}
 			
     `
   }
@@ -75,14 +88,25 @@ export class PageStatus extends LitElement {
 		this.species = []
 	}
 	
+	boxHasNoCoors(){
+		const box = this.boxes.find(box => box._id == this.box_id)
+		return box && !(box.lat && box.lon)
+	}
   render() {
     return html`
 			<div>
 				<div class="title">
-					<select-id id="select-box" class="bold" type="boxes" key="label" .value=${this.box_id} autoselect @change=${this._boxSelectCb}></select-id>
-					<button>Inspektion eintragen</button>
+					<div>
+						<select-id id="select-box" class="bold" type="boxes" key="label" .value=${this.box_id} autoselect @change=${this._boxSelectCb}></select-id>
+						<link-map .box_id=${this.box_id} .nocoor=${this.boxHasNoCoors()}></link-map>
+						<link-boxconfig .box_id=${this.box_id}></link-boxconfig>
+					</div>
+					<a href="#/inspection?box_id=${this.box_id}"><button>Nistkastenkontrolle</button></a>
 				</div>
 				<div class="list">
+					${this.inspections.length == 0 ? html`
+						<div class="nodata">Keine Inspektionen</div>
+					`:''}
 					${this.summaries.map(summary => html`
 						<div class="summary">
 							<div class="head">
@@ -144,7 +168,7 @@ export class PageStatus extends LitElement {
 			{path: 'boxes'}
 		])
 		Object.assign(this, {inspections, summaries, species, boxes})
-		this.requestUpdate()
+		//this.requestUpdate()
 	}
 }
 

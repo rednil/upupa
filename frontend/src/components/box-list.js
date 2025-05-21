@@ -104,17 +104,17 @@ export class BoxList extends LitElement {
 					</div>
 				</div>
 				<div class="tbody">
-					${this.boxes.map(({label, _info, _id, lat, lon}) => html`
+					${this.boxes.map(box => html`
 						<div class="table-row">
 							<span class="body cell left">
-								<span class="name">${label}</span>
+								<span class="name">${box.label}</span>
 								<span class="links">
-									<link-map box_id=${_id} .nocoor=${!(lat && lon)}></link-map>
-									<link-status box_id=${_id} ></link-status>
-									<link-boxconfig box_id=${_id} ></link-boxconfig>
+									<link-map box_id=${box._id} .nocoor=${!(box.lat && box.lon)}></link-map>
+									<link-status box_id=${box._id} .nodata=${box.summaries.length == 0}></link-status>
+									<link-boxconfig box_id=${box._id} ></link-boxconfig>
 								</span>
 							</span>
-							<span class="body cell right ${_info.className}">${this.info=='BOXES'?'':_info.text}</span>
+							<span class="body cell right ${box._info.className}">${this.info=='BOXES'?'':box._info.text}</span>
 						</div>
 					`)}
 				</div>

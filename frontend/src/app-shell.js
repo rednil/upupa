@@ -7,6 +7,8 @@ import './pages/calendar'
 import './forms/select-route'
 import './pages/overview'
 import './forms/button-logout'
+import './pages/inspection.js'
+import './pages/boxconfig.js'
 
 /* 
 Routing can be done via hashed or non-hashed URL paths
@@ -135,6 +137,18 @@ export class AppShell extends LitElement {
 				render: () => html`
 					<app-login id="page" @login=${this.requestUserInfo}></app-login>
 				` 
+			},
+			{
+				path: '#/inspection',
+				render: () => html`
+					<page-inspection id="page"></page-inspection>
+				`
+			},
+			{
+				path: '#/boxconfig',
+				render: () => html`
+					<page-boxconfig id="page"></page-boxconfig>
+				`
 			}
     ]
 		this.params = {}

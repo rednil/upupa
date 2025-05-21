@@ -91,7 +91,7 @@ export class PageCalendar extends LitElement {
 				${this.calendar.map(day => html`
 					<div class="day">
 						${day.bandings.map(banding => html`
-							<div class="banding day_${banding?banding.day:'false'}">${banding?banding.box_name:''}</div>	
+							<a href="${banding ? `#/overview?info=BAND_STATUS_NESTLINGS&box_id=${banding.box_id}` : ''}" class="banding day_${banding?banding.day:'false'}">${banding?banding.box_name:''}</a>	
 						`)}
 					</div>
 				`)}
@@ -112,6 +112,7 @@ export class PageCalendar extends LitElement {
 		.filter(summary => summary.hatchDate && ((summary.state == 'STATE_EGGS') || (summary.state == 'STATE_NESTLINGS')))
 		.map(({box_id, hatchDate}) => ({
 			box_name: boxes.find(box => box._id == box_id).label,
+			box_id,
 			hatchDate: new Date(hatchDate)
 		}))
 		.sort((a,b) => a.hatchDate - b.hatchDate)
@@ -139,6 +140,7 @@ export class PageCalendar extends LitElement {
 					while (day.bandings.length-1 < column) day.bandings.push(null)
 					day.bandings[column] = {
 						box_name: event.box_name,
+						box_id: event.box_id,
 						day: dayIdx
 					}
 				}

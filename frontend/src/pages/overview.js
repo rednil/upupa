@@ -14,6 +14,10 @@ const infoOptions = [
 	'BAND_STATUS_FEMALE'
 ]
 
+function getShortDate(date){
+	return new Date(date).toLocaleDateString(undefined, {day: "numeric", month: "numeric"})
+}
+
 export class PageOverview extends LitElement {
   static get properties() {
     return {
@@ -146,7 +150,7 @@ export class PageOverview extends LitElement {
 						text = `Beringt: ${summary.nestlingsBanded}`,
 						className = 'banded'
 					}
-					else {
+					else if(summary.bandingWindowStart && summary.bandingWindowStart){
 						const now = new Date()
 						const daysRemaining = (new Date(summary.bandingWindowEnd).getTime() - now.getTime()) / 86400000
 						if(now > new Date(summary.bandingWindowStart)){
@@ -167,6 +171,10 @@ export class PageOverview extends LitElement {
 								className += ' possible'
 								text = 'Möglich'
 							}
+						}
+						else {
+							className += ' todo'
+							text = `${getShortDate(summary.bandingWindowStart)}-${getShortDate(summary.bandingWindowEnd)}`
 						}
 					}
 				}
@@ -189,6 +197,7 @@ export class PageOverview extends LitElement {
 		}
 		return { text, className }
 	}
+	
 	getSpeciesName(id){
 		return this.species[id] || 'Unbekannt'
 	}

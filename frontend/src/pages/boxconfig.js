@@ -1,6 +1,6 @@
 import { LitElement, html } from 'lit'
 
-export class PageInspection extends LitElement {
+export class PageBoxconfig extends LitElement {
 	static get properties() {
 		return {
 			box_id: { type: String },
@@ -9,9 +9,9 @@ export class PageInspection extends LitElement {
 
 	render() {
 		return html`
-			<div>Nistkastenkontrolle</div>
+			<div>Nistkasten - Konfiguration</div>
 		`
 	}
 }
 
-customElements.define('page-inspection', PageInspection)
+customElements.define('page-boxconfig', PageBoxconfig)
