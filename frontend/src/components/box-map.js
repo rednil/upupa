@@ -90,6 +90,9 @@ export class BoxMap extends LitElement {
 				background-color: red;
 				color: white;
 			}
+			.my_location {
+				z-index: 100;
+			}
     `]
   }
 	constructor(){
@@ -115,7 +118,11 @@ export class BoxMap extends LitElement {
 		.addTo(this.map)
 		this.markerGroup = layerGroup()
 		.addTo(this.map)
-		if(navigator.geolocation) this.addLocationControl()
+		if(navigator.geolocation) {
+			this.addLocationControl()
+			// put the location circlemarker on top of all others
+			this.map.getPane('overlayPane').style.zIndex = 1000
+		}
 	}
 	disconnectedCallback() {
     super.disconnectedCallback()
@@ -224,7 +231,8 @@ export class BoxMap extends LitElement {
 				color: 'red',
 				fillColor: '#f03',
 				fillOpacity: 0.5,
-				radius: 10
+				radius: 10,
+				className: 'my_location'
 			})
 			.addTo(this.map)
     }

@@ -6,6 +6,31 @@ class Proxy {
 			return json
 		}))
 	}
+	async set( collection, item, component ){
+		try{
+			const response = await fetch(`/api/${collection}/${item._id || ''}`, {
+				method: item._id ? 'PUT' : 'POST',
+				headers:{
+					'Content-Type':'application/json'
+				},
+				body: JSON.stringify(item)
+			})
+			if(component && response.status == 404){
+				console.log('dispatchEvent')
+				component.dispatchEvent(new CustomEvent('fetch-error', {
+					detail: response,
+					bubbles: true,
+					composed: true 
+				}))
+			} 
+			console.log('response', response.status)
+			//.then(response => response.json())
+		}
+		catch(e){
+			console.log('e', e)
+		}
+		
+	}
 }
 
 function getQueryString(query={}){

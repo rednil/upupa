@@ -132,7 +132,7 @@ export class PageOverview extends LitElement {
 		var className = ''
 		switch (this.info){
 			case 'BOXES':
-				text = box.label
+				text = box.name
 				break
 			case 'SPECIES':
 				if(!summary) text = '---'

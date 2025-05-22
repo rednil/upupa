@@ -8,9 +8,9 @@ import session from 'express-session'
 import passport from 'passport'
 import { fileURLToPath } from 'url'
 import path from 'path'
-import ConnectMongoDBSession from 'connect-mongodb-session'
+import MongoStore from 'connect-mongo'
 import { attachDb } from './middleware/attachDb.js'
-import { objectIdConverter } from './middleware/objectIdConverter.js'
+import { queryProcessor } from './middleware/queryProcessor.js'
 import selfRouter from './routes/self.js'
 import authRouter from './routes/auth.js'
 import usersRouter from './routes/users.js'
@@ -19,11 +19,12 @@ import inspectionsRouter from './routes/inspections.js'
 import summariesRouter from './routes/summaries.js'
 import speciesRouter from './routes/species.js'
 
-const MongoDBStore = ConnectMongoDBSession(session)
-const store = new MongoDBStore({
-  uri,
-	databaseName: DATABASE_NAME,
-  collection: 'sessions'
+const store = MongoStore.create({
+	mongoUrl: uri,
+	dbName: DATABASE_NAME,
+	collectionName: 'sessions',
+	stringify: false
+	
 })
 
 var app = express()
@@ -44,7 +45,7 @@ app.use(session({
   store
 }))
 app.use(attachDb)
-app.use(objectIdConverter)
+app.use(queryProcessor)
 app.use(passport.initialize())
 app.use(passport.session())
 

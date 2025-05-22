@@ -8,7 +8,7 @@ import './forms/select-route'
 import './pages/overview'
 import './forms/button-logout'
 import './pages/inspection.js'
-import './pages/boxconfig.js'
+import './pages/config.js'
 
 /* 
 Routing can be done via hashed or non-hashed URL paths
@@ -125,6 +125,20 @@ export class AppShell extends LitElement {
 					<page-calendar id="page"></page-calendar>
 				`
 			},
+			{
+				path: '#/inspection',
+				menu: true,
+				render: () => html`
+					<page-inspection id="page"></page-inspection>
+				`
+			},
+			{
+				path: '#/config',
+				menu: true,
+				render: () => html`
+					<page-config id="page"></page-config>
+				`
+			},
 			{ 
 				path: '#/users',
 				menu: true,
@@ -137,18 +151,6 @@ export class AppShell extends LitElement {
 				render: () => html`
 					<app-login id="page" @login=${this.requestUserInfo}></app-login>
 				` 
-			},
-			{
-				path: '#/inspection',
-				render: () => html`
-					<page-inspection id="page"></page-inspection>
-				`
-			},
-			{
-				path: '#/boxconfig',
-				render: () => html`
-					<page-boxconfig id="page"></page-boxconfig>
-				`
 			}
     ]
 		this.params = {}
@@ -166,7 +168,6 @@ export class AppShell extends LitElement {
 		this.params = getUrlParams()
 	}
   connectedCallback(){
-		console.log('__APP_VERSION2__')
 		super.connectedCallback()
 		if(window.location.hash) this.navigate()
 		else this.navigateDefault()
@@ -225,6 +226,7 @@ export class AppShell extends LitElement {
     window.location.hash = "#/login"
   }
   async handleFetchError(response){
+		console.log('handleFetchError', response)
     let content, jsonError
     try{
       content = await response.json()

@@ -109,31 +109,28 @@ export class PageCalendar extends LitElement {
 			{path: 'boxes'}
 		])
 		const events = summaries
-		.filter(summary => summary.hatchDate && ((summary.state == 'STATE_EGGS') || (summary.state == 'STATE_NESTLINGS')))
-		.map(({box_id, hatchDate}) => ({
-			box_name: boxes.find(box => box._id == box_id).label,
+		.filter(summary => summary.bandingWindowStart && ((summary.state == 'STATE_EGGS') || (summary.state == 'STATE_NESTLINGS')))
+		.map(({box_id, bandingWindowStart, bandingWindowEnd}) => ({
+			box_name: boxes.find(box => box._id == box_id).name,
 			box_id,
-			hatchDate: new Date(hatchDate)
+			start: new Date(bandingWindowStart),
+			end: new Date(bandingWindowEnd),
 		}))
-		.sort((a,b) => a.hatchDate - b.hatchDate)
+		.sort((a,b) => a.start - b.start)
 
-		const bandingStartAge = 7
-		const bandingEndAge = 12
-		const firstEvent = incDate(events[0].hatchDate, bandingStartAge)
-		const lastEvent = incDate(events[events.length - 1].hatchDate, bandingEndAge)
+		const firstEvent = events[0].start
+		const lastEvent = events[events.length - 1].end
 		const calendar = []
 		for(var date = firstEvent; date < lastEvent; date = incDate(date, 1)){
 			calendar.push({date, bandings: []})
 		}
 		events.forEach(event => {
-			const bandingStart = incDate(event.hatchDate, bandingStartAge)
-			const bandingEnd = incDate(event.hatchDate, bandingEndAge)
 			var column = 0
 			var dayIdx = 0
-			for(var date = bandingStart; date < bandingEnd; date = incDate(date, 1)){
+			for(var date = event.start; date < event.end; date = incDate(date, 1)){
 				const day = calendar.find(day => day.date.toDateString() == date.toDateString())
 				if(day) {
-					if(date == bandingStart){
+					if(date == event.start){
 						column = day.bandings.indexOf(null)
 						if(column<0) column = day.bandings.length
 					}

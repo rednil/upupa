@@ -4,7 +4,7 @@ export const attachDb = async (req, res, next) => {
     req.db = await getDb()
     next()
   } catch (error) {
-    console.error('Error attaching database to request:', error);
-    res.status(500).json({ message: 'Failed to connect to the database' });
+		console.log('exception', error)
+		throw('No database connection')
   }
 }

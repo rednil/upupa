@@ -98,12 +98,12 @@ async function importBoxes(json){
 	for(var i=0; i<json.length; i++){
 		const entry = json[i]
 		const box = {
-			label: entry['Nistkastennr.'],
+			name: entry['Nistkastennr.'],
 			site: entry['Standort'],
 			lat: entry['Breite'] || entry['Breite_1'],
 			lon: entry['Länge'] || entry['Länge_1']
 		}
-		if(!box.label || !box.site) continue
+		if(!box.name || !box.site) continue
 		await db.collection('boxes').insertOne(box)
 	}
 }
@@ -145,15 +145,15 @@ async function importInspections(json){
 		const line = json[y]
 		const entries = Object.entries(line)
 		const header = entries.shift()
-		const boxLabel = header[1]
-		const box = await db.collection('boxes').findOne({label: boxLabel})
+		const boxName = header[1]
+		const box = await db.collection('boxes').findOne({name: boxName})
 		var box_id 
 		if(box) {
 			box_id = box._id
 		}
 		else{
-			console.error(`Inspection of unknown box: ${boxLabel}`)
-			const result = await db.collection('boxes').insertOne({label: boxLabel})
+			console.error(`Inspection of unknown box: ${boxName}`)
+			const result = await db.collection('boxes').insertOne({name: boxName})
 			box_id = result.insertedId
 		}
 		var summary = getEmptySummary(box_id)
@@ -191,7 +191,7 @@ async function importInspections(json){
 			if(state != 'STATE_EMPTY') {
 				species_id = await speciesParser(note)
 				if(species_id){
-					if(summary.species_id && summary.species_id != species_id){
+					if(summary.species_id && summary.species_id.toString() != species_id.toString()){
 						console.error(`Different species without occupation: ${date.toLocaleDateString()}`, entries)
 					}
 					summary.species_id = species_id
@@ -235,10 +235,10 @@ async function importInspections(json){
 			if(note.match(/ring/) && !knownRingMatch){
 				console.error('unknown "ring" match', note)
 			}
-			log(inspection, { _box: boxLabel})
+			log(inspection, { _box: boxName})
 			await db.collection('inspections').insertOne(clean(inspection))
 			if(summary.state=='STATE_SUCCESS' || summary.state=='STATE_FAILURE'){
-				log(summary, { _box: boxLabel})
+				log(summary, { _box: boxName})
 				await db.collection('summaries').insertOne(clean(summary))
 				summary = getEmptySummary(box_id, summary.occupancy + 1)
 				continue
@@ -248,7 +248,7 @@ async function importInspections(json){
 			if(!summary.species_id) console.error(`Nestlings of unknown species`, entries)
 		}
 		if((summary.occupancy > 0 && summary.state == 'STATE_EMPTY') || !summary.lastInspection) continue
-		log(summary, { _box: boxLabel})
+		log(summary, { _box: boxName})
 		await db.collection('summaries').insertOne(clean(summary))
 	}
 }
@@ -271,11 +271,11 @@ async function speciesParser(str){
 		const species = await db
 		.collection('species')
 		.findOne({name})
-		if(species) return species._id.toString()
+		if(species) return species._id
 		const response = await db
 		.collection('species')
 		.insertOne({name})
-		return response.insertedId.toString()
+		return response.insertedId
 	}
 }
 function incDate(date, days){

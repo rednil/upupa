@@ -1,5 +1,5 @@
 import { LitElement, html, css } from 'lit'
-import '../forms/select-id.js'
+import '../forms/select-item.js'
 import { proxy } from '../proxy.js'
 import { translate } from '../translator.js'
 import '../forms/link-map.js'
@@ -97,11 +97,13 @@ export class PageStatus extends LitElement {
 			<div>
 				<div class="title">
 					<div>
-						<select-id id="select-box" class="bold" type="boxes" key="label" .value=${this.box_id} autoselect @change=${this._boxSelectCb}></select-id>
+						<select-item id="select-box" class="bold" collection="boxes" .value=${this.box_id} autoselect @change=${this._boxSelectCb}></select-id>
 						<link-map .box_id=${this.box_id} .nocoor=${this.boxHasNoCoors()}></link-map>
 						<link-boxconfig .box_id=${this.box_id}></link-boxconfig>
 					</div>
-					<a href="#/inspection?box_id=${this.box_id}"><button>Nistkastenkontrolle</button></a>
+					<a href="#/inspection?box_id=${this.box_id}">
+						<button>Nistkastenkontrolle</button>
+					</a>
 				</div>
 				<div class="list">
 					${this.inspections.length == 0 ? html`

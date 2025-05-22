@@ -3,7 +3,7 @@ services:
     image: mongo:latest
     ports:
       - 27017:27017
-    restart: no
+    restart: unless-stopped
     logging:
       options:
         max-size: 100m

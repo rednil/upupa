@@ -107,7 +107,7 @@ export class BoxList extends LitElement {
 					${this.boxes.map(box => html`
 						<div class="table-row">
 							<span class="body cell left">
-								<span class="name">${box.label}</span>
+								<span class="name">${box.name}</span>
 								<span class="links">
 									<link-map box_id=${box._id} .nocoor=${!(box.lat && box.lon)}></link-map>
 									<link-status box_id=${box._id} .nodata=${box.summaries.length == 0}></link-status>
