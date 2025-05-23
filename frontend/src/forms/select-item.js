@@ -51,22 +51,22 @@ export class SelectItem extends LitElement {
 		this.dispatchEvent(new Event('change'))
 	}
 	updated(changedProps){
-		console.log('updated', changedProps)
 		if(changedProps.has('collection')) this.fetchData()
 	}
 	async fetchData(){
-		console.log('fetchData')
+		const oldItem = this.item
 		var [options] = await proxy.fetch([
 			{path: this.collection},
 		])
 		this.options = options
+		this.item = this.getSelectedItem()
 		if(
 			(this.value && !this.getSelectedItem()) ||
 			(this.autoselect && !this.value && this.options.length>0)
 		){
 			this.value = options[0]._id
-			this.dispatchEvent(new Event('change'))
 		}
+		if(oldItem != this.getSelectedItem()) this.dispatchEvent(new Event('change'))
 	}
 	
 	getSelectedItem(){

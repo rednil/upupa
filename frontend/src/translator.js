@@ -23,7 +23,12 @@ const translations = {
 	"SPECIES": "Vogelart",
 	"BOXES.NAME": "Beschriftung",
 	"BOXES.LAT": "Breitengrad",
-	"BOXES.LON": "Längengrad"
+	"BOXES.LON": "Längengrad",
+	"USERS.USERNAME": "Benutzername",
+	"USERS.PASSWORD": "Passwort",
+	"USERS.ROLE.USER": "USER",
+	"USERS.ROLE.ADMIN": "ADMIN",
+	"USERS.ROLE": "Funktion"
 }
 
 export function translate(str){

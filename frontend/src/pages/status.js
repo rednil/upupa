@@ -24,28 +24,26 @@ export class PageStatus extends LitElement {
 
   static get styles() {
     return css`
-      :host {
-        display: flex;
-        flex-direction: column;
-				width: 100%;
+      :host, :host > div, .top, .controls {
+				flex:1;
+				display: flex;	
 			}
 			:host > div {
-				margin: 0 auto;
-				display: flex;
 				flex-direction: column;
 				min-height: 0;
-				width: 100%;
-				max-width: 40em;
 			}
-			.inspection, .summary {
+			.inspection, .summary, .controls{
+				margin: 0 auto;
 				padding: 0.5em;
 				border-radius: 5px;
 				box-shadow: rgba(0, 0, 0, 0.1) 0px 6px 24px 0px;
+				max-width: 40em;
+				justify-content: space-between;
 			}
 			.inspection .date, .summary .head {
 				font-weight: bold;
 			}
-			.summary > *, .title, .inspection > * {
+			.summary > *, .inspection > * {
 				display: flex;
 				justify-content: space-between;
 			}
@@ -58,20 +56,18 @@ export class PageStatus extends LitElement {
 			.head > *:nth-child(3){
 				text-align: right;
 			}
-
-			#select-box, button {
-				margin: 0.5em;
+			.left {
+				display: flex;
 			}
 			
-			.list {
+			.bottom {
 				overflow-y: scroll;
-				
 			}
-			.title > div {
+			.left > * {
 				display: flex;
 			}
 			link-map, link-boxconfig {
-				margin: auto;
+				padding-left: 0.5em;
 			}
 			.nodata {
 				text-align: center;
@@ -95,17 +91,19 @@ export class PageStatus extends LitElement {
   render() {
     return html`
 			<div>
-				<div class="title">
-					<div>
-						<select-item id="select-box" class="bold" collection="boxes" .value=${this.box_id} autoselect @change=${this._boxSelectCb}></select-id>
-						<link-map .box_id=${this.box_id} .nocoor=${this.boxHasNoCoors()}></link-map>
-						<link-boxconfig .box_id=${this.box_id}></link-boxconfig>
+				<div class="top">
+					<div class="controls">
+						<div class="left">
+							<select-item id="select-box" class="bold" collection="boxes" .value=${this.box_id} autoselect @change=${this._boxSelectCb}></select-item>
+							<link-map .box_id=${this.box_id} .nocoor=${this.boxHasNoCoors()}></link-map>
+							<link-boxconfig .box_id=${this.box_id}></link-boxconfig>
+						</div>
+						<a href="#/inspection?box_id=${this.box_id}">
+							<button>Nistkastenkontrolle</button>
+						</a>
 					</div>
-					<a href="#/inspection?box_id=${this.box_id}">
-						<button>Nistkastenkontrolle</button>
-					</a>
 				</div>
-				<div class="list">
+				<div class="bottom">
 					${this.inspections.length == 0 ? html`
 						<div class="nodata">Keine Inspektionen</div>
 					`:''}

@@ -1,4 +1,4 @@
-import { LitElement, html } from 'lit'
+import { LitElement, html, css } from 'lit'
 import { translate } from '../translator.js' 
 
 export class BoxesEdit extends LitElement {
@@ -7,23 +7,26 @@ export class BoxesEdit extends LitElement {
 			item: { type: Object },
 		}
 	}
-	constructor(){
-		super()
-		this.item = {}
+	static get styles() {
+		return css`
+			:host > * {
+				display: flex;
+				justify-content: space-between;
+			}
+		`
 	}
-	
 	render() {
 		return [
 			this.renderInput('name'),
-			this.renderInput('lat'),
-			this.renderInput('lon')
+			this.renderInput('lat', 'number'),
+			this.renderInput('lon', 'number')
 		]
 	}
-	renderInput(prop){
+	renderInput(prop, type){
 		return html`
 			<div>
 				<label for=${prop}>${this.getLabel(prop)}</label>
-				<input id=${prop} .value=${this.item[prop] || ''} @change=${this.changeCb}>
+				<input type=${type} id=${prop} .value=${this.item[prop] || ''} @change=${this.changeCb}>
 			</div>
 		`
 	}
@@ -34,7 +37,6 @@ export class BoxesEdit extends LitElement {
 		const { id, value } = evt.target
 		return evt => this.item[id] = value
 	}
-	
 }
 
 customElements.define('boxes-edit', BoxesEdit)
