@@ -20,7 +20,10 @@ const translations = {
 	"BOXES": "Nistkästen",
 	"LAST_INSPECTION": "Letzte Inspektion",
 	"STATUS": "Status",
-	"SPECIES": "Vogelart"
+	"SPECIES": "Vogelart",
+	"BOXES.NAME": "Beschriftung",
+	"BOXES.LAT": "Breitengrad",
+	"BOXES.LON": "Längengrad"
 }
 
 export function translate(str){

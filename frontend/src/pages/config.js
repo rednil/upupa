@@ -7,14 +7,23 @@ export class PageConfig extends LitElement {
 	static get properties() {
 		return {
 			item: { type: Object },
+			copy: { type: Object},
 			collection: { type: String }
 		}
 	}
 	constructor(){
 		super()
 		this.collection = 'boxes'
-		this.item = {}
+		this._item = {}
+		this.copy = {}
 		
+	}
+	set item(item = {}){
+		this._item = item
+		this.copy = {...item}
+	}
+	get item(){
+		return this._item
 	}
 	render() {
 		return html`
@@ -25,19 +34,23 @@ export class PageConfig extends LitElement {
 			<select-item style=${this.item._id ? '' : 'visibility:hidden'} .collection=${this.collection} .value=${this.item?.id} autoselect @change=${evt => this.item = evt.target.item}></select-item>
 			<button @click=${this.addCb}>+</button>
 			${this.renderConfig()}
-			<button>Save</button>
+			<button @click=${this.submit}>Speichern</button>
+			<button>Änderungen verwerfen</button>
 		`
 	}
 	renderConfig(){
 		switch(this.collection){
 			case 'boxes':
-				return html`<boxes-edit .item=${this.item}></boxes-edit>`
+				return html`<boxes-edit .item=${this.copy}></boxes-edit>`
 			case 'species':
-				return html`<species-edit .item=${this.item}></species-edit>`
+				return html`<species-edit .item=${this.copy}></species-edit>`
 		}
 	}
 	addCb(){
 		this.item = {}
+	}
+	async submit(){
+		const response = await proxy.set(this.collection, this.copy, this)
 	}
 }
 

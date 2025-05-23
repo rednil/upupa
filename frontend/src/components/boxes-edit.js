@@ -1,45 +1,40 @@
 import { LitElement, html } from 'lit'
-import { proxy } from '../proxy'
+import { translate } from '../translator.js' 
+
 export class BoxesEdit extends LitElement {
 	static get properties() {
 		return {
 			item: { type: Object },
-			copy: { type: Object}
 		}
 	}
 	constructor(){
 		super()
-		this.copy = {}
 		this.item = {}
-	}
-	set item(item = {}){
-		this._item = item
-		this.copy = {...item}
 	}
 	
 	render() {
+		return [
+			this.renderInput('name'),
+			this.renderInput('lat'),
+			this.renderInput('lon')
+		]
+	}
+	renderInput(prop){
 		return html`
 			<div>
-				<label for="Name" >Name</label>
-				<input id="Name" .value=${this.copy.name || ''} @change=${this.propSetter('name')}>
+				<label for=${prop}>${this.getLabel(prop)}</label>
+				<input id=${prop} .value=${this.item[prop] || ''} @change=${this.changeCb}>
 			</div>
-			<div>
-				<label for="Breitengrad" >Breitengrad</label>
-				<input id="Breitengrad" .value=${this.copy.lat || ''} @change=${this.propSetter('lat')}>
-			</div>
-			<div>
-				<label for="Längengrad" >Längengrad</label>
-				<input id="Längengrad" .value=${this.copy.lon || ''} @change=${this.propSetter('lon')}>
-			</div>
-			<button @click=${this.submit}>Speichern</button>
 		`
 	}
-	propSetter(key){
-		return evt => this.copy[key] = evt.target.value
+	getLabel(prop){
+		return translate(`BOXES.${prop.toUpperCase()}`)
 	}
-	async submit(){
-		const response = await proxy.set('boxes', this.copy, this)
+	changeCb(evt){
+		const { id, value } = evt.target
+		return evt => this.item[id] = value
 	}
+	
 }
 
 customElements.define('boxes-edit', BoxesEdit)
