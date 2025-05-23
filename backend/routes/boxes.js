@@ -37,6 +37,7 @@ router.put('/:id', loginRequired, async (req, res, next) => {
 		const box = await boxes.findOne({_id})
 		res.json(box)
 		archive(req, 'boxes', oldItem)
+		next()
 	}
 	else {
 		console.log('result', result)

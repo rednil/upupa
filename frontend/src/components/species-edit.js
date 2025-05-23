@@ -34,7 +34,7 @@ export class SpeciesEdit extends LitElement {
 		}
 		changeCb(evt){
 			const { id, value } = evt.target
-			return evt => this.item[id] = value
+			this.item[id] = value
 		}
 }
 

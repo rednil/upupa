@@ -10,7 +10,7 @@ import { fileURLToPath } from 'url'
 import path from 'path'
 import MongoStore from 'connect-mongo'
 import { attachDb } from './middleware/attachDb.js'
-import { queryProcessor } from './middleware/queryProcessor.js'
+import { preprocessor } from './middleware/preprocessor.js'
 import selfRouter from './routes/self.js'
 import authRouter from './routes/auth.js'
 import usersRouter from './routes/users.js'
@@ -45,7 +45,7 @@ app.use(session({
   store
 }))
 app.use(attachDb)
-app.use(queryProcessor)
+app.use(preprocessor)
 app.use(passport.initialize())
 app.use(passport.session())
 
@@ -56,7 +56,6 @@ app.use('/api/boxes', boxesRouter)
 app.use('/api/inspections', inspectionsRouter)
 app.use('/api/summaries', summariesRouter)
 app.use('/api/species', speciesRouter)
-
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

@@ -3,7 +3,7 @@ import '../forms/select-item.js'
 import '../components/boxes-edit.js'
 import '../components/species-edit.js'
 import '../components/users-edit.js'
-
+import { proxy } from '../proxy.js'
 export class PageConfig extends LitElement {
 	static get properties() {
 		return {
@@ -90,7 +90,7 @@ export class PageConfig extends LitElement {
 	renderConfig(){
 		switch(this.collection){
 			case 'boxes':
-				return html`<boxes-edit .item=${this.copy}></boxes-edit>`
+				return html`<boxes-edit .item=${this.copy} ></boxes-edit>`
 			case 'species':
 				return html`<species-edit .item=${this.copy}></species-edit>`
 			case 'users':
