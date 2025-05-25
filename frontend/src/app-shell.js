@@ -1,6 +1,6 @@
 import { LitElement, html, css } from 'lit'
 
-import './app-login'
+import './pages/login.js'
 import './pages/status'
 import './pages/calendar'
 import './forms/select-route'
@@ -141,7 +141,7 @@ export class AppShell extends LitElement {
       { 
 				path: '#/login',
 				render: () => html`
-					<app-login id="page" @login=${this.requestUserInfo}></app-login>
+					<page-login id="page" @login=${this.requestUserInfo}></page-login>
 				` 
 			}
     ]
@@ -154,7 +154,9 @@ export class AppShell extends LitElement {
 	navigate(){
 		this.route = this.routes.find(route => window.location.hash.search(route.path) == 0)
 		if(!this.route) {
-			console.error(`Unknown route: ${window.location.hash}`)
+			if(window.Location.hash) {
+				console.error(`Unknown route: ${window.location.hash}`)
+			}
 			return this.navigateDefault()
 		}
 		this.params = getUrlParams()
