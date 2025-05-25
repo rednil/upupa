@@ -3,6 +3,7 @@ import '../forms/select-item.js'
 import '../components/boxes-edit.js'
 import '../components/species-edit.js'
 import '../components/users-edit.js'
+import '../app-dialog.js'
 import { proxy } from '../proxy.js'
 export class PageConfig extends LitElement {
 	static get properties() {
@@ -59,7 +60,7 @@ export class PageConfig extends LitElement {
 						<option value="users">Benutzer</option>
 					</select>
 					<select-item 
-						style=${this.item_id ? '' : 'visibility:hidden'}
+						style=${this.item._id ? '' : 'visibility:hidden'}
 						.collection=${this.collection} 
 						.value=${this.item_id} 
 						autoselect
@@ -72,10 +73,21 @@ export class PageConfig extends LitElement {
 					${this.renderConfig()}
 				</div>
 				<div class="bottom">
+					<button @click=${this.confirmDeletion}>Löschen</button>
+					<button @click=${this.cancel}>Änderungen verwerfen</button>
 					<button @click=${this.submit}>Speichern</button>
-					<button>Änderungen verwerfen</button>
 				</div>
 			</div>
+			<app-dialog
+				id="delete-dialog"
+				primary="Abbrechen"
+				secondary="Löschen"
+				@secondary=${this.delete}
+				discard="primary"
+				title="Löschen"
+			>
+				<div>${this.item.name || this.item.username}</div>
+      </app-dialog>
 		`
 	}
 	changeCollectionCb(evt){
@@ -85,7 +97,7 @@ export class PageConfig extends LitElement {
 	changeItemCb(evt){
 		this.item = evt.target.item
 		this.item_id = evt.target.value
-		history.replaceState({},null,`#/config?collection=${this.collection}&item_id=${this.item_id}`)
+		this.updateHash()
 	}
 	renderConfig(){
 		switch(this.collection){
@@ -98,10 +110,36 @@ export class PageConfig extends LitElement {
 		}
 	}
 	addCb(){
-		this.item = {}
+		this._backupItem = {...this.item}
+		this.item = {} 
+	}
+	confirmDeletion(){
+		this.shadowRoot.querySelector('#delete-dialog').open = true
+	}
+	async delete(){
+		this.shadowRoot.querySelector('#delete-dialog').open = false
+		const response = await proxy.delete(this.collection, this.item, this)
+		if(response?.deletedCount){
+			this.shadowRoot.querySelector('select-item').fetchData()
+		}
+	}
+	cancel(){
+		if(this._backupItem) {
+			this.item = this._backupItem
+			delete this._backupItem
+		}
+		this.copy = {...this.item} 
+	}
+	updateHash(){
+		history.replaceState({},null,`#/config?collection=${this.collection}&item_id=${this.item_id}`)
 	}
 	async submit(){
 		const response = await proxy.set(this.collection, this.copy, this)
+		if(response?.insertedId){
+			this.item_id=response.insertedId
+			this.updateHash()
+		}
+		this.shadowRoot.querySelector('select-item').fetchData()
 	}
 }
 

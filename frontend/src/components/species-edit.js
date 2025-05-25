@@ -1,5 +1,8 @@
 
 import { LitElement, html, css } from 'lit'
+// live directive is needed because user can edit the value of the input.
+// This tells Lit to dirty check against the live DOM value.
+import {live} from 'lit/directives/live.js'
 import { translate } from '../translator.js' 
 
 export class SpeciesEdit extends LitElement {
@@ -25,7 +28,7 @@ export class SpeciesEdit extends LitElement {
 			return html`
 				<div>
 					<label for=${prop}>${this.getLabel(prop)}</label>
-					<input id=${prop} .value=${this.item[prop] || ''} @change=${this.changeCb}>
+					<input id=${prop} .value=${live(this.item[prop] || '')} @change=${this.changeCb}>
 				</div>
 			`
 		}

@@ -3,18 +3,20 @@ import { loginRequired } from '../auth/tools.js'
 
 var router = express.Router()
 
-router.get('/', loginRequired, async (req, res, next) => {
-	const species = await req.db
-	.collection('species')
+router.get('/', loginRequired, async (req, res) => {
+	const species = await req.mongo.pathCollection
 	.find({})
 	.toArray()
 	return res.json(species)
 })
 
-router.post('/', loginRequired, async (req, res, next) => {
-	await res.mongo.insertOne()
+router.post('/', loginRequired, async req => {
+	await req.mongo.insertOne()
 })
-router.put('/:_id', loginRequired, async (req, res, next) => {
-	await res.mongo.updateOne()
+router.put('/', loginRequired, async req => {
+	await req.mongo.updateOne()
+})
+router.delete('/', loginRequired, async req => {
+	await req.mongo.deleteOne()
 })
 export default router

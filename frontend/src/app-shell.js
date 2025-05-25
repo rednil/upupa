@@ -1,7 +1,6 @@
 import { LitElement, html, css } from 'lit'
 
 import './app-login'
-import './app-users'
 import './pages/status'
 import './pages/calendar'
 import './forms/select-route'
@@ -139,13 +138,6 @@ export class AppShell extends LitElement {
 					<page-config id="page"></page-config>
 				`
 			},
-			{ 
-				path: '#/users',
-				menu: true,
-				render: () => html`
-					<app-users id="page" .self=${this.self}></app-users>
-				`
-			},
       { 
 				path: '#/login',
 				render: () => html`
@@ -205,7 +197,7 @@ export class AppShell extends LitElement {
 			<div class="top ${this.self?'logged-in':'logged-out'}">
 				<select-route .self=${this.self} .routes=${this.routes} selected=${this.route.path}></select-route>
 				<div class="user">
-					<span>${this.self?.username}</span>
+					<a href="#/config?collection=users&item_id=${this.self?._id}">${this.self?.username}</a>
 					<button-logout @click=${this.requestLogout}></button-logout>
 				</div>
 			</div>

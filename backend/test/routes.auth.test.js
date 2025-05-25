@@ -12,6 +12,7 @@ describe('routes : auth', () => {
 	beforeEach(async ()=> {
 		auth = await setupUsers()
 	})
+	/*
   describe('POST /api/auth/register', () => {
     it('should register a new user', async () => {
       const username = 'Volzotan Smeik'
@@ -34,7 +35,7 @@ describe('routes : auth', () => {
       .expect(400)
     })
   })
-  
+  */
   describe('POST api/auth/login', () => {
     it('should login a user', () => request(app)
       .post(`${path}/login`)

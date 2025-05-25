@@ -11,26 +11,17 @@ export function loginRequired(req, res, next) {
 }
 
 export async function createUser(req) {
-  let { username, password, role } = req.body
-  if(!username || username=='') throw('USERNAME_MISSING')
-  if(!password || password=='') throw('PASSWORD_MISSING')
-	if(role!='ADMIN') role = 'USER'
-  if(password.length<3) throw ('PASSWORD_TOO_SHORT')
-	const users = req.db.collection('users')
-  const existing = await users.findOne({ username })
+	const body = req.mongo.body
+  if(!body.username || body.username=='') throw('USERNAME_MISSING')
+  if(!body.password || body.password=='') throw('PASSWORD_MISSING')
+	if(body.role!='ADMIN') body.role = 'USER'
+  if(body.password.length<3) throw ('PASSWORD_TOO_SHORT')
+	// dont use mongo.pathCollection, we might be called from /register
+	const users = req.mongo.db.collection('users')
+	const existing = await users.findOne({ username: body.username })
   if(existing) throw('USER_EXISTS')
-  const hash = getHash(password)
-  const result = await users.insertOne({
-    username,
-    password: hash,
-    createdAt: new Date(),
-		role
-  })
-	return {
-		username,
-		_id: result.insertedId,
-		role
-	}
+  body.password = getHash(body.password)
+	await req.mongo.insertOne(body, 'users')
 }
 
 export function getHash(password){

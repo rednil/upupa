@@ -72,7 +72,6 @@ export class AppDialog extends LitElement {
 		if(this.discard == "secondary") this.open = false
 	}
 	render() {
-		console.log('render', this.open)
 		if(!this.open) return
 		return html`
 			<div class="shield"></div>

@@ -44,7 +44,7 @@ export class UsersEdit extends LitElement {
 		}
 		changeCb(evt){
 			const { id, value } = evt.target
-			return evt => this.item[id] = value
+			this.item[id] = value
 		}
 }
 

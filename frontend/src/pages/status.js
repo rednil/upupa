@@ -24,9 +24,11 @@ export class PageStatus extends LitElement {
 
   static get styles() {
     return css`
-      :host, :host > div, .top, .controls {
-				flex:1;
+      :host, :host > div, .top, .controls, .left {
 				display: flex;	
+			}
+			:host, :host > div, .controls, .head > * {
+				flex: 1;
 			}
 			:host > div {
 				flex-direction: column;
@@ -47,24 +49,14 @@ export class PageStatus extends LitElement {
 				display: flex;
 				justify-content: space-between;
 			}
-			.head > * {
-				flex: 1;
-			}
 			.head > *:nth-child(2){
 				text-align: center;
 			}
 			.head > *:nth-child(3){
 				text-align: right;
 			}
-			.left {
-				display: flex;
-			}
-			
 			.bottom {
 				overflow-y: scroll;
-			}
-			.left > * {
-				display: flex;
 			}
 			link-map, link-boxconfig {
 				padding-left: 0.5em;

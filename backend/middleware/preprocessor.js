@@ -1,4 +1,5 @@
 import { ObjectId } from 'mongodb'
+import { getDb } from "../db.js"
 
 class MongoHelper {
 	constructor(req, res, next){
@@ -6,11 +7,21 @@ class MongoHelper {
 		this.res = res
 		this.next = next
 		this.history = []
-		this.db = req.db
+		const mongoMatch = req.url.match(/\/api\/([^\/?]+)/)
+		if(mongoMatch) {
+			this.pathCollectionName = mongoMatch[1]
+		}
+		this.query = stringToNumber(stringToObjectId(req.query))
+		if(req.body) this.body = stringToObjectId(req.body)
 		this.timestamp = new Date()
 	}
+	async attachDb(){
+		this.db = await getDb()
+		if(this.pathCollectionName){
+			this.pathCollection = this.db.collection(this.pathCollectionName)
+		}
+	}
 	async finish(result) {
-		console.log('finish', result)
 		if(result.acknowledged){
 			this.res.json(result)
 			// TODO: handle many
@@ -23,14 +34,22 @@ class MongoHelper {
 			this.res.status(400).json(result)
 		}
 	}
-	async insertOne (item = this.req.processedBody, collectionName = this.req.collectionName){
+	async insertOne (item = this.body, collectionName = this.pathCollectionName){
 		await this.finish(
 			await this.db
 			.collection(collectionName)
 			.insertOne(item)
 		)
 	}
-	async updateOne(item = this.req.processedBody, collectionName = this.req.collectionName){
+	async deleteOne (item = this.body, collectionName = this.pathCollectionName){
+		
+		await this.finish(
+			await this.db
+			.collection(collectionName)
+			.deleteOne({_id: item._id})
+		)
+	}
+	async updateOne(item = this.body, collectionName = this.pathCollectionName){
 		const collection = this.db.collection(collectionName)
 		const query = {_id: item._id}
 		this.archive(
@@ -43,7 +62,7 @@ class MongoHelper {
 			})
 		)
 	}
-	archive(item = this.req.processedBody, collectionName = this.req.collectionName) {
+	archive(item = this.body, collectionName = this.pathCollectionName) {
 		item.item_id = item._id
 		item.user_id = this.req.user._id
 		item.supersededAt = this.timestamp
@@ -53,11 +72,9 @@ class MongoHelper {
 	}
 }
 
-export const preprocessor = (req, res, next) => {
-	req.processedQuery = stringToNumber(stringToObjectId(req.query))
-	if(req.body) req.processedBody = stringToObjectId(req.body)
-	req.timestamp = new Date()
-	res.mongo = new MongoHelper(req, res, next)
+export const preprocessor = async (req, res, next) => {
+	req.mongo = new MongoHelper(req, res, next)
+	await req.mongo.attachDb()
 	next()
 }
 

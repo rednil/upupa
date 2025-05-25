@@ -69,12 +69,14 @@ describe('routes : users', () => {
       .expect(404)
     )
   })
+		
 	
-  describe('DELETE /users/:id', () => {
+  describe('DELETE /api/users', () => {
     it('should delete the respective user',
 			async () => {
 				await auth.admin
-      	.delete(`/api/users/${auth.userId}`)
+      	.delete(`/api/users`)
+				.send({_id: auth.userId})
       	.expect(200)
 				await auth.admin
 				.get(`/api/users/${auth.userId}`)
@@ -84,7 +86,8 @@ describe('routes : users', () => {
     it('should throw an error if a user is not logged in',
 			async () =>	{
 				await request(app)
-				.delete(`/api/users/${auth.userId}`)
+				.delete(`/api/users`)
+				.send({_id: auth.userId})
 				.expect(401)
 				await auth.admin
 				.get(`/api/users/${auth.userId}`)
@@ -94,7 +97,8 @@ describe('routes : users', () => {
     it('should throw an error if called by user without admin privileges',
 			async () => {
 				await auth.user
-				.delete(`/api/users/${auth.userId}`)
+				.delete(`/api/users`)
+				.send({_id: auth.userId})
 				.expect(403)
 				await auth.admin
 				.get(`/api/users/${auth.userId}`)
@@ -111,10 +115,15 @@ describe('routes : users', () => {
 					password: 'sEcrEt',
 					role: 'USER'
 				}
-				await auth.admin
+				const result = await auth.admin
       	.post(`/api/users/`)
 				.send(user)
 				.expect(200)
+				
+				expect(result.body.acknowledged).to.equal(true)
+				
+				await auth.admin
+				.get(`/api/users/${result.body.insertedId}`)
 				.then(({body}) => {
 					matchRoleAndUsername(body, user)
 					expect(body._id).to.exist
@@ -123,22 +132,40 @@ describe('routes : users', () => {
     )
   })
 	
-  describe('PUT /users/:id', () => {
-    it('should modify the respective user',
+  describe('PUT /users', () => {
+    it('should modify the respective user when called as admin',
 			async () => {
 				const changes = {
+					_id: auth.userId,
 					username: 'Quert Zuiopü',
 					password: 'sEcrEt',
 					role: 'ADMIN'
 				}
 				await auth.admin
-				.put(`/api/users/${auth.userId}`)
+				.put(`/api/users`)
 				.send(changes)
+				.expect(200)
+				
+				await auth.admin
+				.get(`/api/users/${auth.userId}`)
 				.expect(200)
 				.then(({body}) => {
 					matchRoleAndUsername(body, changes)
-					expect(body._id).to.eql(auth.userId)
 				})
+    })
+		it('should modify the respective user when called by user on itself',
+			async () => {
+				const changes = {
+					_id: auth.userId,
+					username: 'Quert Zuiopü',
+					password: 'sEcrEt',
+					role: 'USER'
+				}
+				await auth.user
+				.put(`/api/users`)
+				.send(changes)
+				.expect(200)
+				
 				await auth.admin
 				.get(`/api/users/${auth.userId}`)
 				.expect(200)
@@ -150,15 +177,13 @@ describe('routes : users', () => {
 			async() => {
 				const changes = {
 					username: 'Quert Zuiopü',
+					_id: auth.userId,
 				}
 				await auth.admin
-				.put(`/api/users/${auth.userId}`)
+				.put(`/api/users/`)
 				.send(changes)
 				.expect(200)
-				.then(({body}) => {
-					expect(body.username).to.equal(changes.username)
-					expect(body.role).to.eql(userCredentials.role)
-				})
+				
 				await auth.admin
 				.get(`/api/users/${auth.userId}`)
 				.expect(200)
@@ -168,18 +193,37 @@ describe('routes : users', () => {
 				})
 			}
     )
+		it('should throw an error when called by a user on somebody else',
+			async () => {
+				const changes = {
+					_id: auth.adminId,
+					username: 'Quert Zuiopü',
+				}
+				await auth.user
+				.put(`/api/users`)
+				.send(changes)
+				.expect(403)
+			}
+		)
+    it('should prevent privilege escalation',
+			async () => {
+				const changes = {
+					_id: auth.userId,
+					role: 'ADMIN'
+				}
+				await auth.user
+				.put(`/api/users`)
+				.send(changes)
+				.expect(403)
+			}
+		)
     it('should throw an error if a user is not logged in',
 			() => request(app)
-			.put(`/api/users/${auth.userId}`)
+			.put(`/api/users/`)
 			.send({username: 'Quert Zuiopü'})
 			.expect(401)
 		)
-		it('should throw an error if called by user without admin privileges',
-			() => auth.user
-			.put(`/api/users/${auth.userId}`)
-			.send({username: 'Quert Zuiopü'})
-			.expect(403)
-		)
+		
   })
 	
 })

@@ -9,7 +9,6 @@ import passport from 'passport'
 import { fileURLToPath } from 'url'
 import path from 'path'
 import MongoStore from 'connect-mongo'
-import { attachDb } from './middleware/attachDb.js'
 import { preprocessor } from './middleware/preprocessor.js'
 import selfRouter from './routes/self.js'
 import authRouter from './routes/auth.js'
@@ -44,7 +43,6 @@ app.use(session({
   saveUninitialized: true,
   store
 }))
-app.use(attachDb)
 app.use(preprocessor)
 app.use(passport.initialize())
 app.use(passport.session())
