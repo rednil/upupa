@@ -2,7 +2,7 @@
 import { LitElement, html, css } from 'lit'
 import { translate } from '../translator.js' 
 
-export class UsersEdit extends LitElement {
+export class UserEdit extends LitElement {
 	static get properties() {
 			return {
 				item: { type: Object },
@@ -48,4 +48,4 @@ export class UsersEdit extends LitElement {
 		}
 }
 
-customElements.define('users-edit', UsersEdit)
+customElements.define('user-edit', UserEdit)

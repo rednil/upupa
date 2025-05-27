@@ -3,7 +3,7 @@ import { translate } from '../translator.js'
 // live directive is needed because user can edit the value of the input.
 // This tells Lit to dirty check against the live DOM value.
 import {live} from 'lit/directives/live.js'
-export class BoxesEdit extends LitElement {
+export class BoxEdit extends LitElement {
 	static get properties() {
 		return {
 			item: { type: Object },
@@ -41,4 +41,4 @@ export class BoxesEdit extends LitElement {
 	}
 }
 
-customElements.define('boxes-edit', BoxesEdit)
+customElements.define('box-edit', BoxEdit)

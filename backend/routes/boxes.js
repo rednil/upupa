@@ -8,8 +8,7 @@ router.get('/', loginRequired, async (req, res, next) => {
 		.find()
 		.sort({name: 1})
 		.toArray()
-    return res.json(boxes);
-  
+    return res.json(boxes)
 })
 
 router.post('/', loginRequired, async req => {
