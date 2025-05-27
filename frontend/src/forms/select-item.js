@@ -1,5 +1,5 @@
 import { LitElement, html, css } from 'lit'
-import { proxy } from '../proxy.js'
+import { Proxy } from '../proxy.js'
 const promises = {}
 
 export class SelectItem extends LitElement {
@@ -27,6 +27,8 @@ export class SelectItem extends LitElement {
 		super()
 		this.options = []
 		this.key = 'name'
+		this.proxy = new Proxy(this)
+
 	}
 	
 	render() {
@@ -55,16 +57,13 @@ export class SelectItem extends LitElement {
 	}
 	async fetchData(){
 		const oldItem = this.item
-		var [options] = await proxy.fetch([
-			{path: this.collection},
-		])
-		this.options = options
+		this.options = await this.proxy.fetch(this.collection)
 		this.item = this.getSelectedItem()
 		if(
 			(this.value && !this.getSelectedItem()) ||
 			(this.autoselect && !this.value && this.options.length>0)
 		){
-			this.value = options[0]._id
+			this.value = this.options[0]._id
 		}
 		if(oldItem != this.getSelectedItem()) this.dispatchEvent(new Event('change'))
 	}

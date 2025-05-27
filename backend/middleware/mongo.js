@@ -1,19 +1,33 @@
 import { ObjectId } from 'mongodb'
 import { getDb } from "../db.js"
 
-class MongoHelper {
+export const attachMongoHelper = async (req, res, next) => {
+	req.mongo = new MongoHelper(req, res, next)
+	await req.mongo.attachDb()
+	next()
+}
+
+export class MongoHelper {
 	constructor(req, res, next){
 		this.req = req
 		this.res = res
 		this.next = next
 		this.history = []
-		const mongoMatch = req.url.match(/\/api\/([^\/?]+)/)
+		const mongoMatch = req.url?.match(/\/api\/([^\/?]+)/)
 		if(mongoMatch) {
 			this.pathCollectionName = mongoMatch[1]
 		}
-		this.query = stringToNumber(stringToObjectId(req.query))
-		if(req.body) this.body = stringToObjectId(req.body)
+		this.pipeline = parseQuery(req.query)
+		this.query = this.pipeline[0].$match
+		if(req.body) this.body = castObjValues(req.body)
 		this.timestamp = new Date()
+	}
+	async aggregate(){
+		return this.res.json(
+			await this.pathCollection
+			.aggregate(this.pipeline)
+			.toArray()
+		)
 	}
 	async attachDb(){
 		this.db = await getDb()
@@ -72,25 +86,34 @@ class MongoHelper {
 	}
 }
 
-export const preprocessor = async (req, res, next) => {
-	req.mongo = new MongoHelper(req, res, next)
-	await req.mongo.attachDb()
-	next()
+
+
+const castObjValues = obj => 
+	Object.fromEntries(
+		Object.entries(obj)
+		.map(
+			([key, value]) => [key, cast(value)]
+		)
+	)
+
+const cast = str => {
+	if(typeof(str) != 'string') return str
+	if(str.match(/\d\d\d\d-\d\d-\d\d/)) return new Date(str)
+	if(str!='' && !isNaN(str)) return Number(str)
+	if(str.match(/[0-9a-fA-F]{24}/)) return new ObjectId(str)
+	return str
 }
 
-const stringToObjectId = obj => {
-	const result = {}
-	Object.entries(obj).forEach(([key, value]) => {
-		result[key] = (key.endsWith('_id') && typeof value === 'string') ?
-		new ObjectId(value) : value
+export const parseQuery = query => {
+	const pipeline = [
+		{ $match: {} }
+	]
+	Object.entries(query).forEach(([key, str]) => {
+		const arr = str.split(':')
+		var operand = cast(arr.length>1 ? arr[1] : str)
+		var value = arr.length>1 ? {[arr[0]]: operand} : operand
+		if(key.startsWith('$')) pipeline.push({[key]: value})
+		else pipeline[0].$match[key] = value
 	})
-	return result
-}
-const stringToNumber = obj => {
-	const result = {}
-	Object.entries(obj).forEach(([key, value]) => {
-		result[key] = (value!='' && !isNaN(value)) ?
-		new Number(value) : value
-	})
-	return result
+	return pipeline
 }

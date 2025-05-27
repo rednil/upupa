@@ -1,10 +1,10 @@
 import { LitElement, html, css } from 'lit'
 import '../forms/select-item.js'
-import '../components/boxes-edit.js'
+import '../components/box-edit.js'
 import '../components/species-edit.js'
-import '../components/users-edit.js'
+import '../components/user-edit.js'
 import '../app-dialog.js'
-import { proxy } from '../proxy.js'
+import { Proxy } from '../proxy.js'
 export class PageConfig extends LitElement {
 	static get properties() {
 		return {
@@ -38,6 +38,7 @@ export class PageConfig extends LitElement {
 	}
 	constructor(){
 		super()
+		this.proxy = new Proxy(this)
 		this.collection = 'boxes'
 		this._item = {}
 		this.copy = {}
@@ -102,11 +103,11 @@ export class PageConfig extends LitElement {
 	renderConfig(){
 		switch(this.collection){
 			case 'boxes':
-				return html`<boxes-edit .item=${this.copy} ></boxes-edit>`
+				return html`<box-edit .item=${this.copy} ></box-edit>`
 			case 'species':
 				return html`<species-edit .item=${this.copy}></species-edit>`
 			case 'users':
-				return html`<users-edit .item=${this.copy}></users-edit>`
+				return html`<user-edit .item=${this.copy}></user-edit>`
 		}
 	}
 	addCb(){
@@ -118,7 +119,7 @@ export class PageConfig extends LitElement {
 	}
 	async delete(){
 		this.shadowRoot.querySelector('#delete-dialog').open = false
-		const response = await proxy.delete(this.collection, this.item, this)
+		const response = await this.proxy.delete(this.collection, this.item)
 		if(response?.deletedCount){
 			this.shadowRoot.querySelector('select-item').fetchData()
 		}
@@ -134,7 +135,7 @@ export class PageConfig extends LitElement {
 		history.replaceState({},null,`#/config?collection=${this.collection}&item_id=${this.item_id}`)
 	}
 	async submit(){
-		const response = await proxy.set(this.collection, this.copy, this)
+		const response = await this.proxy.set(this.collection, this.copy)
 		if(response?.insertedId){
 			this.item_id=response.insertedId
 			this.updateHash()

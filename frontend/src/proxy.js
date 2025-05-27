@@ -1,12 +1,36 @@
-class Proxy {
-	fetch(requests){
-		return Promise.all(requests.map(async ({path, query={}}) => {
-			const response = await fetch(`/api/${path}${getQueryString(query)}`)
-			const json = await response.json()
-			return json
-		}))
+export class Proxy {
+	constructor(component){
+		this.component = component
 	}
-	async set( collection, item, component ){
+	async fetchMulti(...requests){
+		return Promise.all(
+			requests.map(request => this.fetch(...request))
+		)
+	}
+
+	async fetch(collection, ...query){
+		console.log('fetch', collection, query)
+		try{
+			const response = await fetch(url(collection, query))
+			this.checkError(response)
+			return await response.json()
+		}catch(e){
+			this.reportError('fetch-exception', e)
+		}
+	}
+
+	async fetchSingle(collection, ...query){
+		const result = await this.fetch(collection, ...query)
+		if(!result instanceof Array){
+			return this.reportError('data', `request "${url(collection, query)}" did not deliver an array`)
+		}
+		if(result.length > 1){
+			return this.reportError('data', `request "${url(collection, query)}" returned more than one item`)
+		}
+		if(result.length == 1) return result[0]
+	}
+	
+	async set( collection, item ){
 		try{
 			const response = await fetch(`/api/${collection}/${item._id || ''}`, {
 				method: item._id ? 'PUT' : 'POST',
@@ -15,7 +39,7 @@ class Proxy {
 				},
 				body: JSON.stringify(item)
 			})
-			this.checkForError(response)
+			this.checkError(response)
 			return await response.json()
 		}
 		catch(e){
@@ -23,7 +47,7 @@ class Proxy {
 		}
 		
 	}
-	async delete(collection, item, component){
+	async delete(collection, item){
 		try{
 			const response = await fetch(`/api/${collection}`, {
 				method: 'DELETE',
@@ -32,28 +56,32 @@ class Proxy {
 				},
 				body: JSON.stringify(item)
 			})
-			this.checkForError(response)
+			this.checkError(response)
 			return await response.json()
 		}
 		catch(e){
 			console.log('e', e)
 		}
 	}
-	checkForError(response, component){
-		if(component && response?.status > 400){
-			component.dispatchEvent(new CustomEvent('fetch-error', {
-				detail: response,
-				bubbles: true,
-				composed: true 
-			}))
-		} 
+	reportError(type, detail){
+		this.component.dispatchEvent(new CustomEvent('error', {
+			detail: {
+				type,
+				detail
+			},
+			bubbles: true,
+			composed: true 
+		}))
+	}
+	checkError(response){
+		if(response?.status > 400){
+			this.reportError('fetch-status', response)
+			return true
+		}
+		return false
 	}
 }
 
-
-function getQueryString(query={}){
-	const entries = Object.entries(query)
-	if(!entries.length) return ''
-	return entries.reduce((queryStr, [key, value]) => queryStr + `${key}=${value}`, '?')
+const url = (collection, query = []) => {
+	return `/api/${collection}${query.length?'?':''}${query.join('&')}`
 }
-export const proxy = new Proxy() 

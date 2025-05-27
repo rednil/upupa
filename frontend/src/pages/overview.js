@@ -1,5 +1,5 @@
 import { LitElement, html, css } from 'lit'
-import { proxy } from '../proxy'
+import { Proxy } from '../proxy'
 
 import '../components/box-map'
 import '../components/box-list'
@@ -77,6 +77,7 @@ export class PageOverview extends LitElement {
 		this.boxes = []
 		this.info = 'BOXES'
 		this.mode = 'MAP'
+		this.proxy = new Proxy(this)
 		this.fetchData()
 	}
 	
@@ -111,11 +112,12 @@ export class PageOverview extends LitElement {
 	firstUpdated(){
 	}
 	async fetchData(){
-		var [boxes, summaries, species] = await proxy.fetch([
-			{path: 'boxes'},
-			{path: 'summaries'},
-			{path: 'species'}
-		])
+		var [boxes, summaries, species] = await this.proxy.fetchMulti(
+			['boxes'],
+			['summaries', '$sort=occupancy:-1'],
+			['species']
+		)
+
 		this.species = species.reduce((obj, entry) => Object.assign(obj, {[entry._id]: entry.name}), {})
 		this.boxes = boxes
 		.map(box => {

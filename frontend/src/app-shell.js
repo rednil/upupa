@@ -8,7 +8,7 @@ import './pages/overview'
 import './forms/button-logout'
 import './pages/inspection.js'
 import './pages/config.js'
-
+import './components/error-display.js'
 /* 
 Routing can be done via hashed or non-hashed URL paths
 See https://blog.bitsrc.io/using-hashed-vs-nonhashed-url-paths-in-single-page-apps-a66234cefc96
@@ -42,7 +42,7 @@ export class AppShell extends LitElement {
   static get properties() {
     return {
       self: { type: Object },
-      error: { type: String },
+      error: { type: Object },
 			route: { type: Object },
 			params: { type: Object }
     }
@@ -84,8 +84,9 @@ export class AppShell extends LitElement {
 				height: 2em;
 			}
 			
-			.bottom {
+			.error {
 				background-color: red;
+				text-align: center;
 			}
 		
 			select{
@@ -147,7 +148,10 @@ export class AppShell extends LitElement {
     ]
 		this.params = {}
     window.onpopstate = this.navigate.bind(this)
-    this.addEventListener('fetch-error', evt => this.handleFetchError(evt.detail))
+    this.addEventListener('error', evt => {
+			console.log('error', evt.detail)
+			this.error = evt.detail
+		})
     this.requestUserInfo()
     this.error = ''
   }
@@ -204,7 +208,7 @@ export class AppShell extends LitElement {
 				</div>
 			</div>
 			<main>${this.route.render(this.params)}</main>
-      <div class="bottom">${this.error}</div>
+      <error-display class="bottom error" .error=${this.error}></error-display>
     `
   }
   async requestLogout(){
@@ -213,29 +217,13 @@ export class AppShell extends LitElement {
     if(response?.status==200) {
       this.logout()
     }
-    else this.handleFetchError(response)
+    else this.error = { type: 'fetch-status', detail: response }
   }
   logout(){
     this.self = null
     window.location.hash = "#/login"
   }
-  async handleFetchError(response){
-		console.log('handleFetchError', response)
-    let content, jsonError
-    try{
-      content = await response.json()
-    }catch(e){
-      jsonError = e
-    }
-    if(response){
-      this.error = `${response.url} responded with ${response.statusText} (${response.status})`
-      if(content?.error) this.error += `: ${content.error}`
-      console.error(response, content)
-    }
-    else if(jsonError) {
-      console.error(jsonError.message)
-    }
-  }
+  
 }
 
 customElements.define('app-shell', AppShell)

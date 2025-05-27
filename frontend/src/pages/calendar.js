@@ -1,5 +1,5 @@
 import { LitElement, html, css } from 'lit'
-import { proxy } from '../proxy'
+import { Proxy } from '../proxy'
 
 function formatDate(date){
 	return date.toLocaleString(window.navigator.language,{
@@ -77,6 +77,7 @@ export class PageCalendar extends LitElement {
 	constructor(){
 		super()
 		this.calendar = []
+		this.proxy = new Proxy(this)
 	}
 	
 	render() {
@@ -104,10 +105,10 @@ export class PageCalendar extends LitElement {
 		this.fetchData()
 	}
 	async fetchData(){
-		var [summaries, boxes] = await proxy.fetch([
-			{path: 'summaries', query: {nestlingsBanded: 0}},
-			{path: 'boxes'}
-		])
+		var [summaries, boxes] = await this.proxy.fetchMulti(
+			['summaries', 'nestlingsBanded=0', '$sort=occupancy:-1'],
+			['boxes']
+		)
 		const events = summaries
 		.filter(summary => summary.bandingWindowStart && ((summary.state == 'STATE_EGGS') || (summary.state == 'STATE_NESTLINGS')))
 		.map(({box_id, bandingWindowStart, bandingWindowEnd}) => ({

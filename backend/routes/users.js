@@ -17,7 +17,6 @@ router.get('/', loginRequired, async (req, res, next) => {
 	res.json(users)
 })
 router.get('/:_id', loginRequired, async (req, res) => {
-	console.log('user._id', req.user._id)
 	if(req.user.role != 'ADMIN' && req.user._id.toString() != req.params._id){
 		return res.status(403).json({error: 'UNAUTHORIZED'})
 	}

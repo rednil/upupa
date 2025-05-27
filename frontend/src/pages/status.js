@@ -1,6 +1,6 @@
 import { LitElement, html, css } from 'lit'
 import '../forms/select-item.js'
-import { proxy } from '../proxy.js'
+import { Proxy } from '../proxy.js'
 import { translate } from '../translator.js'
 import '../forms/link-map.js'
 import '../forms/link-boxconfig.js'
@@ -70,6 +70,7 @@ export class PageStatus extends LitElement {
   }
 	constructor(){
 		super()
+		this.proxy = new Proxy(this)
 		this.boxes = []
 		this.inspections = []
 		this.summaries = []
@@ -153,12 +154,12 @@ export class PageStatus extends LitElement {
 		this._fetchData(this.box_id)
 	}
 	async _fetchData(box_id){
-		var [inspections, summaries, species, boxes] = await proxy.fetch([
-			{path: 'inspections', query: { box_id }},
-			{path: 'summaries', query: { box_id }},
-			{path: 'species'},
-			{path: 'boxes'}
-		])
+		var [inspections, summaries, species, boxes] = await this.proxy.fetchMulti(
+			[`inspections`, `box_id=${box_id}`, `$sort=date:-1`],
+			[`summaries`, `box_id=${box_id}`, '$sort=occupancy:-1'],
+			['species'],
+			['boxes']
+		)
 		Object.assign(this, {inspections, summaries, species, boxes})
 		//this.requestUpdate()
 	}
