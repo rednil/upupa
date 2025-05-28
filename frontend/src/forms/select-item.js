@@ -57,7 +57,7 @@ export class SelectItem extends LitElement {
 	}
 	async fetchData(){
 		const oldItem = this.item
-		this.options = await this.proxy.fetch(this.collection)
+		this.options = await this.proxy.fetch(this.collection, '$sort=name:1')
 		this.item = this.getSelectedItem()
 		if(
 			(this.value && !this.getSelectedItem()) ||

@@ -41,7 +41,10 @@ app.use(session({
   secret: process.env.SESSION_SECRET || 'Keyboard Cat',
   resave: false,
   saveUninitialized: true,
-  store
+  store,
+	cookie: {
+		secure: !(environment == 'development'),
+	}
 }))
 app.use(attachMongoHelper)
 app.use(passport.initialize())
@@ -62,7 +65,7 @@ app.use(function(req, res, next) {
 
 // error handler
 app.use(function(err, req, res, next) {
-  console.error('error', err)
+	console.log(err)
   const body = {
     error: err.message
   }

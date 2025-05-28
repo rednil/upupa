@@ -3,6 +3,7 @@ import path from 'path'
 import { MongoClient } from 'mongodb'
 import { fileURLToPath } from 'url'
 
+const dataPath = 'data/2025-05-27.ods'
 const {
 	DATABASE_HOST,
 	DATABASE_PORT,
@@ -71,10 +72,17 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Construct the full path to the 'data.ods' file
-const filePath = path.join(__dirname, 'data/2025.ods');
+const filePath = path.join(__dirname, dataPath);
 
 await client.connect()
 const db = client.db(DATABASE_NAME)
+
+// clear DB
+db.collection('inspections').drop()
+db.collection('summaries').drop()
+db.collection('boxes').drop()
+db.collection('species').drop()
+
 
 // Read the .ods file
 const workbook = XLSX.readFile(filePath)
@@ -94,7 +102,6 @@ client.close()
 
 
 async function importBoxes(json){
-	db.collection('boxes').drop()
 	for(var i=0; i<json.length; i++){
 		const entry = json[i]
 		const box = {
@@ -139,8 +146,7 @@ function getEmptySummary(box_id, occupancy = 0){
 	}
 }
 async function importInspections(json){
-	db.collection('inspections').drop()
-	db.collection('summaries').drop()
+	
 	for(var y=0; y<json.length; y++){
 		const line = json[y]
 		const entries = Object.entries(line)

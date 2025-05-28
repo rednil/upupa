@@ -108,17 +108,18 @@ export class PageStatus extends LitElement {
 								<span>${translate(summary.state)}</span>
 							</div>
 							<div><span>Gelegegröße</span><span>${summary.clutchSize}</span></div>
-							<div><span>Nestlinge beringt</span><span>${summary.nestlingsBanded}</span></div>
+							<div><span>Nestlinge ausgeflogen</span><span>${summary.nestlingsLeft}</span></div>
 							<div class="date"><label for="layingStart">Legebeginn</label><input id="layingStart" type="date" value=${getDateValue(summary.layingStart)}></div>
 							<div class="date"><label for="breedingStart">Brutbeginn</label><input id="breedingStart" type="date" value=${getDateValue(summary.breedingStart)}></div>
 							<div class="date"><label for="hatchDate">Schlüpfdatum</label><input id="hatchDate" type="date" value=${getDateValue(summary.hatchDate)}></div>
 							${summary.hatchDate ? html`
 								<div><span>Beringungszeitfenster</span><span>${getShortDate(summary.bandingWindowStart)}-${getShortDate(summary.bandingWindowEnd)}</span></div>	
 							`:''}
+							<div><span>Nestlinge beringt</span><span>${summary.nestlingsBanded}</span></div>
 							<div><span>Weibchen beringt</span><span>${summary.femaleBanded ? 'ja' : 'nein'}</span></div>
 							<div><span>Männchen beringt</span><span>${summary.maleBanded ? 'ja' : 'nein'}</span></div>
 							${summary.state == 'STATE_FAILURE' ? html`
-								<div><span>Grund für Misserfolg</span><span>${summary.reasonForFailure}</span></div>
+								<div><span>Grund für Misserfolg</span><span>${summary.reasonForLoss}</span></div>
 								<div><span>Prädator</span><span>${summary.predator}</span></div>
 							`:''}
 						</div>

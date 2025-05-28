@@ -4,11 +4,7 @@ import { loginRequired } from '../auth/tools.js'
 var router = express.Router()
 
 router.get('/', loginRequired, async (req, res, next) => {
-    const boxes = await req.mongo.pathCollection
-		.find()
-		.sort({name: 1})
-		.toArray()
-    return res.json(boxes)
+	return req.mongo.aggregate()
 })
 
 router.post('/', loginRequired, async req => {
