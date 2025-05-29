@@ -43,7 +43,7 @@ app.use(session({
   saveUninitialized: true,
   store,
 	cookie: {
-		secure: !(environment == 'development'),
+		secure: false, // for dev anyway, and for prod it sits behind a traefik proxy
 	}
 }))
 app.use(attachMongoHelper)

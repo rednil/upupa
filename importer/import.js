@@ -3,24 +3,69 @@ import XLSX from 'xlsx'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import  {CookieJar} from 'tough-cookie'
-import { HttpCookieAgent }  from 'http-cookie-agent/http'
-//import { HttpsCookieAgent }  from 'http-cookie-agent/https'
+import { HttpCookieAgent,HttpsCookieAgent  }  from 'http-cookie-agent/http'
 const cookieJar = new CookieJar()
-// Create an HTTP agent that uses the cookie jar
-// If your backend is HTTPS, use HttpsCookieAgent instead
+
+const {
+	API_PROTOCOL,
+	API_HOST,
+	API_PORT,
+	ADMIN_USERNAME,
+	ADMIN_PASSWORD
+} = process.env
+
 const httpAgent = new HttpCookieAgent({
   cookies: {
     jar: cookieJar,
   },
-});
-const agent = axios.create({
-  baseURL: 'http://localhost:3000', 
-  withCredentials: true, 
-  httpAgent: httpAgent
+})
+const httpsAgent = new HttpsCookieAgent({
+	cookies: {
+    jar: cookieJar,
+  },
 })
 
-const oneBoxOnly = process.argv[2]
+const agent = axios.create({
+  baseURL: `${API_PROTOCOL}://${API_HOST}${API_PORT?':'+API_PORT:''}`, 
+  withCredentials: true, 
+  httpAgent,
+	httpsAgent
+})
 
+/*
+agent.interceptors.request.use(request => {
+  console.log('--- Request Start ---');
+  console.log('Method:', request.method);
+  console.log('URL:', request.url);
+  console.log('Headers:', request.headers);
+  // console.log('Body:', request.data); // For POST/PUT requests
+  console.log('--- Request End ---');
+  return request;
+}, error => {
+  console.error('Request Error:', error);
+  return Promise.reject(error);
+})
+
+// Response Interceptor
+agent.interceptors.response.use(response => {
+  console.log('--- Response Start ---');
+  console.log('Status:', response.status);
+  console.log('Headers:', response.headers);
+  // console.log('Body:', response.data); // For response body
+  console.log('--- Response End ---');
+  return response;
+}, error => {
+  console.error('Response Error:', error.response ? `Status: ${error.response.status}, Data: ${JSON.stringify(error.response.data)}` : error.message);
+  return Promise.reject(error);
+})
+await login(ADMIN_USERNAME, ADMIN_PASSWORD)
+const response = await agent.get('/api/self')
+console.log('self', response.data)
+await logout()
+process.exit()
+*/
+
+const oneBoxOnly = process.argv[2]
 const dataPath = 'data/2025-05-27.ods'
 const year = 2025
 const bandingStartAge = 7
@@ -164,7 +209,7 @@ const parseInfo = {
 }
 
 const workbook = getWorkbook()
-await login('admin', 'admin')
+await login(ADMIN_USERNAME, ADMIN_PASSWORD)
 //await importBoxes(XLSX.utils.sheet_to_json(workbook.Sheets.Box_Status))
 await importInspections(XLSX.utils.sheet_to_json(workbook.Sheets['Breeding_(25)']))
 
