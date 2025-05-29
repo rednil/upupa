@@ -1,263 +1,335 @@
+import axios from 'axios'
 import XLSX from 'xlsx'
 import path from 'path'
-import { MongoClient } from 'mongodb'
 import { fileURLToPath } from 'url'
+import  {CookieJar} from 'tough-cookie'
+import { HttpCookieAgent }  from 'http-cookie-agent/http'
+//import { HttpsCookieAgent }  from 'http-cookie-agent/https'
+const cookieJar = new CookieJar()
+// Create an HTTP agent that uses the cookie jar
+// If your backend is HTTPS, use HttpsCookieAgent instead
+const httpAgent = new HttpCookieAgent({
+  cookies: {
+    jar: cookieJar,
+  },
+});
+const agent = axios.create({
+  baseURL: 'http://localhost:3000', 
+  withCredentials: true, 
+  httpAgent: httpAgent
+})
 
 const dataPath = 'data/2025-05-27.ods'
-const {
-	DATABASE_HOST,
-	DATABASE_PORT,
-	DATABASE_ROOT_USERNAME,
-	DATABASE_ROOT_PASSWORD,
-	DATABASE_NAME,
-} = process.env
-
-const regExp = {
-	eggs: new RegExp(/(\d+)\s*Eier/),
-	nestlings: new RegExp(/(\d+)\s*Nestling/),
-	breedingStart: new RegExp(/Bb[^\d]*(\d+).(\d+)/),
-	layingStart: new RegExp(/Lb[^\d]*(\d+).(\d+)/),
-	hatchDate: new RegExp(/H[^\d]*(\d+).(\d+)/),
-	nestlingsBandDate: new RegExp(/Nestlinge.*ring.[^\d]+(\d+).(\d+)/),
-	nestlingsBanded: new RegExp(/(\d+)[^\d]*Nestlinge.*ringt/)
-}
-const names = [
-	{ key: 'Blaumeise', match: ['BM'] },
-	{ key: 'Kleiber', match: ['Kleiber', 'KL'] },
-	{ key: 'Kohlmeise', match: ['KM'] },
-	{ key: 'Sumpfmeise', match: ['SM'] },
-	{ key: 'Wasseramsel', match: ['WA']},
-	{ key: 'Feldsperling', match: []},
-	{ key: 'Tannenmeise', match: ['TM']}
-]
-const states = [
-	{ key: 'STATE_SUCCESS', match: ['ausgeflogen']},
-	{ key: 'STATE_EMPTY', match: ['leer'] },
-	{ key: 'STATE_NEST_BUILDING', match: ['halbfertiges Nest', 'Nestanfang'] },
-	{ key: 'STATE_NEST_READY', match: ['legebereit'] },
-	{ key: 'STATE_EGGS', match: ['Ei'], noMatch: ['Eichhörnchen', 'Keine Eier'] },
-	{ key: 'STATE_BREEDING', match: ['brütet'] },
-	{ key: 'STATE_NESTLINGS', match: ['Nestling'] },
-	{ key: 'STATE_FAILURE', match: ['Nest-Okkupation', 'Prädation', 'Nestprädation']},
-	
-]
-
-function parseGeneric(str, options){
-	for(var i in options){
-		const {key, match, noMatch = []} = options[i]
-		var abort = false
-		for(var j in noMatch){
-			if(str.match(noMatch[j])) {
-				abort = true
-				break
-			}
-		}
-		if(abort) continue
-		if(str.match(key)) return key
-		for(var j in match){
-			if(str.match(match[j])) return key
-		}
-	}
-}
-
 const year = 2025
 const bandingStartAge = 7
 const bandingEndAge = 12
-const uri = `mongodb://${DATABASE_ROOT_USERNAME}:${DATABASE_ROOT_PASSWORD}@${DATABASE_HOST}:${DATABASE_PORT}`
+const idCache = {}
+const parseInfo = {
+	eggs: {
+		options: [
+			{ 
+				allow: [
+					/(\d+)\s*Eier/,
+					/\((\d+)\?\)\s*Eier/
+				],
+				value: match => Number(match[1])
+			}
+		],
+		default: 0
+	},
+	nestlings: {
+		options: [
+			{ 
+				allow: [
+					/(\d+)\s*Nestling/,
+					/\((\d+)\?\)\s*Nestling/
+				],
+				value: match => Number(match[1])
+			}
+		],
+		default: 0
+	},
+	breedingStart: {
+		options: [
+			{
+				allow: /Bb[^\d]*(\d+).(\d+)/,
+				value: dateFormatter
+			}
+		]
+	},
+	layingStart: {
+		options: [
+			{
+				allow: [
+					/Lb[^\d]*(\d+).(\d+)/,
+					/Eiablage[^\d]*(\d+).(\d+)/
+				],
+				value: dateFormatter
+			}
+		]
+	},
+	hatchDate: {
+		options: [
+			{
+				allow: /H[^\d]*(\d+).(\d+)/,
+				value: dateFormatter
+			}
+		]
+	},
+	nestlingsBandDate: {
+		options: [
+			{
+				allow: /Nestlinge.*ring.[^\d]+(\d+).(\d+)/,
+				value: dateFormatter
+			}
+		]
+	},
+	nestlingsBanded: {
+		options: [
+			{
+				allow: /(\d+)[^\d]*Nestlinge.*ringt/,
+				value: match => Number(match[1])
+			}
+		]
+	},
+	femaleBanded: {
+		options: [
+			{
+				allow: ['W beringt', 'beide Altvögel beringt'],
+				value: true
+			}
+		]
+	},
+	maleBanded: {
+		options: [
+			{
+				allow: 'beide Altvögel beringt',
+				value: true
+			}
+		]
+	},
+	speciesName: {
+		options: [
+			{	value: 'Blaumeise', 		allow: ['BM'] 						},
+			{ value: 'Kleiber', 			allow: ['Kleiber', 'KL'] 	},
+			{ value: 'Kohlmeise', 		allow: ['KM']							},
+			{ value: 'Sumpfmeise', 		allow: ['SM']							},
+			{ value: 'Wasseramsel', 	allow: ['WA']							},
+			{ value: 'Feldsperling', 	allow: []									},
+			{ value: 'Tannenmeise', 	allow: ['TM']							}
+		]
+	},
+	state: {
+		options: [
+			{ value: 'STATE_SUCCESS', allow: ['ausgeflogen']},
+			{ 
+				value: 'STATE_FAILURE',
+				allow: [
+					'Nest-Okkupation',
+					'Prädation',
+					'Nestprädation',
+					'Altvogel verunglückt'
+				]
+			},
+			{ value: 'STATE_NESTLINGS', allow: ['Nestling'] },
+			{ value: 'STATE_BREEDING', allow: ['brütet'] },
+			{ value: 'STATE_EGGS', allow: ['Ei'], disAllow: ['Eichhörnchen', 'Keine Eier'] },
+			{ value: 'STATE_NEST_BUILDING', allow: ['halbfertiges Nest', 'Nestanfang'] },
+			{ value: 'STATE_NEST_READY', allow: ['legebereit'] },
+			{ value: 'STATE_EMPTY', allow: ['leer'] },
+		]
+	}
+}
 
-const client = new MongoClient(uri)
-
-// Get the directory name using import.meta.url
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Construct the full path to the 'data.ods' file
-const filePath = path.join(__dirname, dataPath);
-
-await client.connect()
-const db = client.db(DATABASE_NAME)
-
-// clear DB
-db.collection('inspections').drop()
-db.collection('summaries').drop()
-db.collection('boxes').drop()
-db.collection('species').drop()
-
-
-// Read the .ods file
-const workbook = XLSX.readFile(filePath)
-
-
-await importBoxes(XLSX.utils.sheet_to_json(workbook.Sheets.Box_Status))
+const workbook = getWorkbook()
+await login('admin', 'admin')
+//await importBoxes(XLSX.utils.sheet_to_json(workbook.Sheets.Box_Status))
 await importInspections(XLSX.utils.sheet_to_json(workbook.Sheets['Breeding_(25)']))
-//const firstSheetName = workbook.SheetNames[0]
-//const worksheet = workbook.Sheets[firstSheetName]
 
-// Convert the worksheet to JSON format (array of objects)
-//const jsonData = XLSX.utils.sheet_to_json(worksheet)
+async function login(username, password) {
+	const loginResponse = await agent.post('/api/auth/login', { username, password });
+	console.log('Login successful:', loginResponse.data);
+}
+async function logout(){
+	const logoutResponse = await agent.delete('/api/auth/login');
+	console.log('Logout successful:', logoutResponse.data)
+}
+function getWorkbook(){
+	// Get the directory name using import.meta.url
+	const __filename = fileURLToPath(import.meta.url);
+	const __dirname = path.dirname(__filename);
 
-// Log the parsed data
-//console.log(firstSheetName)
-client.close()
-
+	// Construct the full path to the 'data.ods' file
+	const filePath = path.join(__dirname, dataPath);
+	// Read the .ods file
+	return XLSX.readFile(filePath)
+}
 
 async function importBoxes(json){
+	console.log(`drop ${coll}`, (await agent.delete('/api/self/boxes')).status)
 	for(var i=0; i<json.length; i++){
 		const entry = json[i]
+		var name = entry['Nistkastennr.']
+		if(!name) continue
 		const box = {
-			name: entry['Nistkastennr.'],
+			name: fixBoxName(name),
 			site: entry['Standort'],
 			lat: entry['Breite'] || entry['Breite_1'],
 			lon: entry['Länge'] || entry['Länge_1']
 		}
 		if(!box.name || !box.site) continue
-		await db.collection('boxes').insertOne(box)
+		const response = await agent.post('/api/boxes', box);
+    console.log('Inserted Box', box.name, response.status, response.data.insertedId)
 	}
 }
 
-function dateParser(str, regExp){
-	const match = str.match(regExp)
-	if(match) {
-		const month = ('0' + match[2]).slice(-2)
-		const date = ('0' + match[1]).slice(-2)
-		const dateStr = `${year}-${month}-${date}T00:00:00Z`
-		return new Date(dateStr)
-	}
+function fixBoxName(name){
+	return name
+	.toUpperCase()
+	.replace(/\s/g, '')
+	.replace(/^([^\d])(\d)$/, '$10$2')
 }
+function dateFormatter(match){
+	const month = ('0' + match[2]).slice(-2)
+	const date = ('0' + match[1]).slice(-2)
+	const dateStr = `${year}-${month}-${date}T00:00:00Z`
+	return new Date(dateStr)
+}
+
 function actualizeDate(target, key, str){
-	const date = dateParser(str, regExp[key])
+	const date = valueParser(key, str)
 	if(date) target[key] = date
 }
-function eggParser(str){
-	const eggMatch = str.match(regExp.eggs)
-	return eggMatch ? Number(eggMatch[1]) : 0
-}
-function nestlingsParser(str){
-	const nestlingsMatch = str.match(regExp.nestlings)
-	return nestlingsMatch ? Number(nestlingsMatch[1]) : 0
-}
-function getEmptySummary(box_id, occupancy = 0){
-	return {
-		year,
-		box_id,
-		occupancy,
-		clutchSize: 0,
-		nestlingsBanded: 0
+function valueParser(type, str){
+	const info = parseInfo[type]
+	for(var i in info.options) {
+		const option = info.options[i]
+		const allow = [option.allow || []].flat()
+		const disAllow = [option.disAllow || []].flat()
+		const getValue = (typeof option.value == 'function') ? option.value : () => option.value
+		if(disAllow.find(regExp => str.match(regExp))) continue
+		for(var j in allow){
+			const match = str.match(allow[j])
+			if(match) return getValue(match)
+		}
 	}
+	return info.default
 }
+
+async function getId(coll, name){
+	idCache[coll] = idCache[coll] ?? {}
+	var id = idCache[coll][name]
+	if(id) return id
+	var response = await agent.get(`/api/${coll}?name=${name}`)
+	if(response && response.status == 200 && response.data.length){
+		if(response.data.length>1) console.error(`More than one ${coll} with name ${name}`)
+		id = response.data[0]._id
+	}
+	else {
+		response = await agent.post(`/api/${coll}`, {name})
+		if(response && response.status == 200 && response.data.insertedId){
+			console.log(`Added formerly unknown "${name}" into collectioin "${coll}"`)
+			id = response.data.insertedId
+		}
+		else {
+			return console.error('Insertion of ${name} into ${coll} failed', response.status)
+		}
+	}
+	return idCache[coll][name] = id
+}
+
+
 async function importInspections(json){
-	
+	await Promise.all(
+		[
+			'species',
+			'inspections',
+			'summaries'
+		]
+		.map(async coll => {
+			console.log(`drop ${coll}`, (await agent.delete(`/api/self/${coll}`)).status)
+		})
+	)
+	//for(var y=0; y<1; y++){
 	for(var y=0; y<json.length; y++){
 		const line = json[y]
 		const entries = Object.entries(line)
 		const header = entries.shift()
-		const boxName = header[1]
-		const box = await db.collection('boxes').findOne({name: boxName})
-		var box_id 
-		if(box) {
-			box_id = box._id
-		}
-		else{
-			console.error(`Inspection of unknown box: ${boxName}`)
-			const result = await db.collection('boxes').insertOne({name: boxName})
-			box_id = result.insertedId
-		}
-		var summary = getEmptySummary(box_id)
+		const boxName = fixBoxName(header[1])
+		const box_id = await getId('boxes', boxName)
+		var summary = {}
+		var inspection = {}
 		for(var x in entries){
+			inspection = {
+				box_id
+			}
 			const [dateStr, note] = entries[x]
-			const date = new Date(dateStr.replace(/(.*)\.(.*)\.(.*)/, '$3-$2-$1'))
-			var state = parseGeneric(note, states)
-			// if there is no state noted, but there was one before, fallback
-			if(!state && summary.state) state = summary.state
-			summary.state = state
-			if(state == 'STATE_FAILURE'){
-				if(note.search('Siebenschläfer')>=0) {
-					summary.reasonForFailure = 'PREDATION'
-					summary.predator = 'Siebenschläfer'
-				}
-				if(note.search('Eichhörnchen')>=0) {
-					summary.reasonForFailure = 'PREDATION'
-					summary.predator = 'Eichhörnchen'
-				}
-				else if(note.search('Nest-Okkupation') >= 0) {
-					summary.reasonForFailure = 'NEST_OCCUPATION'
-				}
-				
-				
-			}
-
-			summary.lastInspection = date
-			var eggs = eggParser(note)
-			var nestlings = nestlingsParser(note)
-			
-			if(eggs > summary.clutchSize) summary.clutchSize = eggs
-			if(nestlings > summary.clutchSize) summary.clutchSize = nestlings
-			var species_id
-			
-			if(state != 'STATE_EMPTY') {
-				species_id = await speciesParser(note)
-				if(species_id){
-					if(summary.species_id && summary.species_id.toString() != species_id.toString()){
-						console.error(`Different species without occupation: ${date.toLocaleDateString()}`, entries)
+			inspection.date = new Date(dateStr.replace(/(.*)\.(.*)\.(.*)/, '$3-$2-$1'))
+			inspection.note = note
+			inspection.type = (note.search('O.K.')>=0) ? 'OUTSIDE' : 'INSIDE'
+			if(inspection.type == 'INSIDE'){
+				inspection.state = valueParser('state', note)
+				// if there is no state noted, but there was one before, fallback
+				if(!inspection.state && summary.state) inspection.state = summary.state
+				summary.state = inspection.state
+				if(inspection.state == 'STATE_FAILURE'){
+					if(note.search('Siebenschläfer')>=0) {
+						inspection.reasonForLoss = 'PREDATION'
+						inspection.predator = 'Siebenschläfer'
 					}
-					summary.species_id = species_id
-					if(summary.occupancy == 0) summary.occupancy = 1
+					if(note.search('Eichhörnchen')>=0) {
+						inspection.reasonForLoss = 'PREDATION'
+						inspection.predator = 'Eichhörnchen'
+					}
+					else if(note.search('Nest-Okkupation') >= 0) {
+						inspection.reasonForLoss = 'NEST_OCCUPATION'
+					}
 				}
+
+				inspection.eggs = valueParser('eggs', note)
+				inspection.nestlings = valueParser('nestlings', note)
+				
+				if(inspection.state != 'STATE_EMPTY') {
+					const speciesName = valueParser('speciesName', note)
+					if(speciesName) {
+						inspection.species_id = await getId('species', speciesName)
+						
+						if(summary.species_id && summary.species_id != inspection.species_id){
+							console.error(`Different species without occupation: ${boxName} ${inspection.date.toLocaleDateString()}`, entries)
+						}
+						summary.species_id = inspection.species_id
+					}
+				}
+				
+				actualizeDate(inspection, 'breedingStart', note)
+				actualizeDate(inspection, 'layingStart', note)
+				actualizeDate(inspection, 'hatchDate', note)
+				bandingParser(inspection, note)
 			}
-			
-			const inspection = {
-				date,
-				note,
-				box_id,
-				eggs,
-				nestlings,
-				state,
-				species_id
-			}
-			actualizeDate(summary, 'breedingStart', note)
-			actualizeDate(summary, 'layingStart', note)
-			actualizeDate(summary, 'hatchDate', note)
-			if(summary.hatchDate){
-				summary.bandingWindowStart = incDate(summary.hatchDate, bandingStartAge)
-				summary.bandingWindowEnd = incDate(summary.hatchDate, bandingEndAge)
-			}
-			
-	
-			const nestlingsBandedMatch = note.match(regExp.nestlingsBanded)
-			var knownRingMatch = false
-			if(nestlingsBandedMatch) {
-				summary.nestlingsBanded = Number(nestlingsBandedMatch[1])
-				knownRingMatch = true
-			}
-			if(note.search('W beringt')>=0) {
-				summary.femaleBanded = true
-				knownRingMatch = true
-			}
-			if(note.search("beide Altvögel beringt")>=0){
-				summary.femaleBanded = true
-				summary.maleBanded = true
-				knownRingMatch = true
-			}
-			if(note.match(/ring/) && !knownRingMatch){
-				console.error('unknown "ring" match', note)
-			}
-			log(inspection, { _box: boxName})
-			await db.collection('inspections').insertOne(clean(inspection))
-			if(summary.state=='STATE_SUCCESS' || summary.state=='STATE_FAILURE'){
-				log(summary, { _box: boxName})
-				await db.collection('summaries').insertOne(clean(summary))
-				summary = getEmptySummary(box_id, summary.occupancy + 1)
-				continue
+			log(sparse(inspection), { _box: boxName})
+			try{
+				await agent.post('/api/inspections', sparse(inspection))
+			}catch(e){
+				console.error(`Failed to insert inspection`, inspection)
 			}
 		}
-		if(summary.clutchSize > 0){
-			if(!summary.species_id) console.error(`Nestlings of unknown species`, entries)
-		}
-		if((summary.occupancy > 0 && summary.state == 'STATE_EMPTY') || !summary.lastInspection) continue
-		log(summary, { _box: boxName})
-		await db.collection('summaries').insertOne(clean(summary))
 	}
 }
+
+function bandingParser(inspection, note){
+	inspection.nestlingsBanded = valueParser('nestlingsBanded', note)
+	inspection.femaleBanded = valueParser('femaleBanded', note)
+	inspection.maleBanded = valueParser('maleBanded', note)
+	if(
+		note.match(/ring/) &&
+		!inspection.nestlingsBanded &&
+		!inspection.femaleBanded &&
+		!inspection.maleBanded
+	){
+		console.error('unknown "ring" match', note)
+	}
+}
+
 function log(obj, attachments = {}){
 	obj = Object.assign(attachments, obj)
 	Object.entries(obj).forEach(([key, value]) => {
@@ -265,27 +337,9 @@ function log(obj, attachments = {}){
 	})
 	console.log(obj)
 }
-function clean(obj){
+function sparse(obj){
 	Object.keys(obj).forEach(key => {
-		if(obj[key] === null) delete obj[key]
+		if(obj[key] == null) delete obj[key]
 	})
 	return obj
-}
-async function speciesParser(str){
-	const name = parseGeneric(str, names)
-	if(name){
-		const species = await db
-		.collection('species')
-		.findOne({name})
-		if(species) return species._id
-		const response = await db
-		.collection('species')
-		.insertOne({name})
-		return response.insertedId
-	}
-}
-function incDate(date, days){
-	const newDate = new Date(date)
-	newDate.setDate(date.getDate() + days)
-	return newDate
 }

@@ -32,6 +32,7 @@ const translations = {
 }
 
 export function translate(str){
+	if(str == null) return ''
 	var translation
 	var arr = str.split('.')
 	while (arr.length && !translation) {

@@ -1,20 +1,52 @@
-import { LitElement, html } from 'lit'
-
+import { LitElement, html, css } from 'lit'
+import { translate } from '../translator.js'
 export class InspectionDisplay extends LitElement {
 	static get properties() {
 		return {
-			box_id: { type: String },
-			nocoor: { type: Boolean }
+			inspection: { type: Object },
+			species: { type: Array }
 		}
 	}
-
-	render() {
-		// "logout" from material icons
-		return html`
-			<svg @click=${this.logout} xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="black"><path d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h280v80H200v560h280v80H200Zm440-160-55-58 102-102H360v-80h327L585-622l55-58 200 200-200 200Z"/></svg>			</a>
+	static get styles() {
+		return css`
+			:host {
+				display: flex;
+				flex-direction: column;
+			}
+			:host > * {
+				display: flex;
+				justify-content: space-between;
+			}
+			.head > * {
+				flex: 1;
+			}
+			.head > *:nth-child(2){
+				text-align: center;
+			}
+			.head > *:nth-child(3){
+				text-align: right;
+			}
+			.date {
+				font-weight: bold;
+			}
 		`
 	}
-	
+	render() {
+		const {date, note, eggs, nestlings, state, species_id} = this.inspection
+		return html`
+			<div class="head">
+				<span class="date">${new Date(date).toLocaleDateString({}, {dateStyle: 'long'})}</span>
+				<span>${this.getSpeciesName(species_id)}</span>
+				<span>${translate(state)}</span>
+			</div>
+			<div><span>Anzahl Eier</span><span>${eggs}</span></div>
+			<div><span>Anzahl Nestlinge</span><span>${nestlings}</span></div>
+			<div>Bemerkung: ${note}</div>
+			`
+	}
+	getSpeciesName(species_id){
+		return this.species.find(species => species._id == species_id)?.name || '---'
+	}
 }
 
 customElements.define('inspection-display', InspectionDisplay)
