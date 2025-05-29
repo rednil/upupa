@@ -1,6 +1,6 @@
 {
   "name": "Upupa",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Server and client for bird projects",
   "main": "index.js",
   "scripts": {
