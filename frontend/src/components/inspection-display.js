@@ -1,10 +1,12 @@
 import { LitElement, html, css } from 'lit'
 import { translate } from '../translator.js'
+
 export class InspectionDisplay extends LitElement {
 	static get properties() {
 		return {
 			inspection: { type: Object },
-			species: { type: Array }
+			species: { type: Array },
+			detail: { type: String }
 		}
 	}
 	static get styles() {
@@ -29,20 +31,63 @@ export class InspectionDisplay extends LitElement {
 			.date {
 				font-weight: bold;
 			}
+			label {
+				padding-right: 1em;
+			}
 		`
 	}
+	constructor(){
+		super()
+		this.detail = 'SHORT'
+	}
 	render() {
-		const {date, note, eggs, nestlings, state, species_id} = this.inspection
+		const {date, note, species_id, type} = this.inspection
 		return html`
-			<div class="head">
-				<span class="date">${new Date(date).toLocaleDateString({}, {dateStyle: 'long'})}</span>
-				<span>${this.getSpeciesName(species_id)}</span>
-				<span>${translate(state)}</span>
+			<div class="head" @click=${this.clickCb}>
+				<span class="date">${this.getLongDate(date)}</span>
+				${type=='OUTSIDE' ? html`<span></span><span>Nistkasten nicht geöffnet</span>` : html`
+					<span>${this.getSpeciesName(species_id)}</span>
+					<span>${this.getStateLabel(this.inspection)}</span>
+				`}
 			</div>
-			<div><span>Anzahl Eier</span><span>${eggs}</span></div>
-			<div><span>Anzahl Nestlinge</span><span>${nestlings}</span></div>
+			${this.detail=='LONG'?this.renderDetails():''}
 			<div>Bemerkung: ${note}</div>
 			`
+	}
+	
+	renderDetails(){
+		return Object.entries(this.inspection)
+		.filter(([key, value]) => !(
+			key.endsWith('_id') ||
+			key=='note' ||
+			key=='date'
+		))
+		.map(([key, value]) => html`
+			<div>
+				<label>${translate(key)}</label>
+				<span>${this.formatDetailValue(value)}</span>
+			</div>`,
+		)
+	}
+	getLongDate(date){
+		return new Date(date).toLocaleDateString({}, {dateStyle: 'long'})
+	}
+	formatDetailValue(value){
+		if(typeof value == 'string') {
+			if(value.match(/\d{4}-\d{2}-\d{2}/)) return this.getLongDate(value)
+			//return translate(value)
+		}
+		return value
+	}
+	clickCb(){
+		this.detail = this.detail == 'SHORT' ? 'LONG' : 'SHORT'
+	}
+	getStateLabel({state, eggs, nestlings}){
+		switch(state){
+			case 'STATE_NESTLINGS': return `${nestlings} Nestlinge`
+			case 'STATE_EGGS': return `${eggs} Eier`
+			default: return translate(state)
+		} 
 	}
 	getSpeciesName(species_id){
 		return this.species.find(species => species._id == species_id)?.name || '---'

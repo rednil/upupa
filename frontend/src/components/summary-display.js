@@ -5,7 +5,12 @@ function getDateValue(date){
 	return (date || '').split('T')[0]
 }
 function getShortDate(date){
-	return new Date(date).toLocaleDateString(undefined, {day: "numeric", month: "numeric"})
+	return new Date(date)
+	.toLocaleDateString(undefined, {day: "numeric", month: "numeric"})
+}
+function getMediumDate(date){
+	return new Date(date)
+	.toLocaleDateString(undefined, {day: "numeric", month: "long"})
 }
 
 export class SummaryDisplay extends LitElement {
@@ -41,28 +46,66 @@ export class SummaryDisplay extends LitElement {
 	}
 	render() {
 		const summary = this.summary
-
+		return [
+			this.renderHead(),
+			summary.state != 'STATE_EMPTY' ? this.renderDetail() : '',
+			summary.state == 'STATE_FAILURE' ? this.renderFailure() : ''
+		]
+	}
+	renderHead(){
+		const summary = this.summary
 		return html`
 			<div class="head">
 				<span>${summary.occupancy}. Belegung</span>
 				<span>${this.getSpeciesName(summary.species_id)}</span>
 				<span>${translate(summary.state)}</span>
 			</div>
+		`
+	}
+	renderDetail(){
+		const summary = this.summary
+		return html`
 			<div><span>Gelegegröße</span><span>${summary.clutchSize}</span></div>
-			<div><span>Nestlinge ausgeflogen</span><span>${summary.offspring}</span></div>
-			<div class="date"><label for="layingStart">Legebeginn</label><span id="layingStart">${getShortDate(summary.layingStart)}</span></div>
-			<div class="date"><label for="breedingStart">Brutbeginn</label><span id="breedingStart">${getShortDate(summary.breedingStart)}</span></div>
-			<div class="date"><label for="hatchDate">Schlüpfdatum</label><span id="hatchDate">${getShortDate(summary.hatchDate)}</span></div>
-			${summary.hatchDate ? html`
-				<div><span>Beringungszeitfenster</span><span>${getShortDate(summary.bandingWindowStart)}-${getShortDate(summary.bandingWindowEnd)}</span></div>	
+			${summary.state=='STATE_SUCCESS'?html`
+				<div><span>Nestlinge ausgeflogen</span><span>${summary.nestlings}</span></div>
 			`:''}
-			<div><span>Nestlinge beringt</span><span>${summary.nestlingsBanded}</span></div>
-			<div><span>Weibchen beringt</span><span>${summary.femaleBanded ? 'ja' : 'nein'}</span></div>
-			<div><span>Männchen beringt</span><span>${summary.maleBanded ? 'ja' : 'nein'}</span></div>
-			${summary.state == 'STATE_FAILURE' ? html`
-				<div><span>Grund für Misserfolg</span><span>${summary.reasonForLoss}</span></div>
+			<div class="date"><label for="layingStart">Legebeginn</label><span id="layingStart">${getMediumDate(summary.layingStart)}</span></div>
+			<div class="date"><label for="breedingStart">Brutbeginn</label><span id="breedingStart">${getMediumDate(summary.breedingStart)}</span></div>
+			<div class="date"><label for="hatchDate">Schlüpfdatum</label><span id="hatchDate">${getMediumDate(summary.hatchDate)}</span></div>
+			${summary.hatchDate ? html`
+				<div><span>Beringungszeitfenster</span><span>${getMediumDate(summary.bandingWindowStart)}-${getMediumDate(summary.bandingWindowEnd)}</span></div>	
+			`:''}
+			<div>
+				<span>Beringung</span>
+				<span>
+					<span>
+						<input type="checkbox" .checked=${summary.maleBanded} disabled>
+						<span>M</span>
+					</span>
+					<span>
+						<input type="checkbox" .checked=${summary.femaleBanded} disabled>
+						<span>W</span>
+					</span>
+					<span>
+						<input type="checkbox" .checked=${summary.nestlingsBanded} disabled>
+						<span>N</span>
+						<span>${summary.nestlingsBanded}</span>
+					</span>
+				</span>
+			</div>
+		`
+	}
+	renderFailure(){
+		const summary = this.summary
+		return html`
+			<div><span>Grund für Misserfolg</span><span>${translate(summary.reasonForLoss)}</span></div>
+			${summary.reasonForLoss == 'PREDATION' ? html`
 				<div><span>Prädator</span><span>${summary.predator}</span></div>
 			`:''}
+			${summary.reasonForLoss == 'NEST_OCCUPATION' ? html`
+				<div><span>Okkupator</span><span>${this.getSpeciesName(summary.occupator_id)}</span></div>
+			`:''}
+
 		`
 	}
 	getSpeciesName(species_id){

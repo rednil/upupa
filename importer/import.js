@@ -19,6 +19,8 @@ const agent = axios.create({
   httpAgent: httpAgent
 })
 
+const oneBoxOnly = process.argv[2]
+
 const dataPath = 'data/2025-05-27.ods'
 const year = 2025
 const bandingStartAge = 7
@@ -42,7 +44,8 @@ const parseInfo = {
 			{ 
 				allow: [
 					/(\d+)\s*Nestling/,
-					/\((\d+)\?\)\s*Nestling/
+					/\((\d+)\?\)\s*Nestling/,
+					/Nestlinge\s*\((\d+)\?\)/
 				],
 				value: match => Number(match[1])
 			}
@@ -133,11 +136,30 @@ const parseInfo = {
 			},
 			{ value: 'STATE_NESTLINGS', allow: ['Nestling'] },
 			{ value: 'STATE_BREEDING', allow: ['brütet'] },
-			{ value: 'STATE_EGGS', allow: ['Ei'], disAllow: ['Eichhörnchen', 'Keine Eier'] },
+			{ value: 'STATE_EGGS', allow: ['Ei'], disAllow: ['Eichhörnchen', /[kK]eine Eier/] },
 			{ value: 'STATE_NEST_BUILDING', allow: ['halbfertiges Nest', 'Nestanfang'] },
 			{ value: 'STATE_NEST_READY', allow: ['legebereit'] },
 			{ value: 'STATE_EMPTY', allow: ['leer'] },
 		]
+	},
+	reasonForLoss: {
+		options: [
+			{ value: 'NEST_OCCUPATION', allow: ['Nest-Okkupation'] },
+			{ value: 'PREDATION', allow: ['Siebenschläfer', 'Eichhörnchen'] },
+			{ value: 'PARENT_MISSING', allow: ['Altvogel verunglückt']}
+		]
+	},
+	predator: {
+		options: [
+			{ value: 'Siebenschläfer' },
+			{ value: 'Eichhörnchen' }
+		]
+	},
+	type: {
+		options: [
+			{ value: 'OUTSIDE', allow: ['O.K.'], disAllow: /\d+\sNestlinge beringt/ },
+		],
+		default: 'INSIDE'
 	}
 }
 
@@ -208,6 +230,8 @@ function valueParser(type, str){
 		const disAllow = [option.disAllow || []].flat()
 		const getValue = (typeof option.value == 'function') ? option.value : () => option.value
 		if(disAllow.find(regExp => str.match(regExp))) continue
+		
+		if((typeof option.value == 'string') && str.match(option.value)) return option.value
 		for(var j in allow){
 			const match = str.match(allow[j])
 			if(match) return getValue(match)
@@ -250,71 +274,82 @@ async function importInspections(json){
 			console.log(`drop ${coll}`, (await agent.delete(`/api/self/${coll}`)).status)
 		})
 	)
-	//for(var y=0; y<1; y++){
+	
 	for(var y=0; y<json.length; y++){
 		const line = json[y]
-		const entries = Object.entries(line)
-		const header = entries.shift()
-		const boxName = fixBoxName(header[1])
-		const box_id = await getId('boxes', boxName)
-		var summary = {}
-		var inspection = {}
-		for(var x in entries){
-			inspection = {
-				box_id
-			}
-			const [dateStr, note] = entries[x]
-			inspection.date = new Date(dateStr.replace(/(.*)\.(.*)\.(.*)/, '$3-$2-$1'))
-			inspection.note = note
-			inspection.type = (note.search('O.K.')>=0) ? 'OUTSIDE' : 'INSIDE'
-			if(inspection.type == 'INSIDE'){
-				inspection.state = valueParser('state', note)
-				// if there is no state noted, but there was one before, fallback
-				if(!inspection.state && summary.state) inspection.state = summary.state
-				summary.state = inspection.state
-				if(inspection.state == 'STATE_FAILURE'){
-					if(note.search('Siebenschläfer')>=0) {
-						inspection.reasonForLoss = 'PREDATION'
-						inspection.predator = 'Siebenschläfer'
-					}
-					if(note.search('Eichhörnchen')>=0) {
-						inspection.reasonForLoss = 'PREDATION'
-						inspection.predator = 'Eichhörnchen'
-					}
-					else if(note.search('Nest-Okkupation') >= 0) {
-						inspection.reasonForLoss = 'NEST_OCCUPATION'
-					}
-				}
+		await importLine(line)
+	}
+	
+	// parallel not working, species inserted multiple times
+	// await Promise.all(json.map(importLine))
+}
+async function importLine(line){
+	const entries = Object.entries(line)
+	const header = entries.shift()
+	const boxName = fixBoxName(header[1])
+	if(oneBoxOnly && oneBoxOnly != boxName) return
+	const box_id = await getId('boxes', boxName)
+	var summary = {}
+	var inspection = {}
+	for(var x in entries){
+		inspection = {
+			box_id
+		}
+		const [dateStr, note] = entries[x]
+		if(note == 'NK') continue
+		inspection.date = new Date(dateStr.replace(/(.*)\.(.*)\.(.*)/, '$3-$2-$1'))
+		inspection.note = note
+		inspection.type = valueParser('type', note)
+		if(inspection.type == 'INSIDE'){
+			inspection.state = valueParser('state', note)
+			// if there is no state noted, but there was one before, fallback
+			if(!inspection.state && summary.state) inspection.state = summary.state
+			summary.state = inspection.state
+			
 
-				inspection.eggs = valueParser('eggs', note)
-				inspection.nestlings = valueParser('nestlings', note)
-				
-				if(inspection.state != 'STATE_EMPTY') {
-					const speciesName = valueParser('speciesName', note)
-					if(speciesName) {
-						inspection.species_id = await getId('species', speciesName)
-						
-						if(summary.species_id && summary.species_id != inspection.species_id){
-							console.error(`Different species without occupation: ${boxName} ${inspection.date.toLocaleDateString()}`, entries)
-						}
-						summary.species_id = inspection.species_id
+			inspection.eggs = valueParser('eggs', note)
+			inspection.nestlings = valueParser('nestlings', note)
+			
+			if(inspection.state != 'STATE_EMPTY') {
+				const speciesName = valueParser('speciesName', note)
+				if(speciesName) {
+					inspection.species_id = await getId('species', speciesName)
+					
+					if(
+						summary.species_id && 
+						(summary.species_id != inspection.species_id) && 
+						inspection.reasonForLoss != 'NEST_OCCUPATION'
+					){
+						console.error(`Different species without occupation: ${boxName} ${inspection.date.toLocaleDateString()}`)
 					}
+					summary.species_id = inspection.species_id
 				}
-				
-				actualizeDate(inspection, 'breedingStart', note)
-				actualizeDate(inspection, 'layingStart', note)
-				actualizeDate(inspection, 'hatchDate', note)
-				bandingParser(inspection, note)
 			}
-			log(sparse(inspection), { _box: boxName})
-			try{
-				await agent.post('/api/inspections', sparse(inspection))
-			}catch(e){
-				console.error(`Failed to insert inspection`, inspection)
+			if(inspection.state == 'STATE_FAILURE'){
+				inspection.reasonForLoss = valueParser('reasonForLoss', note)
+				if(inspection.reasonForLoss == 'PREDATION'){
+					inspection.predator = valueParser('predator', note)
+				}
+				if(inspection.reasonForLoss == 'NEST_OCCUPATION'){
+					inspection.occupator_id = inspection.species_id
+					delete inspection.species_id
+				}
 			}
+			
+			actualizeDate(inspection, 'breedingStart', note)
+			actualizeDate(inspection, 'layingStart', note)
+			actualizeDate(inspection, 'hatchDate', note)
+			bandingParser(inspection, note)
+		}
+		log(sparse(inspection), { _box: boxName})
+		try{
+			await agent.post('/api/inspections', sparse(inspection))
+		}catch(e){
+			console.error(`Failed to insert inspection`, inspection)
 		}
 	}
 }
+
 
 function bandingParser(inspection, note){
 	inspection.nestlingsBanded = valueParser('nestlingsBanded', note)

@@ -9,7 +9,6 @@ export class Proxy {
 	}
 
 	async fetch(collection, ...query){
-		console.log('fetch', collection, query)
 		try{
 			const response = await fetch(url(collection, query))
 			this.checkError(response)

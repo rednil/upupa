@@ -17,7 +17,8 @@ const copyProps = [
 	'species_id',
 	'nestlingsBanded',
 	'femaleBanded',
-	'maleBanded'
+	'maleBanded',
+	'occupator_id'
 ]
 
 router.post('/', loginRequired, async (req, res, next) => {
@@ -29,7 +30,6 @@ router.post('/', loginRequired, async (req, res, next) => {
 	if(!date) return res.status(400).json({date: 'MISSING'})
 	if(inspection.type != 'OUTSIDE'){
 		const summaries = req.mongo.db.collection('summaries')
-		
 		var summary = await getSummary(req)
 		// the getSummary function returns null if the last inhabitant is done
 		// and the next one hasn't started laying eggs
@@ -38,12 +38,27 @@ router.post('/', loginRequired, async (req, res, next) => {
 			copyProps.forEach(prop => {
 				if(inspection[prop] != null) summary[prop] = inspection[prop]
 			})
-			if(summary.state == 'STATE_SUCCESS') summary.offspring = inspection.nestlings
+			if(summary.state != 'STATE_SUCCESS'){
+				summary.nestlings = inspection.nestlings
+			}
+			summary.clutchSize = Math.max(summary.clutchSize, inspection.eggs || 0, inspection.nestlings || 0)
+			if(
+				summary.state == 'STATE_BREEDING' && 
+				!summary.breedingStart &&
+				summary.layingStart
+			){
+				summary.breedingStart = incDate(summary.layingStart, summary.clutchSize)
+			}
+			if(
+				summary.state == 'STATE_EGGS' &&
+				!summary.layingStart
+			){
+				summary.layingStart = incDate(inspection.date, -inspection.eggs)
+			}
 			if(summary.hatchDate){
 				summary.bandingWindowStart = incDate(summary.hatchDate, bandingStartAge)
 				summary.bandingWindowEnd = incDate(summary.hatchDate, bandingEndAge)
 			}
-			summary.clutchSize = Math.max(summary.clutchSize, inspection.eggs || 0, inspection.nestlings || 0)
 			if(summary.species_id && summary.occupancy == 0) summary.occupancy = 1
 			if(summary._id){
 				await summaries.updateOne(
@@ -74,7 +89,7 @@ async function getSummary (req) {
 	const year = date.getFullYear()
 	var summary = await req.mongo.db.collection('summaries')
 	.find({box_id, year})
-	.sort({occupancy:1})
+	.sort({occupancy:-1})
 	.next()
 	var nextOccupancy = false
 	if(summary) {

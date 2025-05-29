@@ -28,7 +28,9 @@ const translations = {
 	"USERS.PASSWORD": "Passwort",
 	"USERS.ROLE.USER": "USER",
 	"USERS.ROLE.ADMIN": "ADMIN",
-	"USERS.ROLE": "Funktion"
+	"USERS.ROLE": "Funktion",
+	"PREDATION": "Prädation",
+	"NEST_OCCUPATION": "Nest-Okkupation"
 }
 
 export function translate(str){
