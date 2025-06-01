@@ -17,6 +17,7 @@ import boxesRouter from './routes/boxes.js'
 import inspectionsRouter from './routes/inspections.js'
 import summariesRouter from './routes/summaries.js'
 import speciesRouter from './routes/species.js'
+import perpetratorsRouter from './routes/perpetrators.js'
 
 const store = MongoStore.create({
 	mongoUrl: uri,
@@ -57,6 +58,7 @@ app.use('/api/boxes', boxesRouter)
 app.use('/api/inspections', inspectionsRouter)
 app.use('/api/summaries', summariesRouter)
 app.use('/api/species', speciesRouter)
+app.use('/api/perpetrators', perpetratorsRouter)
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

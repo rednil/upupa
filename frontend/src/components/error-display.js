@@ -8,7 +8,6 @@ export class ErrorDisplay extends LitElement {
 		}
 	}
 	updated(changedProps){
-		console.log('updated', changedProps)
 		if(changedProps.has('error')){
 			switch(this.error.type){
 				case 'fetch-status': return this.handleFetchError()

@@ -1,6 +1,7 @@
 import { LitElement, html, css } from 'lit'
 import { translate } from '../translator'
-const states = [
+
+export const INSPECTION_STATES = [
 	'STATE_EMPTY',
 	'STATE_NEST_BUILDING',
 	'STATE_NEST_READY',
@@ -8,7 +9,8 @@ const states = [
 	'STATE_BREEDING',
 	'STATE_NESTLINGS',
 	'STATE_SUCCESS',
-	'STATE_FAILURE',
+	'STATE_OCCUPIED',
+	'STATE_ABANDONED'
 ]
 export class SelectState extends LitElement {
 
@@ -28,7 +30,7 @@ export class SelectState extends LitElement {
   render() {
     return html`
       <select @change=${this.changeCb} .value=${this.value}>
-				${states.map(state => html`
+				${INSPECTION_STATES.map(state => html`
 					<option value=${state}>${translate(state)}</option>
 				`)}
 			</select>
@@ -36,6 +38,7 @@ export class SelectState extends LitElement {
   }
 	changeCb(evt){
 		this.value = evt.target.value
+		this.dispatchEvent(new CustomEvent('change'))
 	}
 }
 

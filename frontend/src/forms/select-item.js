@@ -12,6 +12,7 @@ export class SelectItem extends LitElement {
 			key: { type: String }, // the key used to name each option, e.g. "name"
 			autoselect: { type: Boolean },
 			disabled: { type: Boolean },
+			readonly: { type: Boolean }
 		}
 	}
 
@@ -32,6 +33,11 @@ export class SelectItem extends LitElement {
 	}
 	
 	render() {
+		if(this.readonly){
+			return html`
+				<span>${this.item && this.item[this.key]}</span>
+			`
+		}
 		return html`
 			<select ?disabled=${this.disabled} .value=${this.value} id="select" @change=${this._changeCb}>
 				${this.autoselect ? '' : html`<option>---</option>`}
@@ -53,19 +59,28 @@ export class SelectItem extends LitElement {
 		this.dispatchEvent(new Event('change'))
 	}
 	updated(changedProps){
-		if(changedProps.has('collection')) this.fetchData()
+		if(changedProps.has('collection')) this._collectionChanged()
+		if(changedProps.has('options') && this.options.length) this._optionsChanged()
 	}
-	async fetchData(){
+	async _collectionChanged(){
+		if(!promises[this.collection]) return this.fetchData()
+		this.options = await promises[this.collection]
+	}
+	_optionsChanged(){
 		const oldItem = this.item
-		this.options = await this.proxy.fetch(this.collection, '$sort=name:1')
 		this.item = this.getSelectedItem()
 		if(
+			this.options.length && 
 			(this.value && !this.getSelectedItem()) ||
 			(this.autoselect && !this.value && this.options.length>0)
 		){
 			this.value = this.options[0]._id
 		}
 		if(oldItem != this.getSelectedItem()) this.dispatchEvent(new Event('change'))
+	}
+	async fetchData(){
+		promises[this.collection] = this.proxy.fetch(this.collection, '$sort=name:1')
+		this.options = await promises[this.collection]
 	}
 	
 	getSelectedItem(){

@@ -171,33 +171,71 @@ const parseInfo = {
 		options: [
 			{ value: 'STATE_SUCCESS', allow: ['ausgeflogen']},
 			{ 
-				value: 'STATE_FAILURE',
+				value: 'STATE_OCCUPIED',
+				allow: [
+					'Nest-Okkupation',
+					'Siebenschläfer',
+					'Nestprädation',
+					'Hornisse'
+				],
+				disAllow: 'Nest-Okkupation BM'
+			},
+			{ 
+				value: 'STATE_ABANDONED',
 				allow: [
 					'Nest-Okkupation',
 					'Prädation',
 					'Nestprädation',
-					'Altvogel verunglückt'
-				]
+					'Altvogel verunglückt',
+					'Nest aufgegeben',
+					'Brut aufgegeben',
+					'Keine Eier mehr auffindbar'
+				],
+				disAllow: 'Nest-Okkupation BM'
 			},
 			{ value: 'STATE_NESTLINGS', allow: ['Nestling'] },
 			{ value: 'STATE_BREEDING', allow: ['brütet'] },
 			{ value: 'STATE_EGGS', allow: ['Ei'], disAllow: ['Eichhörnchen', /[kK]eine Eier/] },
-			{ value: 'STATE_NEST_BUILDING', allow: ['halbfertiges Nest', 'Nestanfang'] },
-			{ value: 'STATE_NEST_READY', allow: ['legebereit'] },
+			{ value: 'STATE_NEST_BUILDING', allow: [
+				'halbfertiges Nest',
+				'Nestanfang',
+				'fast fertiges Nest',
+				'halb fertiges Nest',
+				'Nest, fast fertig',
+				'Moos',
+				'fast fertigees Nest',
+				'NA',
+				'Nesteintrag'
+			] },
+			{ value: 'STATE_NEST_READY', allow: [
+				'legebereit',
+				'fertiges Nest',
+				'fertig vorbereiteter Brutraum'
+			] },
 			{ value: 'STATE_EMPTY', allow: ['leer'] },
 		]
 	},
 	reasonForLoss: {
 		options: [
-			{ value: 'NEST_OCCUPATION', allow: ['Nest-Okkupation'] },
-			{ value: 'PREDATION', allow: ['Siebenschläfer', 'Eichhörnchen'] },
-			{ value: 'PARENT_MISSING', allow: ['Altvogel verunglückt']}
+			{ value: 'TAKEOVER', allow: ['Nest-Okkupation BM'] },
+			{ value: 'PREDATION', allow: [
+				'Siebenschläfer',
+				'Eichhörnchen',
+				'Prädation',
+				'Keine Eier mehr auffindbar'
+			] },
+			{ value: 'PARENT_MISSING', allow: [
+				'Altvogel verunglückt',
+				'Nest aufgegeben',
+				'Brut aufgegeben'
+			]}
 		]
 	},
-	predator: {
+	perpetrator: {
 		options: [
 			{ value: 'Siebenschläfer' },
-			{ value: 'Eichhörnchen' }
+			{ value: 'Eichhörnchen' },
+			{ value: 'Hornisse' }
 		]
 	},
 	type: {
@@ -205,12 +243,17 @@ const parseInfo = {
 			{ value: 'OUTSIDE', allow: ['O.K.'], disAllow: /\d+\sNestlinge beringt/ },
 		],
 		default: 'INSIDE'
+	},
+	takeover: {
+		options: [
+			{ value: true, allow: ['Nest-Okkupation BM'] },
+		]
 	}
 }
 
 const workbook = getWorkbook()
 await login(ADMIN_USERNAME, ADMIN_PASSWORD)
-//await importBoxes(XLSX.utils.sheet_to_json(workbook.Sheets.Box_Status))
+await importBoxes(XLSX.utils.sheet_to_json(workbook.Sheets.Box_Status))
 await importInspections(XLSX.utils.sheet_to_json(workbook.Sheets['Breeding_(25)']))
 
 async function login(username, password) {
@@ -233,7 +276,7 @@ function getWorkbook(){
 }
 
 async function importBoxes(json){
-	console.log(`drop ${coll}`, (await agent.delete('/api/self/boxes')).status)
+	console.log(`drop boxes`, (await agent.delete('/api/self/boxes')).status)
 	for(var i=0; i<json.length; i++){
 		const entry = json[i]
 		var name = entry['Nistkastennr.']
@@ -246,7 +289,7 @@ async function importBoxes(json){
 		}
 		if(!box.name || !box.site) continue
 		const response = await agent.post('/api/boxes', box);
-    console.log('Inserted Box', box.name, response.status, response.data.insertedId)
+    console.log('Inserted Box', box.name, response.status)
 	}
 }
 
@@ -346,40 +389,50 @@ async function importLine(line){
 		inspection.note = note
 		inspection.type = valueParser('type', note)
 		if(inspection.type == 'INSIDE'){
-			inspection.state = valueParser('state', note)
+			const state = inspection.state = valueParser('state', note)
 			// if there is no state noted, but there was one before, fallback
-			if(!inspection.state && summary.state) inspection.state = summary.state
-			summary.state = inspection.state
+			if(!state && !note.match(/UV/) && !note.match(/NK/)) console.error('No state:', boxName, inspection.date.toLocaleDateString(), note)
+			if(state == 'STATE_OCCUPIED' || state == 'STATE_ABANDONED'){
+				const perpetratorName = valueParser('perpetrator', note)
+				if(perpetratorName) inspection.perpetrator_id = await getId('perpetrators', perpetratorName)
+				if(isOccupied(summary)) {
+					inspection.reasonForLoss = valueParser('reasonForLoss', note)
+				}
+			}
 			
-
+			if(!state && summary.state) inspection.state = summary.state
+			summary.state = state
+			
 			inspection.eggs = valueParser('eggs', note)
 			inspection.nestlings = valueParser('nestlings', note)
-			
-			if(inspection.state != 'STATE_EMPTY') {
+
+			// Something like "alle Nestlinge ausgeflogen"
+			if(state == 'STATE_SUCCESS' && inspection.nestlings == 0){
+				inspection.nestlings = summary.nestlings
+			}
+			summary.nestlings = inspection.nestlings
+
+			if(state != 'STATE_EMPTY') {
 				const speciesName = valueParser('speciesName', note)
 				if(speciesName) {
 					inspection.species_id = await getId('species', speciesName)
 					
 					if(
 						summary.species_id && 
-						(summary.species_id != inspection.species_id) && 
-						inspection.reasonForLoss != 'NEST_OCCUPATION'
+						(summary.species_id != inspection.species_id) 
 					){
-						console.error(`Different species without occupation: ${boxName} ${inspection.date.toLocaleDateString()}`)
+						inspection.takeover = valueParser('takeover', note)
+						if(!inspection.takeover){
+							console.error('Species changed without explicit takeover', boxName, inspection.date.toLocaleDateString())
+						}
+						if(isOccupied(summary)){
+							console.error(`Species changed after STATE_EGGS: ${boxName} ${inspection.date.toLocaleDateString()}`)
+						}
 					}
 					summary.species_id = inspection.species_id
 				}
 			}
-			if(inspection.state == 'STATE_FAILURE'){
-				inspection.reasonForLoss = valueParser('reasonForLoss', note)
-				if(inspection.reasonForLoss == 'PREDATION'){
-					inspection.predator = valueParser('predator', note)
-				}
-				if(inspection.reasonForLoss == 'NEST_OCCUPATION'){
-					inspection.occupator_id = inspection.species_id
-					delete inspection.species_id
-				}
-			}
+			
 			
 			actualizeDate(inspection, 'breedingStart', note)
 			actualizeDate(inspection, 'layingStart', note)
@@ -392,10 +445,25 @@ async function importLine(line){
 		}catch(e){
 			console.error(`Failed to insert inspection`, inspection)
 		}
+		
 	}
+	const summaries = await agent.get(`/api/summaries?box_id=${inspection.box_id}`)
+	console.log(
+		'summaries',
+		summaries.data.map(summary => Object.fromEntries(
+			Object.entries(summary)
+			.filter(([key]) => !(key.endsWith('_id') || key.endsWith('At')))
+		))
+	)
 }
 
-
+function isOccupied({state}){
+	return (
+		state == 'STATE_EGGS' || 
+		state == 'STATE_NESTLINGS' ||
+		state == 'STATE_BREEDING'
+	)
+}
 function bandingParser(inspection, note){
 	inspection.nestlingsBanded = valueParser('nestlingsBanded', note)
 	inspection.femaleBanded = valueParser('femaleBanded', note)

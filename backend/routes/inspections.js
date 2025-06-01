@@ -13,12 +13,11 @@ const copyProps = [
 	'layingStart',
 	'hatchDate',
 	'reasonForLoss',
-	'predator',
+	'perpetrator_id',
 	'species_id',
 	'nestlingsBanded',
 	'femaleBanded',
-	'maleBanded',
-	'occupator_id'
+	'maleBanded'
 ]
 
 router.post('/', loginRequired, async (req, res, next) => {
@@ -35,12 +34,18 @@ router.post('/', loginRequired, async (req, res, next) => {
 		// and the next one hasn't started laying eggs
 		if(summary){
 			summary.lastInspection = date
+			var occupied = isOccupied(summary)
 			copyProps.forEach(prop => {
 				if(inspection[prop] != null) summary[prop] = inspection[prop]
 			})
-			if(summary.state != 'STATE_SUCCESS'){
-				summary.nestlings = inspection.nestlings
+			if(occupied && isCatastrophic(inspection)){
+				summary.state = 'STATE_FAILURE'
 			}
+			if(summary.perpetrator_id && !inspection.perpetrator_id){
+				// perpetrator is no more, we might have just a normal inhabitant
+				summary.perpetrator_id = null
+			}
+			summary.nestlings = inspection.nestlings
 			summary.clutchSize = Math.max(summary.clutchSize, inspection.eggs || 0, inspection.nestlings || 0)
 			if(
 				summary.state == 'STATE_BREEDING' && 
@@ -73,9 +78,13 @@ router.post('/', loginRequired, async (req, res, next) => {
 	}
 	await req.mongo.insertOne()
 })
+function isCatastrophic(inspection){
+	return inspection.state == 'STATE_ABANDONED' || inspection.state == 'STATE_OCCUPIED'
+}
 function isFinished(summary){
 	return (summary.state=='STATE_SUCCESS' || summary.state=='STATE_FAILURE')
 }
+// after reaching these states, abandoned / occupied / takeover leads to failure
 function isOccupied({state}){
 	return (
 		state == 'STATE_EGGS' || 
@@ -98,7 +107,10 @@ async function getSummary (req) {
 			if(isOccupied(inspection)){
 				nextOccupancy = true
 			}
-			else{
+			else {
+				// (1) if the state is still abandoned / occupied,
+				// we keep this summary (maybe a perpetrator is reported late)
+				// (2) if someone starts over, 
 				// dont create a new occupancy until the new
 				// inhabitant actually starts laying eggs
 				return null 

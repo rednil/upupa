@@ -15,6 +15,8 @@ const translations = {
 	"STATE_NESTLINGS": "Nestlinge",
 	"STATE_FAILURE": "Misserfolg",
 	"STATE_SUCCESS": "Erfolg",
+	"STATE_OCCUPIED": "Okkupiert",
+	"STATE_ABANDONED": "Verlassen",
 	"BAND_STATUS_FEMALE": "Beringung Altvögel",
 	"BAND_STATUS_NESTLINGS": "Beringung Nestlinge",
 	"BOXES": "Nistkästen",
@@ -30,7 +32,9 @@ const translations = {
 	"USERS.ROLE.ADMIN": "ADMIN",
 	"USERS.ROLE": "Funktion",
 	"PREDATION": "Prädation",
-	"NEST_OCCUPATION": "Nest-Okkupation"
+	"NEST_OCCUPATION": "Nest-Okkupation",
+	"PARENT_MISSING": "Nest aufgegeben",
+	"UNKNOWN": "Unbekannt"
 }
 
 export function translate(str){

@@ -1,11 +1,10 @@
 import { LitElement, html, css } from 'lit'
 import { translate } from '../translator.js'
-
+import '../forms/select-item.js'
 export class InspectionDisplay extends LitElement {
 	static get properties() {
 		return {
 			inspection: { type: Object },
-			species: { type: Array },
 			detail: { type: String }
 		}
 	}
@@ -46,7 +45,7 @@ export class InspectionDisplay extends LitElement {
 			<div class="head" @click=${this.clickCb}>
 				<span class="date">${this.getLongDate(date)}</span>
 				${type=='OUTSIDE' ? html`<span></span><span>Nistkasten nicht geöffnet</span>` : html`
-					<span>${this.getSpeciesName(species_id)}</span>
+					<select-item collection="species" .value=${species_id} readonly></select-item>
 					<span>${this.getStateLabel(this.inspection)}</span>
 				`}
 			</div>
@@ -88,9 +87,6 @@ export class InspectionDisplay extends LitElement {
 			case 'STATE_EGGS': return `${eggs} Eier`
 			default: return translate(state)
 		} 
-	}
-	getSpeciesName(species_id){
-		return this.species.find(species => species._id == species_id)?.name || '---'
 	}
 }
 
