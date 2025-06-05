@@ -1,8 +1,9 @@
-import { LitElement, html, css } from 'lit'
+import { html, css } from 'lit'
+import { Page } from './base'
 
 const LOGIN = 'login'
 const REGISTER = 'register'
-export class PageLogin extends LitElement {
+export class PageLogin extends Page {
   
   static get properties() {
     return {
@@ -48,10 +49,9 @@ export class PageLogin extends LitElement {
       
       <div>
 				<label for="username">Username</label>
-				<input type="email" id="username" .value=${this.user?.username || ''} >
+				<input type="email" id="username">
 				<label for="password">Password</label>
-				<input id="password" type="password" placeholder=${this.user?._id?'Keep existing':''} >
-				<div class="errormsg">${this.error}</div>
+				<input id="password" type="password">
         <button @click=${() => this.auth(LOGIN)}>Sign In</button>
 				<!--
         <button @click=${() => this.auth(REGISTER)}>Create Account</button>
@@ -64,20 +64,22 @@ export class PageLogin extends LitElement {
     this.error = ''
 		const username = this.shadowRoot.querySelector('#username').value
 		const password = this.shadowRoot.querySelector('#password').value
-    const response = await fetch(`/api/auth/${mode}`, {
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      },
-      method: 'POST',
-      body: JSON.stringify({username, password})
-    })
-    if(response.status != 200) this.error = response.statusText
-    this.dispatchEvent(new CustomEvent((response?.status==200) ? 'login' : 'fetch-error', {
-      composed: true,
-      bubbles: true,
-      detail: response
-    }))
+    if(mode==LOGIN){
+			try{
+				const userCtx = await this.proxy.db.login(username, password)
+				console.log('login', userCtx)
+				if(userCtx.name != null){
+					this.dispatchEvent(new CustomEvent('login', {
+						detail: userCtx
+					}))
+				}
+			}catch(e){
+				console.log('login exception', e)
+				this.dispatchEvent('fetch-error', {
+					detail: e
+				})
+			}
+		}
   }
 }
 

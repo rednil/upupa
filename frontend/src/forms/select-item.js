@@ -5,7 +5,7 @@ const promises = {}
 export class SelectItem extends LitElement {
 	static get properties() {
 		return {
-			collection: { type: String }, // the api endpoint, e.g. "species"
+			type: { type: String }, // the api endpoint, e.g. "species"
 			value: { type: String }, // the selected _id
 			item: { type: Object }, // the selected document
 			options: { type: Array }, // the api response 
@@ -59,12 +59,12 @@ export class SelectItem extends LitElement {
 		this.dispatchEvent(new Event('change'))
 	}
 	updated(changedProps){
-		if(changedProps.has('collection')) this._collectionChanged()
+		if(changedProps.has('type')) this._typeChanged()
 		if(changedProps.has('options') && this.options.length) this._optionsChanged()
 	}
-	async _collectionChanged(){
-		if(!promises[this.collection]) return this.fetchData()
-		this.options = await promises[this.collection]
+	async _typeChanged(){
+		if(!promises[this.type]) return this.fetchData()
+		this.options = await promises[this.type]
 	}
 	_optionsChanged(){
 		const oldItem = this.item
@@ -79,8 +79,9 @@ export class SelectItem extends LitElement {
 		if(oldItem != this.getSelectedItem()) this.dispatchEvent(new Event('change'))
 	}
 	async fetchData(){
-		promises[this.collection] = this.proxy.fetch(this.collection, '$sort=name:1')
-		this.options = await promises[this.collection]
+		promises[this.type] = this.proxy.query(this.type, {include_docs: true})
+		this.options = await promises[this.type]
+		console.log('options', this.options)
 	}
 	
 	getSelectedItem(){

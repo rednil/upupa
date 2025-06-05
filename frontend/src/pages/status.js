@@ -74,7 +74,7 @@ export class PageStatus extends LitElement {
 				<div class="top">
 					<div class="controls">
 						<div class="left">
-							<select-item id="select-box" class="bold" collection="boxes" .value=${this.box_id} autoselect @change=${this._boxSelectCb}></select-item>
+							<select-item id="select-box" class="bold" type="box" .value=${this.box_id} autoselect @change=${this._boxSelectCb}></select-item>
 							<link-map .box_id=${this.box_id} .nocoor=${this.boxHasNoCoors()}></link-map>
 							<link-boxconfig .box_id=${this.box_id}></link-boxconfig>
 						</div>
@@ -112,12 +112,17 @@ export class PageStatus extends LitElement {
 		this._fetchData(this.box_id)
 	}
 	async _fetchData(box_id){
-		var [inspections, summaries, species, boxes] = await this.proxy.fetchMulti(
-			[`inspections`, `box_id=${box_id}`, `$sort=date:-1`],
-			[`summaries`, `box_id=${box_id}`, '$sort=occupancy:-1'],
-			['species'],
-			['boxes']
-		)
+		var [boxes, species, inspections=[], summaries=[]] = await Promise.all([
+			this.proxy.query('box', { include_docs: true }),
+			this.proxy.query('species'),
+			this.proxy.query('inspection', {
+				endkey: [box_id],
+				startkey: [box_id, {}],
+				include_docs: true,
+				descending: true
+			}),
+			//[`summaries`, `box_id=${box_id}`, '$sort=occupancy:-1'],
+		])
 		Object.assign(this, {inspections, summaries, species, boxes})
 		//this.requestUpdate()
 	}

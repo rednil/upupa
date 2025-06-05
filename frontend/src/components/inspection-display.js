@@ -45,7 +45,7 @@ export class InspectionDisplay extends LitElement {
 			<div class="head" @click=${this.clickCb}>
 				<span class="date">${this.getLongDate(date)}</span>
 				${type=='OUTSIDE' ? html`<span></span><span>Nistkasten nicht geöffnet</span>` : html`
-					<select-item collection="species" .value=${species_id} readonly></select-item>
+					<select-item type="species" .value=${species_id} readonly></select-item>
 					<span>${this.getStateLabel(this.inspection)}</span>
 				`}
 			</div>

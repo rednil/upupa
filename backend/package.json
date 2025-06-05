@@ -7,20 +7,15 @@
     "start": "dotenvx run -f .env.dev -- nodemon ./bin/www",
     "test": "dotenvx run -f .env.test -- mocha",
     "test:watch": "nodemon --watch \"*/*.js\" --exec \"npm test\"",
-    "serve:prod": "./bin/www",
-    "browse": "mongodb-compass"
+    "serve:prod": "./bin/www"
   },
   "dependencies": {
-    "bcrypt": "^5.1.1",
-    "connect-mongo": "^5.1.0",
     "debug": "~4.4.0",
     "express": "~5.1.0",
-    "express-session": "^1.18.1",
     "http-errors": "~2.0.0",
-    "mongodb": "^6.16.0",
+    "http-proxy-middleware": "^3.0.5",
     "morgan": "~1.10.0",
-    "passport": "^0.7.0",
-    "passport-local": "^1.0.0"
+    "pouchdb": "^9.0.0"
   },
   "devDependencies": {
     "@dotenvx/dotenvx": "^1.43.0",

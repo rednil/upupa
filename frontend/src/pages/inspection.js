@@ -82,7 +82,7 @@ export class PageInspection extends LitElement {
 		<div class="${i.state}">
 			<div class="editor">
 				<div class="head">
-					<select-item id="select-box" class="bold" collection="boxes" .value=${this.box_id} autoselect @change=${this.boxSelectCb}></select-item>
+					<select-item id="select-box" class="bold" type="box" .value=${this.box_id} autoselect @change=${this.boxSelectCb}></select-item>
 					<input id="date" type="date" .value=${i.date} @change=${this.changeDateCb}> 
 				</div>
 				<div class="state">
@@ -91,11 +91,11 @@ export class PageInspection extends LitElement {
 				</div>
 				<div class="species_id">
 					<label for="species_id">Vogelart</label>
-					<select-item id="species_id" collection="species" value=${i.species_id}></select-item>
+					<select-item id="species_id" type="species" value=${i.species_id}></select-item>
 				</div>
 				<div class="perpetrator_id">
 					<label for="perpetrator_id">Eindringling</label>
-					<select-item id="perpetrator_id" collection="perpetrators" value=${i.perpetrator_id}></select-item>
+					<select-item id="perpetrator_id" type="perpetrator" value=${i.perpetrator_id}></select-item>
 				</div>
 				<div class="eggs">
 					<label for="eggs">Anzahl Eier</label>

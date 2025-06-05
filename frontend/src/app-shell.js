@@ -1,5 +1,6 @@
 import { LitElement, html, css } from 'lit'
 
+import { Proxy } from './proxy.js' 
 import './pages/login.js'
 import './pages/status'
 import './pages/calendar'
@@ -101,6 +102,7 @@ export class AppShell extends LitElement {
 
   constructor() {
     super()
+		this.proxy = new Proxy(this)
     this.routes = [
 			{
 				path: '#/overview',
@@ -178,20 +180,18 @@ export class AppShell extends LitElement {
   }
 
   async requestUserInfo(){
-    const response = await fetch('/api/self')
-    switch(response.status){
-      case 401:
-        this.logout()
-        break
-      case 200:
-        this.self = await response.json()
-        if(window.location.hash == '#/login') window.location.hash = ''
-				this.error = ""
-        break
-      default:
-        this.logout()
-        this.handleFetchError(response)
-    }
+    try{
+			const session = await this.proxy.db.getSession()
+			console.log('session', session)
+			if(session.userCtx.name == null){
+				return this.logout()
+			}
+			this.self = session.userCtx
+			if(window.location.hash == '#/login') window.location.hash = ''
+		}catch(e){
+			this.logout()
+      this.handleFetchError(e)
+		}
   }
 
  
@@ -212,9 +212,8 @@ export class AppShell extends LitElement {
     `
   }
   async requestLogout(){
-		console.log('logout')
-    const response = await fetch ('api/auth/login', { method: 'DELETE' })
-    if(response?.status==200) {
+    const response = await this.db.logout()
+    if(response.ok) {
       this.logout()
     }
     else this.error = { type: 'fetch-status', detail: response }

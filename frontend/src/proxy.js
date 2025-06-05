@@ -1,6 +1,19 @@
+const db = new PouchDB(window.location.origin + '/api/couch/db', {
+		skip_setup: true
+
+})
+
+
 export class Proxy {
+
 	constructor(component){
 		this.component = component
+		this.db = db
+	}
+	async query(view, options = {}) {
+		const response = await this.db.query(`upupa/${view}`, options)
+		if(options.include_docs) return response.rows.map(view => view.doc)
+		return response.rows
 	}
 	async fetchMulti(...requests){
 		return Promise.all(

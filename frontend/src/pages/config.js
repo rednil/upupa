@@ -62,7 +62,7 @@ export class PageConfig extends LitElement {
 					</select>
 					<select-item 
 						style=${this.item._id ? '' : 'visibility:hidden'}
-						.collection=${this.collection} 
+						.type=${this.collection} 
 						.value=${this.item_id} 
 						autoselect
 						key=${this.collection == 'users' ? 'username' : 'name'}

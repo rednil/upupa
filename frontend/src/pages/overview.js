@@ -1,9 +1,9 @@
-import { LitElement, html, css } from 'lit'
-import { Proxy } from '../proxy'
+import { html, css } from 'lit'
 
 import '../components/box-map'
 import '../components/box-list'
 import {translate} from '../translator'
+import { Page } from './base'
 
 const infoOptions = [
 	'BOXES',
@@ -18,7 +18,7 @@ function getShortDate(date){
 	return new Date(date).toLocaleDateString(undefined, {day: "numeric", month: "numeric"})
 }
 
-export class PageOverview extends LitElement {
+export class PageOverview extends Page {
   static get properties() {
     return {
       boxes: { type: Array },
@@ -77,7 +77,6 @@ export class PageOverview extends LitElement {
 		this.boxes = []
 		this.info = 'BOXES'
 		this.mode = 'MAP'
-		this.proxy = new Proxy(this)
 		this.fetchData()
 	}
 	
@@ -112,13 +111,14 @@ export class PageOverview extends LitElement {
 	firstUpdated(){
 	}
 	async fetchData(){
-		var [boxes, summaries, species] = await this.proxy.fetchMulti(
-			['boxes'],
-			['summaries', '$sort=occupancy:-1'],
-			['species']
-		)
-
-		this.species = species.reduce((obj, entry) => Object.assign(obj, {[entry._id]: entry.name}), {})
+		var [boxes, species, summaries=[]] = await Promise.all([
+			this.proxy.query('box', {include_docs: true }),
+			this.proxy.query('species'),
+			//this.proxy.query('summary', true)
+		])
+		console.log('boxes', boxes)
+		this.species = species.reduce((obj, {id, value}) => Object.assign(obj, {[id]: value}), {})
+		console.log(species, this.species)
 		this.boxes = boxes
 		.map(box => {
 			box.summaries = summaries

@@ -7,16 +7,14 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-		"import-prod": "dotenvx run -f ../backend/.env.prod -- node ./import.js",
-		"import-test": "dotenvx run -f ../backend/.env.test -- node ./import.js",
-		"import-dev": "dotenvx run -f ../backend/.env.dev -- node ./import.js",
+    "import-prod": "dotenvx run -f ../backend/.env.prod -- node ./import.js",
+    "import-test": "dotenvx run -f ../backend/.env.test -- node ./import.js",
+    "import-dev": "dotenvx run -f ../backend/.env.dev -- node ./import.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-		"@dotenvx/dotenvx": "^1.44.1",
-    "axios": "^1.9.0",
-    "http-cookie-agent": "^7.0.1",
-    "tough-cookie": "^5.1.2",
+    "@dotenvx/dotenvx": "^1.44.1",
+    "pouchdb": "^9.0.0",
     "xlsx": "^0.18.5"
   }
 }
