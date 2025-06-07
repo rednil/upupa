@@ -63,8 +63,7 @@ export class SelectItem extends LitElement {
 		if(changedProps.has('options') && this.options.length) this._optionsChanged()
 	}
 	async _typeChanged(){
-		if(!promises[this.type]) return this.fetchData()
-		this.options = await promises[this.type]
+		this.options = await this.proxy.getByType(this.type)
 	}
 	_optionsChanged(){
 		const oldItem = this.item
@@ -78,11 +77,7 @@ export class SelectItem extends LitElement {
 		}
 		if(oldItem != this.getSelectedItem()) this.dispatchEvent(new Event('change'))
 	}
-	async fetchData(){
-		promises[this.type] = this.proxy.query(this.type, {include_docs: true})
-		this.options = await promises[this.type]
-		console.log('options', this.options)
-	}
+	
 	
 	getSelectedItem(){
 		return this.options.find(option => option._id == this.value)

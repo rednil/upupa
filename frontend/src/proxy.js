@@ -2,7 +2,7 @@ const db = new PouchDB(window.location.origin + '/api/couch/db', {
 		skip_setup: true
 
 })
-
+const typeCache = {}
 
 export class Proxy {
 
@@ -14,6 +14,9 @@ export class Proxy {
 		const response = await this.db.query(`upupa/${view}`, options)
 		if(options.include_docs) return response.rows.map(view => view.doc)
 		return response.rows
+	}
+	async getByType(type){
+		return typeCache[type] || (typeCache[type] = this.query(type, {include_docs: true}))
 	}
 	async fetchMulti(...requests){
 		return Promise.all(

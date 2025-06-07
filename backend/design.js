@@ -1,6 +1,8 @@
 import PouchDB from 'pouchdb'
 import inspection from './views/inspection.js'
 import summary from './views/summary.js'
+import pouchdbFind from 'pouchdb-find'
+PouchDB.plugin(pouchdbFind)
 
 const {
 	DATABASE_URL,
@@ -18,13 +20,16 @@ var db = new PouchDB(DATABASE_URL, {
 
 
 export async function ensureDesignDocument() {
+	await db.createIndex({
+		"index": {
+    	"fields": ["type"]
+		},
+	})
   const designDocId = "_design/upupa";
   const newDesignDoc = {
     "_id": "_design/upupa",
 		"views": {
-			"inspection": {
-				"map": inspection.toString()
-			},
+			inspection,
 			"box":{"map": `doc => {	if (doc.type == 'box') { emit(doc.name) }	}`},
 			"species":{"map": `doc => {	if (doc.type == 'species') { emit(doc.name) }	}`},
 			summary
@@ -42,7 +47,7 @@ export async function ensureDesignDocument() {
     });
     console.log("Design document 'upupa' updated.");
   } catch (error) {
-    if (error.statusCode === 404) {
+    if (error.status === 404) {
       // Design document doesn't exist, create it
       await db.put(newDesignDoc);
       console.log("Design document 'upupa' created.");

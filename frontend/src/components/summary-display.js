@@ -1,5 +1,6 @@
 import { LitElement, html, css } from 'lit'
 import { translate } from '../translator.js'
+import { Proxy } from '../proxy.js'
 
 function getDateValue(date){
 	return (date || '').split('T')[0]
@@ -17,7 +18,6 @@ export class SummaryDisplay extends LitElement {
 	static get properties() {
 		return {
 			summary: { type: Object },
-			species: { type: Array }
 		}
 	}
 	static get styles() {
@@ -43,6 +43,11 @@ export class SummaryDisplay extends LitElement {
 				flex: 1;
 			}
 		`
+	}
+	constructor(){
+		super()
+		this.proxy = new Proxy(this)
+		this.species = this.proxy.getByType('species')
 	}
 	render() {
 		const summary = this.summary
@@ -109,7 +114,8 @@ export class SummaryDisplay extends LitElement {
 		`
 	}
 	getSpeciesName(species_id){
-		return this.species.find(species => species._id == species_id)?.name || '---'
+		console.log('getSpeciesName', species_id, this.species, this.species.find(species => species.id == species_id))
+		return this.species.find(species => species.id == species_id)?.key || '---'
 	}
 }
 

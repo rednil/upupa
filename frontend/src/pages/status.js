@@ -88,7 +88,7 @@ export class PageStatus extends LitElement {
 						<div class="nodata">Keine Inspektionen</div>
 					`:''}
 					${this.summaries.map(summary => html`
-						<summary-display .summary=${summary} .species=${this.species}></summary-display>
+						<summary-display .summary=${summary.value} .species=${this.species}></summary-display>
 					`)}
 					${this.inspections.map(inspection => html`
 						<inspection-display .inspection=${inspection} .species=${this.species}></inspection-display>
@@ -121,8 +121,15 @@ export class PageStatus extends LitElement {
 				include_docs: true,
 				descending: true
 			}),
+			this.proxy.query('summary', {
+				group: true,
+				endkey: [2025, box_id],
+				startkey: [2025, box_id, {}],
+				descending: true
+			}),
 			//[`summaries`, `box_id=${box_id}`, '$sort=occupancy:-1'],
 		])
+		console.log('summaries', summaries)
 		Object.assign(this, {inspections, summaries, species, boxes})
 		//this.requestUpdate()
 	}

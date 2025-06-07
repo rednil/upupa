@@ -15,7 +15,8 @@
     "http-errors": "~2.0.0",
     "http-proxy-middleware": "^3.0.5",
     "morgan": "~1.10.0",
-    "pouchdb": "^9.0.0"
+    "pouchdb": "^9.0.0",
+    "pouchdb-find": "^9.0.0"
   },
   "devDependencies": {
     "@dotenvx/dotenvx": "^1.43.0",

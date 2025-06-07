@@ -2,8 +2,7 @@ import PouchDB from 'pouchdb'
 import XLSX from 'xlsx'
 import path from 'path'
 import { fileURLToPath } from 'url'
-
-
+import parser from './parser.js'
 
 const {
 	API_PROTOCOL,
@@ -13,209 +12,35 @@ const {
 	ADMIN_PASSWORD
 } = process.env
 
-var db = new PouchDB('http://localhost:5984/dev', {
-	auth: {
-		username: 'admin',
-		password: 'admin'
-	},
+const auth = {
+	username: 'admin',
+	password: 'admin'
+}
+var db = new PouchDB('http://localhost:5984/dev', {auth})
+const designDocs = await db.allDocs({
+	startkey: "_design/",
+	endkey: "_design0",
+	include_docs: true
 })
-
+console.log('designDocs', designDocs)
 await db.destroy()
-db = new PouchDB('http://localhost:5984/dev', {
-	auth: {
-		username: 'admin',
-		password: 'admin'
-	},
-})
+db = new PouchDB('http://localhost:5984/dev', {auth})
+db.bulkDocs(designDocs.rows.map(doc => {
+	delete doc.doc._rev
+	return doc.doc
+}))
 const oneBoxOnly = process.argv[2]
 const dataPath = 'data/2025-05-27.ods'
-const year = 2025
-const bandingStartAge = 7
-const bandingEndAge = 12
+
 const idCache = {}
-const parseInfo = {
-	eggs: {
-		options: [
-			{ 
-				allow: [
-					/(\d+)\s*Eier/,
-					/\((\d+)\?\)\s*Eier/
-				],
-				value: match => Number(match[1])
-			}
-		],
-		default: 0
-	},
-	nestlings: {
-		options: [
-			{ 
-				allow: [
-					/(\d+)\s*Nestling/,
-					/\((\d+)\?\)\s*Nestling/,
-					/Nestlinge\s*\((\d+)\?\)/
-				],
-				value: match => Number(match[1])
-			}
-		],
-		default: 0
-	},
-	breedingStart: {
-		options: [
-			{
-				allow: /Bb[^\d]*(\d+).(\d+)/,
-				value: dateFormatter
-			}
-		]
-	},
-	layingStart: {
-		options: [
-			{
-				allow: [
-					/Lb[^\d]*(\d+).(\d+)/,
-					/Eiablage[^\d]*(\d+).(\d+)/
-				],
-				value: dateFormatter
-			}
-		]
-	},
-	hatchDate: {
-		options: [
-			{
-				allow: /H[^\d]*(\d+).(\d+)/,
-				value: dateFormatter
-			}
-		]
-	},
-	nestlingsBandDate: {
-		options: [
-			{
-				allow: /Nestlinge.*ring.[^\d]+(\d+).(\d+)/,
-				value: dateFormatter
-			}
-		]
-	},
-	nestlingsBanded: {
-		options: [
-			{
-				allow: /(\d+)[^\d]*Nestlinge.*ringt/,
-				value: match => Number(match[1])
-			}
-		]
-	},
-	femaleBanded: {
-		options: [
-			{
-				allow: ['W beringt', 'beide Altvögel beringt'],
-				value: true
-			}
-		]
-	},
-	maleBanded: {
-		options: [
-			{
-				allow: 'beide Altvögel beringt',
-				value: true
-			}
-		]
-	},
-	speciesName: {
-		options: [
-			{	value: 'Blaumeise', 		allow: ['BM'] 						},
-			{ value: 'Kleiber', 			allow: ['Kleiber', 'KL'] 	},
-			{ value: 'Kohlmeise', 		allow: ['KM']							},
-			{ value: 'Sumpfmeise', 		allow: ['SM']							},
-			{ value: 'Wasseramsel', 	allow: ['WA']							},
-			{ value: 'Feldsperling', 	allow: []									},
-			{ value: 'Tannenmeise', 	allow: ['TM']							}
-		]
-	},
-	state: {
-		options: [
-			{ value: 'STATE_SUCCESS', allow: ['ausgeflogen']},
-			{ 
-				value: 'STATE_OCCUPIED',
-				allow: [
-					'Nest-Okkupation',
-					'Siebenschläfer',
-					'Nestprädation',
-					'Hornisse'
-				],
-				disAllow: 'Nest-Okkupation BM'
-			},
-			{ 
-				value: 'STATE_ABANDONED',
-				allow: [
-					'Nest-Okkupation',
-					'Prädation',
-					'Nestprädation',
-					'Altvogel verunglückt',
-					'Nest aufgegeben',
-					'Brut aufgegeben',
-					'Keine Eier mehr auffindbar'
-				],
-				disAllow: 'Nest-Okkupation BM'
-			},
-			{ value: 'STATE_NESTLINGS', allow: ['Nestling'] },
-			{ value: 'STATE_BREEDING', allow: ['brütet'] },
-			{ value: 'STATE_EGGS', allow: ['Ei'], disAllow: ['Eichhörnchen', /[kK]eine Eier/] },
-			{ value: 'STATE_NEST_BUILDING', allow: [
-				'halbfertiges Nest',
-				'Nestanfang',
-				'fast fertiges Nest',
-				'halb fertiges Nest',
-				'Nest, fast fertig',
-				'Moos',
-				'fast fertigees Nest',
-				'NA',
-				'Nesteintrag'
-			] },
-			{ value: 'STATE_NEST_READY', allow: [
-				'legebereit',
-				'fertiges Nest',
-				'fertig vorbereiteter Brutraum'
-			] },
-			{ value: 'STATE_EMPTY', allow: ['leer'] },
-		]
-	},
-	reasonForLoss: {
-		options: [
-			{ value: 'TAKEOVER', allow: ['Nest-Okkupation BM'] },
-			{ value: 'PREDATION', allow: [
-				'Siebenschläfer',
-				'Eichhörnchen',
-				'Prädation',
-				'Keine Eier mehr auffindbar'
-			] },
-			{ value: 'PARENT_MISSING', allow: [
-				'Altvogel verunglückt',
-				'Nest aufgegeben',
-				'Brut aufgegeben'
-			]}
-		]
-	},
-	perpetrator: {
-		options: [
-			{ value: 'Siebenschläfer' },
-			{ value: 'Eichhörnchen' },
-			{ value: 'Hornisse' }
-		]
-	},
-	scope: {
-		options: [
-			{ value: 'OUTSIDE', allow: ['O.K.'], disAllow: /\d+\sNestlinge beringt/ },
-		],
-		default: 'INSIDE'
-	},
-	takeover: {
-		options: [
-			{ value: true, allow: ['Nest-Okkupation BM'] },
-		]
-	}
-}
+
 
 const workbook = getWorkbook()
+const docs = []
 await importBoxes(XLSX.utils.sheet_to_json(workbook.Sheets.Box_Status))
 await importInspections(XLSX.utils.sheet_to_json(workbook.Sheets['Breeding_(25)']))
+await db.bulkDocs(docs)
+
 
 function getWorkbook(){
 	// Get the directory name using import.meta.url
@@ -228,9 +53,7 @@ function getWorkbook(){
 	return XLSX.readFile(filePath)
 }
 
-function uuid() {
-	return (new Date().getTime()).toString() + Math.round(Math.random() * 1000000)
-}
+
 
 async function importBoxes(json){
 	//console.log(`drop boxes`, (await agent.delete('/api/self/boxes')).status)
@@ -239,7 +62,6 @@ async function importBoxes(json){
 		var name = entry['Nistkastennr.']
 		if(!name) continue
 		const box = {
-			_id: uuid(),
 			type: 'box',
 			name: fixBoxName(name),
 			site: entry['Standort'],
@@ -258,19 +80,14 @@ function fixBoxName(name){
 	.replace(/\s/g, '')
 	.replace(/^([^\d])(\d)$/, '$10$2')
 }
-function dateFormatter(match){
-	const month = ('0' + match[2]).slice(-2)
-	const date = ('0' + match[1]).slice(-2)
-	const dateStr = `${year}-${month}-${date}T00:00:00Z`
-	return new Date(dateStr)
-}
+
 
 function actualizeDate(target, key, str){
 	const date = valueParser(key, str)
 	if(date) target[key] = date
 }
 function valueParser(type, str){
-	const info = parseInfo[type]
+	const info = parser[type]
 	for(var i in info.options) {
 		const option = info.options[i]
 		const allow = [option.allow || []].flat()
@@ -290,33 +107,41 @@ function valueParser(type, str){
 async function getId(type, obj){
 	const name = obj.name
 	idCache[type] = idCache[type] ?? {}
-	var id = idCache[type][name]
-	if(id) return id
-	const response = await db.put({
-		_id: uuid(),
+	var _id = idCache[type][name]
+	if(_id) return _id
+	_id = uuid()
+	docs.push({
+		_id,
 		type,
 		...obj
 	})
-	if(response && response.ok && response.id){
-		console.log(`Created ${type} ${name}`)
-		return idCache[type][name] = response.id
-	}
-	else {
-		throw ('Insertion of ${type} ${name} failed', response)
-	}
+	idCache[type][name] = _id
+	console.log(`Created ${type} ${name}`)
 }
 
 
 async function importInspections(json){
 	
-	
+	const inspections = []
 	for(var y=0; y<json.length; y++){
 		const line = json[y]
-		await importLine(line)
+		await importLine(line,)
 	}
 	
-	// parallel not working, species inserted multiple times
-	// await Promise.all(json.map(importLine))
+	
+}
+function uuid(length=10) {
+  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  const charactersLength = characters.length;
+  for (let i = 0; i < length; i++) {
+    result += characters.charAt(Math.floor(Math.random() * charactersLength));
+  }
+  return result;
+}
+
+function dateToId(date){
+	return date.getFullYear() + ('0' + (date.getMonth()+1)).slice(-2) + ('0' + date.getDate()).slice(-2)
 }
 async function importLine(line){
 	const entries = Object.entries(line)
@@ -324,23 +149,35 @@ async function importLine(line){
 	const boxName = fixBoxName(header[1])
 	if(oneBoxOnly && oneBoxOnly != boxName) return
 	const box_id = await getId('box', {name: boxName})
-	var summary = {}
+	var summary = {	}
+	let occupancy = 0
 	var inspection = {}
 	for(var x in entries){
 		inspection = {
-			_id: uuid(),
+			//_id: uuid(),
 			type: 'inspection',
-			box_id
+			box_id,
+			occupancy: summary.occupancy
 		}
 		const [dateStr, note] = entries[x]
 		if(note == 'NK') continue
 		inspection.date = new Date(dateStr.replace(/(.*)\.(.*)\.(.*)/, '$3-$2-$1'))
+		//inspection._id = uuid({msecs: inspection.date.getTime()})
+		inspection._id = dateToId(inspection.date) + '-' + box_id
 		inspection.note = note
 		inspection.scope = valueParser('scope', note)
 		if(inspection.scope == 'INSIDE'){
 			const state = inspection.state = valueParser('state', note)
+			if(isFinished(summary) && !isFinished(inspection)){
+				delete summary.occupancy
+			}
+			if(isOccupied(inspection) && !summary.occupancy){
+				summary.occupancy = inspection.occupancy = ++occupancy
+			}
 			// if there is no state noted, but there was one before, fallback
-			if(!state && !note.match(/UV/) && !note.match(/NK/)) console.error('No state:', boxName, inspection.date.toLocaleDateString(), note)
+			if(!state && !note.match(/UV/) && !note.match(/NK/)){
+				console.error('No state:', boxName, inspection.date.toLocaleDateString(), note)
+			}
 			if(state == 'STATE_OCCUPIED' || state == 'STATE_ABANDONED'){
 				const perpetratorName = valueParser('perpetrator', note)
 				if(perpetratorName) inspection.perpetrator_id = await getId('perpetrator', {name: perpetratorName})
@@ -388,13 +225,7 @@ async function importLine(line){
 			actualizeDate(inspection, 'hatchDate', note)
 			bandingParser(inspection, note)
 		}
-		//log(sparse(inspection), { _box: boxName})
-		try{
-			const response = await db.put(sparse(inspection))
-		}catch(e){
-			console.error(`Failed to insert inspection`, e)
-		}
-		
+		docs.push(sparse(inspection))
 	}
 	/*
 	const summaries = await agent.get(`/api/summaries?box_id=${inspection.box_id}`)
@@ -407,7 +238,14 @@ async function importLine(line){
 	)
 	*/
 }
-
+function isFinished({state}){
+	return (
+		state=='STATE_SUCCESS' ||
+		state=='STATE_FAILURE' ||
+		state=='STATE_ABANDONED' ||
+		state=='STATE_OCCUPIED'
+	)
+}
 function isOccupied({state}){
 	return (
 		state == 'STATE_EGGS' || 
