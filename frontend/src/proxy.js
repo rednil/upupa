@@ -16,8 +16,29 @@ export class Proxy {
 		return response.rows
 	}
 	async getByType(type){
-		return typeCache[type] || (typeCache[type] = this.query(type, {include_docs: true}))
+		return typeCache[type] || (typeCache[type] = this.query('typename', {
+			startkey: [type],
+			endkey: [type, {}],
+			include_docs: true
+		}))
 	}
+	clearTypeCache(type){
+		delete typeCache[type]
+	}
+	uuid(length = 10){
+		const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+		let result = ''
+		const charactersLength = characters.length
+		for (let i = 0; i < length; i++) {
+			result += characters.charAt(Math.floor(Math.random() * charactersLength))
+		}
+		return result
+	}
+	async put(item){
+		if(!item._id) item._id = this.uuid()
+		return this.db.put(item)
+	}
+	
 	async fetchMulti(...requests){
 		return Promise.all(
 			requests.map(request => this.fetch(...request))

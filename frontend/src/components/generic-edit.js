@@ -5,10 +5,11 @@ import { LitElement, html, css } from 'lit'
 import {live} from 'lit/directives/live.js'
 import { translate } from '../translator.js' 
 
-export class SpeciesEdit extends LitElement {
+export class GenericEdit extends LitElement {
 	static get properties() {
 			return {
 				item: { type: Object },
+				type: { type: String }
 			}
 		}
 		static get styles() {
@@ -33,7 +34,7 @@ export class SpeciesEdit extends LitElement {
 			`
 		}
 		getLabel(prop){
-			return translate(`SPECIES.${prop.toUpperCase()}`)
+			return translate(`${this.type}.${prop}`.toUpperCase())
 		}
 		changeCb(evt){
 			const { id, value } = evt.target
@@ -41,4 +42,4 @@ export class SpeciesEdit extends LitElement {
 		}
 }
 
-customElements.define('species-edit', SpeciesEdit)
+customElements.define('generic-edit', GenericEdit)

@@ -1,0 +1,13 @@
+services:
+  couchdb:
+    container_name: upupa-couch
+    hostname: upupa-couch
+    image: couchdb:3.5
+    volumes:
+      - ./couchdb.ini:/opt/couchdb/etc/local.d/couchdb.ini
+    ports:
+      - 5984:5984
+    restart: unless-stopped
+    environment:
+      COUCHDB_USER: admin
+      COUCHDB_PASSWORD: admin

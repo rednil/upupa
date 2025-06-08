@@ -59,10 +59,10 @@ export class SelectItem extends LitElement {
 		this.dispatchEvent(new Event('change'))
 	}
 	updated(changedProps){
-		if(changedProps.has('type')) this._typeChanged()
+		if(changedProps.has('type')) this.fetchOptions()
 		if(changedProps.has('options') && this.options.length) this._optionsChanged()
 	}
-	async _typeChanged(){
+	async fetchOptions(){
 		this.options = await this.proxy.getByType(this.type)
 	}
 	_optionsChanged(){

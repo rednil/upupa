@@ -39,7 +39,6 @@ export class SelectRoute extends LitElement {
 				${this.routes.filter(({menu}) => menu).map(({path}) => html`
 					<option value="${path}">${translate(path)}</option>
 				`)}
-				<option disabled>Version __APP_VERSION__</option>
 			</select>
     `
   }

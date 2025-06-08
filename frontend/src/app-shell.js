@@ -10,6 +10,7 @@ import './forms/button-logout'
 import './pages/inspection.js'
 import './pages/config.js'
 import './components/error-display.js'
+import './pages/about'
 /* 
 Routing can be done via hashed or non-hashed URL paths
 See https://blog.bitsrc.io/using-hashed-vs-nonhashed-url-paths-in-single-page-apps-a66234cefc96
@@ -141,6 +142,13 @@ export class AppShell extends LitElement {
 					<page-config id="page"></page-config>
 				`
 			},
+			{
+				path: '#/about',
+				menu: true,
+				render: () => html`
+					<page-about id="page"></page-about>
+				`
+			},
       { 
 				path: '#/login',
 				render: () => html`
@@ -212,7 +220,7 @@ export class AppShell extends LitElement {
     `
   }
   async requestLogout(){
-    const response = await this.db.logout()
+    const response = await this.proxy.db.logout()
     if(response.ok) {
       this.logout()
     }

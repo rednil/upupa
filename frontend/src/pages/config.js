@@ -1,16 +1,16 @@
 import { LitElement, html, css } from 'lit'
 import '../forms/select-item.js'
 import '../components/box-edit.js'
-import '../components/species-edit.js'
+import '../components/generic-edit.js'
 import '../components/user-edit.js'
 import '../app-dialog.js'
 import { Proxy } from '../proxy.js'
 export class PageConfig extends LitElement {
 	static get properties() {
 		return {
-			item_id: { type: String },
+			_id: { type: String },
 			copy: { type: Object},
-			collection: { type: String }
+			type: { type: String }
 		}
 	}
 	static get styles() {
@@ -39,7 +39,7 @@ export class PageConfig extends LitElement {
 	constructor(){
 		super()
 		this.proxy = new Proxy(this)
-		this.collection = 'boxes'
+		this.type = 'box'
 		this._item = {}
 		this.copy = {}
 		
@@ -55,17 +55,17 @@ export class PageConfig extends LitElement {
 		return html`
 			<div>
 				<div class="top">
-					<select .value=${this.collection} @change=${this.changeCollectionCb}>
-						<option value="boxes">Nistkasten</option>
+					<select .value=${this.type} @change=${this.changeCollectionCb}>
+						<option value="box">Nistkasten</option>
 						<option value="species">Vogelart</option>
-						<option value="users">Benutzer</option>
+						<option value="perpetrator">Eindringling</option>
 					</select>
 					<select-item 
-						style=${this.item._id ? '' : 'visibility:hidden'}
-						.type=${this.collection} 
-						.value=${this.item_id} 
+						style=${(this.item && !this.item._id) ? 'visibility:hidden' : ''}
+						.type=${this.type} 
+						.value=${this._id} 
 						autoselect
-						key=${this.collection == 'users' ? 'username' : 'name'}
+						key=${this.type == 'users' ? 'username' : 'name'}
 						@change=${this.changeItemCb}
 					></select-item>
 					<button @click=${this.addCb}>+</button>
@@ -92,34 +92,38 @@ export class PageConfig extends LitElement {
 		`
 	}
 	changeCollectionCb(evt){
-		this.collection = evt.target.value
-		history.replaceState({},null,`#/config?collection=${this.collection}`)
+		this.type = evt.target.value
+		history.replaceState({},null,`#/config?type=${this.type}`)
 	}
 	changeItemCb(evt){
+		console.log('changeItemCb', evt.target.item)
 		this.item = evt.target.item
-		this.item_id = evt.target.value
+		this._id = evt.target.value
 		this.updateHash()
 	}
 	renderConfig(){
-		switch(this.collection){
-			case 'boxes':
+		switch(this.type){
+			case 'box':
 				return html`<box-edit .item=${this.copy} ></box-edit>`
 			case 'species':
-				return html`<species-edit .item=${this.copy}></species-edit>`
+			case 'perpetrator':
+				return html`<generic-edit .item=${this.copy}></generic-edit>`
 			case 'users':
 				return html`<user-edit .item=${this.copy}></user-edit>`
 		}
 	}
 	addCb(){
 		this._backupItem = {...this.item}
-		this.item = {} 
+		this.item = {
+			type: this.type,
+		} 
 	}
 	confirmDeletion(){
 		this.shadowRoot.querySelector('#delete-dialog').open = true
 	}
 	async delete(){
 		this.shadowRoot.querySelector('#delete-dialog').open = false
-		const response = await this.proxy.delete(this.collection, this.item)
+		const response = await this.proxy.db.remove(this.item)
 		if(response?.deletedCount){
 			this.shadowRoot.querySelector('select-item').fetchData()
 		}
@@ -132,15 +136,17 @@ export class PageConfig extends LitElement {
 		this.copy = {...this.item} 
 	}
 	updateHash(){
-		history.replaceState({},null,`#/config?collection=${this.collection}&item_id=${this.item_id}`)
+		history.replaceState({},null,`#/config?type=${this.type}&_id=${this._id}`)
 	}
 	async submit(){
-		const response = await this.proxy.set(this.collection, this.copy)
+		const response = await this.proxy.put(this.copy)
+		console.log('response', response)
 		if(response?.insertedId){
-			this.item_id=response.insertedId
+			this._id=response.insertedId
 			this.updateHash()
 		}
-		this.shadowRoot.querySelector('select-item').fetchData()
+		this.proxy.clearTypeCache(this.type)
+		this.shadowRoot.querySelector('select-item').fetchOptions()
 	}
 }
 

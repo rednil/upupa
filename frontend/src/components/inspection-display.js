@@ -57,9 +57,13 @@ export class InspectionDisplay extends LitElement {
 	renderDetails(){
 		return Object.entries(this.inspection)
 		.filter(([key, value]) => !(
-			key.endsWith('_id') ||
+			//key.endsWith('_id') ||
+			key=='_id' ||
+			key=='box_id' ||
 			key=='note' ||
-			key=='date'
+			key=='date' ||
+			key=='_rev' ||
+			key=='type'
 		))
 		.map(([key, value]) => html`
 			<div>

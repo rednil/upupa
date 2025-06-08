@@ -82,9 +82,12 @@ function fixBoxName(name){
 }
 
 
-function actualizeDate(target, key, str){
+function actualizeDate(inspections, target, key, str){
 	const date = valueParser(key, str)
-	if(date) target[key] = date
+	if(date){
+		target[key] = date
+		inspections.forEach(inspection => delete inspection[key])
+	}
 }
 function valueParser(type, str){
 	const info = parser[type]
@@ -117,12 +120,12 @@ async function getId(type, obj){
 	})
 	idCache[type][name] = _id
 	console.log(`Created ${type} ${name}`)
+	return _id
 }
 
 
 async function importInspections(json){
 	
-	const inspections = []
 	for(var y=0; y<json.length; y++){
 		const line = json[y]
 		await importLine(line,)
@@ -145,6 +148,7 @@ function dateToId(date){
 }
 async function importLine(line){
 	const entries = Object.entries(line)
+	const inspections = []
 	const header = entries.shift()
 	const boxName = fixBoxName(header[1])
 	if(oneBoxOnly && oneBoxOnly != boxName) return
@@ -157,7 +161,6 @@ async function importLine(line){
 			//_id: uuid(),
 			type: 'inspection',
 			box_id,
-			occupancy: summary.occupancy
 		}
 		const [dateStr, note] = entries[x]
 		if(note == 'NK') continue
@@ -174,13 +177,16 @@ async function importLine(line){
 			if(isOccupied(inspection) && !summary.occupancy){
 				summary.occupancy = inspection.occupancy = ++occupancy
 			}
+			inspection.occupancy = summary.occupancy
 			// if there is no state noted, but there was one before, fallback
 			if(!state && !note.match(/UV/) && !note.match(/NK/)){
 				console.error('No state:', boxName, inspection.date.toLocaleDateString(), note)
 			}
 			if(state == 'STATE_OCCUPIED' || state == 'STATE_ABANDONED'){
 				const perpetratorName = valueParser('perpetrator', note)
-				if(perpetratorName) inspection.perpetrator_id = await getId('perpetrator', {name: perpetratorName})
+				if(perpetratorName) {
+					inspection.perpetrator_id = await getId('perpetrator', {name: perpetratorName})
+				}
 				if(isOccupied(summary)) {
 					inspection.reasonForLoss = valueParser('reasonForLoss', note)
 				}
@@ -220,12 +226,12 @@ async function importLine(line){
 			}
 			
 			
-			actualizeDate(inspection, 'breedingStart', note)
-			actualizeDate(inspection, 'layingStart', note)
-			actualizeDate(inspection, 'hatchDate', note)
+			actualizeDate(inspections, inspection, 'breedingStart', note)
+			actualizeDate(inspections, inspection, 'layingStart', note)
+			actualizeDate(inspections, inspection, 'hatchDate', note)
 			bandingParser(inspection, note)
 		}
-		docs.push(sparse(inspection))
+		inspections.push(sparse(inspection))
 	}
 	/*
 	const summaries = await agent.get(`/api/summaries?box_id=${inspection.box_id}`)
@@ -237,6 +243,7 @@ async function importLine(line){
 		))
 	)
 	*/
+	docs.push(...inspections)
 }
 function isFinished({state}){
 	return (

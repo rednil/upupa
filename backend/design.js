@@ -20,16 +20,19 @@ var db = new PouchDB(DATABASE_URL, {
 
 
 export async function ensureDesignDocument() {
+	/*
 	await db.createIndex({
 		"index": {
     	"fields": ["type"]
 		},
 	})
+	*/
   const designDocId = "_design/upupa";
   const newDesignDoc = {
     "_id": "_design/upupa",
 		"views": {
 			inspection,
+			typename: {"map": `doc => {	if (doc.type && doc.name) { emit([doc.type, doc.name]) }	}`},
 			"box":{"map": `doc => {	if (doc.type == 'box') { emit(doc.name) }	}`},
 			"species":{"map": `doc => {	if (doc.type == 'species') { emit(doc.name) }	}`},
 			summary

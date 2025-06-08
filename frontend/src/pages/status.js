@@ -41,7 +41,10 @@ export class PageStatus extends LitElement {
 			.inspection .date, .summary .head {
 				font-weight: bold;
 			}
-			
+			.top {
+				overflow-y: scroll;
+				flex-shrink: 0;
+			}
 			.bottom {
 				overflow-y: scroll;
 			}
@@ -51,6 +54,9 @@ export class PageStatus extends LitElement {
 			.nodata {
 				text-align: center;
 				padding: 1em;
+			}
+			.left *, a {
+				margin: auto 0;
 			}
 			
     `
@@ -88,18 +94,16 @@ export class PageStatus extends LitElement {
 						<div class="nodata">Keine Inspektionen</div>
 					`:''}
 					${this.summaries.map(summary => html`
-						<summary-display .summary=${summary.value} .species=${this.species}></summary-display>
+						<summary-display .summary=${summary.value} ></summary-display>
 					`)}
 					${this.inspections.map(inspection => html`
-						<inspection-display .inspection=${inspection} .species=${this.species}></inspection-display>
+						<inspection-display .inspection=${inspection} ></inspection-display>
 					`)}
 				</div>
 			</div>
     `
   }
-	getSpeciesName(species_id){
-		return this.species.find(species => species._id == species_id)?.name || '---'
-	}
+	
 	firstUpdated(){
 		if(this.box_id){
 			this._fetchData(this.box_id)
@@ -112,9 +116,8 @@ export class PageStatus extends LitElement {
 		this._fetchData(this.box_id)
 	}
 	async _fetchData(box_id){
-		var [boxes, species, inspections=[], summaries=[]] = await Promise.all([
-			this.proxy.query('box', { include_docs: true }),
-			this.proxy.query('species'),
+		var [boxes, inspections=[], summaries=[]] = await Promise.all([
+			this.proxy.getByType('box'),
 			this.proxy.query('inspection', {
 				endkey: [box_id],
 				startkey: [box_id, {}],
@@ -130,7 +133,7 @@ export class PageStatus extends LitElement {
 			//[`summaries`, `box_id=${box_id}`, '$sort=occupancy:-1'],
 		])
 		console.log('summaries', summaries)
-		Object.assign(this, {inspections, summaries, species, boxes})
+		Object.assign(this, {inspections, summaries, boxes})
 		//this.requestUpdate()
 	}
 }

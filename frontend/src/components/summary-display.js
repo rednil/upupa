@@ -18,6 +18,8 @@ export class SummaryDisplay extends LitElement {
 	static get properties() {
 		return {
 			summary: { type: Object },
+			species: { type: Array },
+			perpetrators: { type: Array }
 		}
 	}
 	static get styles() {
@@ -47,14 +49,21 @@ export class SummaryDisplay extends LitElement {
 	constructor(){
 		super()
 		this.proxy = new Proxy(this)
-		this.species = this.proxy.getByType('species')
+		this.species = []
+		this.perpetrators = []
+		this.fetchData()
+	}
+	async fetchData(){
+		this.species = await this.proxy.getByType('species')
+		this.perpetrators = await this.proxy.getByType('perpetrator')
 	}
 	render() {
 		const summary = this.summary
 		return [
 			this.renderHead(),
 			summary.state != 'STATE_EMPTY' ? this.renderDetail() : '',
-			summary.state == 'STATE_FAILURE' ? this.renderFailure() : ''
+			summary.state == 'STATE_FAILURE' ? this.renderFailure() : '',
+			this.renderPerpetrator()
 		]
 	}
 	renderHead(){
@@ -62,7 +71,7 @@ export class SummaryDisplay extends LitElement {
 		return html`
 			<div class="head">
 				<span>${summary.occupancy}. Belegung</span>
-				<span>${this.getSpeciesName(summary.species_id)}</span>
+				<span>${this.getName(this.species, summary.species_id)}</span>
 				<span>${translate(summary.state)}</span>
 			</div>
 		`
@@ -103,19 +112,23 @@ export class SummaryDisplay extends LitElement {
 	renderFailure(){
 		const summary = this.summary
 		return html`
-			<div><span>Grund für Misserfolg</span><span>${translate(summary.reasonForLoss)}</span></div>
-			${summary.reasonForLoss == 'PREDATION' ? html`
-				<div><span>Prädator</span><span>${summary.predator}</span></div>
-			`:''}
-			${summary.reasonForLoss == 'NEST_OCCUPATION' ? html`
-				<div><span>Okkupator</span><span>${this.getSpeciesName(summary.occupator_id)}</span></div>
-			`:''}
-
+			<div>
+				<span>Grund für Misserfolg</span>
+				<span>${translate(summary.reasonForLoss)}</span>
+			</div>
 		`
 	}
-	getSpeciesName(species_id){
-		console.log('getSpeciesName', species_id, this.species, this.species.find(species => species.id == species_id))
-		return this.species.find(species => species.id == species_id)?.key || '---'
+	renderPerpetrator(){
+		const {perpetrator_id, reasonForLoss} = this.summary
+		return !perpetrator_id ? '' : html`
+			<div>
+				<span>${translate(`${reasonForLoss}.PERPETRATOR`)}</span>
+				<span>${this.getName(this.perpetrators, perpetrator_id)}</span>
+			</div>
+		`
+	}
+	getName(items, id){
+		return items.find(({_id}) => _id == id)?.name || '---'
 	}
 }
 

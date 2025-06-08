@@ -29,7 +29,10 @@ const parser = {
 	breedingStart: {
 		options: [
 			{
-				allow: /Bb[^\d]*(\d+).(\d+)/,
+				allow: [
+					/Bb[^\d]*(\d+).(\d+)/,
+					/W brütet am (\d+).(\d+)/
+				],
 				value: dateFormatter
 			}
 		]
