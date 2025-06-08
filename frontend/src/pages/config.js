@@ -96,7 +96,6 @@ export class PageConfig extends LitElement {
 		history.replaceState({},null,`#/config?type=${this.type}`)
 	}
 	changeItemCb(evt){
-		console.log('changeItemCb', evt.target.item)
 		this.item = evt.target.item
 		this._id = evt.target.value
 		this.updateHash()
@@ -140,7 +139,6 @@ export class PageConfig extends LitElement {
 	}
 	async submit(){
 		const response = await this.proxy.put(this.copy)
-		console.log('response', response)
 		if(response?.insertedId){
 			this._id=response.insertedId
 			this.updateHash()

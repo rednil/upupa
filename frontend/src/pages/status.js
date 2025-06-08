@@ -94,7 +94,7 @@ export class PageStatus extends LitElement {
 						<div class="nodata">Keine Inspektionen</div>
 					`:''}
 					${this.summaries.map(summary => html`
-						<summary-display .summary=${summary.value} ></summary-display>
+						<summary-display .summary=${summary} ></summary-display>
 					`)}
 					${this.inspections.map(inspection => html`
 						<inspection-display .inspection=${inspection} ></inspection-display>
@@ -118,23 +118,22 @@ export class PageStatus extends LitElement {
 	async _fetchData(box_id){
 		var [boxes, inspections=[], summaries=[]] = await Promise.all([
 			this.proxy.getByType('box'),
-			this.proxy.query('inspection', {
-				endkey: [box_id],
-				startkey: [box_id, {}],
-				include_docs: true,
-				descending: true
-			}),
-			this.proxy.query('summary', {
-				group: true,
-				endkey: [2025, box_id],
-				startkey: [2025, box_id, {}],
-				descending: true
-			}),
-			//[`summaries`, `box_id=${box_id}`, '$sort=occupancy:-1'],
+			this.proxy.idStartsWith(
+				`inspection-${box_id}-`,
+				{
+					include_docs: true,
+					descending: true
+				}
+			),
+			this.proxy.idStartsWith(
+				`summary-2025-${box_id}-`,
+				{
+					include_docs: true,
+					descending: true
+				}
+			),
 		])
-		console.log('summaries', summaries)
 		Object.assign(this, {inspections, summaries, boxes})
-		//this.requestUpdate()
 	}
 }
 

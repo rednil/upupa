@@ -8,7 +8,7 @@ import path from 'path'
 import couch from './routes/couch.js'
 import { ensureDesignDocument } from './design.js'
 
-await ensureDesignDocument()
+//await ensureDesignDocument()
 
 var app = express()
 if(environment != 'test') app.use(morgan('dev'))

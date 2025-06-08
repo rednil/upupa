@@ -172,7 +172,11 @@ const parser = {
 	},
 	scope: {
 		options: [
-			{ value: 'OUTSIDE', allow: ['O.K.'], disAllow: /\d+\sNestlinge beringt/ },
+			{ 
+				value: 'OUTSIDE',
+				allow: ['O.K.', 'Altvögel am Nest'],
+				disAllow: /\d+\sNestlinge beringt/
+			},
 		],
 		default: 'INSIDE'
 	},

@@ -11,7 +11,7 @@ const infoOptions = [
 	'STATUS',
 	'LAST_INSPECTION',
 	'BAND_STATUS_NESTLINGS',
-	'BAND_STATUS_FEMALE'
+	'BAND_STATUS_PARENTS'
 ]
 
 function getShortDate(date){
@@ -112,13 +112,16 @@ export class PageOverview extends Page {
 	}
 	async fetchData(){
 		var [boxes, species, summaries=[]] = await Promise.all([
-			this.proxy.query('box', {include_docs: true }),
-			this.proxy.query('species'),
-			//this.proxy.query('summary', true)
+			this.proxy.getByType('box'),
+			this.proxy.getByType('species'),
+			this.proxy.idStartsWith(
+				`summary-2025-`,
+				{
+					include_docs: true,
+				}
+			),
 		])
-		console.log('boxes', boxes)
-		this.species = species.reduce((obj, {id, value}) => Object.assign(obj, {[id]: value}), {})
-		console.log(species, this.species)
+		this.species = species.reduce((obj, {_id, name}) => Object.assign(obj, {[_id]: name}), {})
 		this.boxes = boxes
 		.map(box => {
 			box.summaries = summaries
@@ -195,6 +198,11 @@ export class PageOverview extends Page {
 			case 'LAST_INSPECTION':
 				if(box.summaries.length == 0) text = 'Keine'
 				else text = new Date(box.summaries[0].lastInspection).toLocaleDateString()
+				break
+			case 'BAND_STATUS_PARENTS':
+				if(summary) { 
+					text = `M: ${summary.maleBanded?'ja':'nein'}, W: ${summary.femaleBanded?'ja':'nein'}`
+				}
 				break
 		}
 		return { text, className }

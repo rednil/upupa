@@ -4,6 +4,9 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import parser from './parser.js'
 
+const bandingStartAge = 7
+const bandingEndAge = 12
+
 const {
 	API_PROTOCOL,
 	API_HOST,
@@ -53,7 +56,11 @@ function getWorkbook(){
 	return XLSX.readFile(filePath)
 }
 
-
+function incDate(date, days){
+	const newDate = new Date(date)
+	newDate.setDate(newDate.getDate() + days)
+	return newDate
+}
 
 async function importBoxes(json){
 	//console.log(`drop boxes`, (await agent.delete('/api/self/boxes')).status)
@@ -82,11 +89,10 @@ function fixBoxName(name){
 }
 
 
-function actualizeDate(inspections, target, key, str){
+function actualizeDate(target, key, str){
 	const date = valueParser(key, str)
 	if(date){
 		target[key] = date
-		inspections.forEach(inspection => delete inspection[key])
 	}
 }
 function valueParser(type, str){
@@ -112,7 +118,7 @@ async function getId(type, obj){
 	idCache[type] = idCache[type] ?? {}
 	var _id = idCache[type][name]
 	if(_id) return _id
-	_id = uuid()
+	_id = uuid(type)
 	docs.push({
 		_id,
 		type,
@@ -133,14 +139,14 @@ async function importInspections(json){
 	
 	
 }
-function uuid(length=10) {
+function uuid(prefix, length=10) {
   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let result = '';
-  const charactersLength = characters.length;
+  let result = prefix ? prefix+'-' : ''
+  const charactersLength = characters.length
   for (let i = 0; i < length; i++) {
-    result += characters.charAt(Math.floor(Math.random() * charactersLength));
+    result += characters.charAt(Math.floor(Math.random() * charactersLength))
   }
-  return result;
+  return result
 }
 
 function dateToId(date){
@@ -149,36 +155,48 @@ function dateToId(date){
 async function importLine(line){
 	const entries = Object.entries(line)
 	const inspections = []
+	const summaries = []
 	const header = entries.shift()
 	const boxName = fixBoxName(header[1])
 	if(oneBoxOnly && oneBoxOnly != boxName) return
 	const box_id = await getId('box', {name: boxName})
-	var summary = {	}
-	let occupancy = 0
-	var inspection = {}
+	var summary = null
+	//let occupancy = 0
+	var lastInspection = {}
 	for(var x in entries){
-		inspection = {
-			//_id: uuid(),
+		const inspection = {
 			type: 'inspection',
 			box_id,
 		}
 		const [dateStr, note] = entries[x]
 		if(note == 'NK') continue
 		inspection.date = new Date(dateStr.replace(/(.*)\.(.*)\.(.*)/, '$3-$2-$1'))
-		//inspection._id = uuid({msecs: inspection.date.getTime()})
-		inspection._id = dateToId(inspection.date) + '-' + box_id
+		inspection._id = `inspection-${box_id}-${dateToId(inspection.date)}`
 		inspection.note = note
 		inspection.scope = valueParser('scope', note)
 		if(inspection.scope == 'INSIDE'){
-			const state = inspection.state = valueParser('state', note)
-			if(isFinished(summary) && !isFinished(inspection)){
-				delete summary.occupancy
-			}
-			if(isOccupied(inspection) && !summary.occupancy){
-				summary.occupancy = inspection.occupancy = ++occupancy
-			}
-			inspection.occupancy = summary.occupancy
 			// if there is no state noted, but there was one before, fallback
+			const state = inspection.state = valueParser('state', note) || lastInspection.state
+			if(
+				(summary?.state == 'STATE_SUCCESS') ||
+				(isFinished(summary) && !isFinished(inspection))){ // allow catastrophe to continue
+				summary = null
+			}
+			if(!summary && isOccupied(inspection)){
+				const occupancy = summaries.length + 1
+				const year = inspection.date.getFullYear()
+				summary = {
+					_id: `summary-${year}-${box_id}-${occupancy}`,
+					type: 'summary',
+					occupancy,
+					year,
+					box_id,
+					clutchSize: 0
+				}
+				summaries.push(summary)
+			}
+			inspection.occupancy = summary?.occupancy
+			
 			if(!state && !note.match(/UV/) && !note.match(/NK/)){
 				console.error('No state:', boxName, inspection.date.toLocaleDateString(), note)
 			}
@@ -188,30 +206,21 @@ async function importLine(line){
 					inspection.perpetrator_id = await getId('perpetrator', {name: perpetratorName})
 				}
 				if(isOccupied(summary)) {
-					inspection.reasonForLoss = valueParser('reasonForLoss', note)
+					summary.reasonForLoss = inspection.reasonForLoss = valueParser('reasonForLoss', note)
 				}
 			}
-			
-			if(!state && summary.state) inspection.state = summary.state
-			summary.state = state
-			
+
 			inspection.eggs = valueParser('eggs', note)
 			inspection.nestlings = valueParser('nestlings', note)
-
-			// Something like "alle Nestlinge ausgeflogen"
-			if(state == 'STATE_SUCCESS' && inspection.nestlings == 0){
-				inspection.nestlings = summary.nestlings
-			}
-			summary.nestlings = inspection.nestlings
+			bandingParser(inspection, note)
 
 			if(state != 'STATE_EMPTY') {
 				const speciesName = valueParser('speciesName', note)
 				if(speciesName) {
-					inspection.species_id = await getId('species', {name: speciesName})
-					
+					inspection.species_id = await getId('species', {name: speciesName})					
 					if(
-						summary.species_id && 
-						(summary.species_id != inspection.species_id) 
+						lastInspection.species_id && 
+						(lastInspection.species_id != inspection.species_id) 
 					){
 						inspection.takeover = valueParser('takeover', note)
 						if(!inspection.takeover){
@@ -221,17 +230,61 @@ async function importLine(line){
 							console.error(`Species changed after STATE_EGGS: ${boxName} ${inspection.date.toLocaleDateString()}`)
 						}
 					}
-					summary.species_id = inspection.species_id
 				}
 			}
+			if(summary) {
+				summary.lastInspection = inspection.date
+				// Something like "alle Nestlinge ausgeflogen"
+				if(state == 'STATE_SUCCESS' && inspection.nestlings == 0){
+					inspection.nestlings = summary.nestlings
+				}
+				// last wins (only if present)
+				[
+					'state',
+					'nestlings',
+					'reasonForLoss',
+					'perpetrator_id',
+					'nestlingsBanded',
+					'femaleBanded',
+					'maleBanded',
+					'species_id'
+				]
+				.forEach(prop => {
+					if(inspection[prop]) summary[prop] = inspection[prop]
+				})
+				if(isCatastrophic(inspection)) summary.state = 'STATE_FAILURE'
+				actualizeDate(summary, 'breedingStart', note)
+				actualizeDate(summary, 'layingStart', note)
+				actualizeDate(summary, 'hatchDate', note)
+				if(
+					state == 'STATE_BREEDING' && 
+					!summary.breedingStart &&
+					summary.layingStart
+				){
+					summary.breedingStart = incDate(summary.layingStart, summary.clutchSize)
+				}
+				if(
+					inspection.eggs &&
+					!summary.layingStart
+				){
+					summary.layingStart = incDate(inspection.date, -inspection.eggs)
+				}
+				if(summary.hatchDate){
+					//if(!summary.bandingWindowStart){
+						summary.bandingWindowStart = incDate(summary.hatchDate, bandingStartAge)
+					//}
+					//if(!summary.bandingWindowEnd){
+						summary.bandingWindowEnd = incDate(summary.hatchDate, bandingEndAge)
+					//}
+				}
+				
+				summary.clutchSize = Math.max(summary.clutchSize, inspection.eggs, inspection.nestlings)
+			}
+
 			
-			
-			actualizeDate(inspections, inspection, 'breedingStart', note)
-			actualizeDate(inspections, inspection, 'layingStart', note)
-			actualizeDate(inspections, inspection, 'hatchDate', note)
-			bandingParser(inspection, note)
 		}
 		inspections.push(sparse(inspection))
+		lastInspection = inspection
 	}
 	/*
 	const summaries = await agent.get(`/api/summaries?box_id=${inspection.box_id}`)
@@ -244,8 +297,10 @@ async function importLine(line){
 	)
 	*/
 	docs.push(...inspections)
+	docs.push(...summaries.map(summary => sparse(summary)))
 }
-function isFinished({state}){
+function isFinished(stateholder){
+	const state = stateholder?.state
 	return (
 		state=='STATE_SUCCESS' ||
 		state=='STATE_FAILURE' ||
@@ -253,22 +308,36 @@ function isFinished({state}){
 		state=='STATE_OCCUPIED'
 	)
 }
-function isOccupied({state}){
+function isOccupied(stateholder){
+	const state = stateholder?.state
 	return (
 		state == 'STATE_EGGS' || 
 		state == 'STATE_NESTLINGS' ||
 		state == 'STATE_BREEDING'
 	)
 }
-function bandingParser(inspection, note){
-	inspection.nestlingsBanded = valueParser('nestlingsBanded', note)
-	inspection.femaleBanded = valueParser('femaleBanded', note)
-	inspection.maleBanded = valueParser('maleBanded', note)
+function inPreparation(stateholder){
+	const state = stateholder?.state
+	return (
+		state == 'STATE_EMPTY' ||
+		state == 'STATE_NEST_BUILDING' ||
+		state == 'STATE_NEST_READY'
+	)
+}
+
+function isCatastrophic(stateholder){
+	const state = stateholder?.state
+	return state == 'STATE_ABANDONED' || state == 'STATE_OCCUPIED'
+}
+function bandingParser(target, note){
+	target.nestlingsBanded = valueParser('nestlingsBanded', note)
+	target.femaleBanded = valueParser('femaleBanded', note)
+	target.maleBanded = valueParser('maleBanded', note)
 	if(
 		note.match(/ring/) &&
-		!inspection.nestlingsBanded &&
-		!inspection.femaleBanded &&
-		!inspection.maleBanded
+		!target.nestlingsBanded &&
+		!target.femaleBanded &&
+		!target.maleBanded
 	){
 		console.error('unknown "ring" match', note)
 	}

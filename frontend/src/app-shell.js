@@ -190,7 +190,6 @@ export class AppShell extends LitElement {
   async requestUserInfo(){
     try{
 			const session = await this.proxy.db.getSession()
-			console.log('session', session)
 			if(session.userCtx.name == null){
 				return this.logout()
 			}

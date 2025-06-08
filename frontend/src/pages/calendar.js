@@ -1,5 +1,5 @@
-import { LitElement, html, css } from 'lit'
-import { Proxy } from '../proxy'
+import { html, css } from 'lit'
+import { Page } from './base'
 
 function formatDate(date){
 	return date.toLocaleString(window.navigator.language,{
@@ -12,7 +12,7 @@ function dateClass(date){
 	const day = date.getDay()
 	if(day == 6 || day == 0) return 'weekend'
 }
-export class PageCalendar extends LitElement {
+export class PageCalendar extends Page {
 	static get properties() {
 		return {
 			calendar: { type: Array }
@@ -62,7 +62,7 @@ export class PageCalendar extends LitElement {
 			}
 			
 			.days {
-				overflow-x: scroll;
+				overflow-x: auto;
 				white-space: nowrap;
 				height: fit-content;
 			}
@@ -77,7 +77,6 @@ export class PageCalendar extends LitElement {
 	constructor(){
 		super()
 		this.calendar = []
-		this.proxy = new Proxy(this)
 	}
 	
 	render() {
@@ -105,12 +104,21 @@ export class PageCalendar extends LitElement {
 		this.fetchData()
 	}
 	async fetchData(){
-		var [summaries, boxes] = await this.proxy.fetchMulti(
-			['summaries', 'nestlingsBanded=0', '$sort=occupancy:-1'],
-			['boxes']
-		)
+		var [summaries, boxes] = await Promise.all([
+			this.proxy.idStartsWith(
+				`summary-2025-`,
+				{
+					include_docs: true,
+				}
+			),
+			this.proxy.getByType('box')
+		])
 		const events = summaries
-		.filter(summary => summary.bandingWindowStart && ((summary.state == 'STATE_EGGS') || (summary.state == 'STATE_NESTLINGS')))
+		.filter(summary => (
+			!summary.nestlingsBanded &&
+			summary.bandingWindowStart && 
+			((summary.state == 'STATE_EGGS') || (summary.state == 'STATE_NESTLINGS'))
+		))
 		.map(({box_id, bandingWindowStart, bandingWindowEnd}) => ({
 			box_name: boxes.find(box => box._id == box_id).name,
 			box_id,

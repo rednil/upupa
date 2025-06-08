@@ -1,6 +1,5 @@
 import PouchDB from 'pouchdb'
 import inspection from './views/inspection.js'
-import summary from './views/summary.js'
 import pouchdbFind from 'pouchdb-find'
 PouchDB.plugin(pouchdbFind)
 
@@ -18,7 +17,6 @@ var db = new PouchDB(DATABASE_URL, {
 	},
 })
 
-
 export async function ensureDesignDocument() {
 	/*
 	await db.createIndex({
@@ -32,11 +30,6 @@ export async function ensureDesignDocument() {
     "_id": "_design/upupa",
 		"views": {
 			inspection,
-			typename: {"map": `doc => {	if (doc.type && doc.name) { emit([doc.type, doc.name]) }	}`},
-			"box":{"map": `doc => {	if (doc.type == 'box') { emit(doc.name) }	}`},
-			"species":{"map": `doc => {	if (doc.type == 'species') { emit(doc.name) }	}`},
-			summary
-			
 		}
   };
 

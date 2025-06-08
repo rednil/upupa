@@ -51,6 +51,7 @@ export class SummaryDisplay extends LitElement {
 		this.proxy = new Proxy(this)
 		this.species = []
 		this.perpetrators = []
+		this.summary = {}
 		this.fetchData()
 	}
 	async fetchData(){
