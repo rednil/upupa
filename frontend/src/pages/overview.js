@@ -111,28 +111,25 @@ export class PageOverview extends Page {
 	firstUpdated(){
 	}
 	async fetchData(){
-		var [boxes, species, summaries=[]] = await Promise.all([
+		var [boxes, species, lastInspections=[]] = await Promise.all([
 			this.proxy.getByType('box'),
 			this.proxy.getByType('species'),
-			this.proxy.idStartsWith(
-				`summary-2025-`,
-				{
-					include_docs: true,
-				}
-			),
+			this.proxy.queryReduce('lastInspection', {
+				group: true,
+				startkey: [2025],
+				endkey: [2025, {}],
+			}),
 		])
 		this.species = species.reduce((obj, {_id, name}) => Object.assign(obj, {[_id]: name}), {})
 		this.boxes = boxes
 		.map(box => {
-			box.summaries = summaries
-			.filter(summary => summary.box_id == box._id)
-			//.sort((a,b) => b.occupancy - a.occupancy) is done by backend
+			box.lastInspection = lastInspections.find(lastInspection => lastInspection.box_id == box._id)
 			return box
 		})
 	}
 
 	getInfoText(box){
-		const summary = box.summaries[0]
+		const {lastInspection} = box
 		var text = ''
 		var className = ''
 		switch (this.info){
@@ -140,25 +137,25 @@ export class PageOverview extends Page {
 				text = box.name
 				break
 			case 'SPECIES':
-				if(!summary) text = '---'
-				else if(summary.state == 'STATE_EMPTY') {
+				if(!lastInspection) text = '---'
+				else if(lastInspection.state == 'STATE_EMPTY') {
 					text = 'Leer'
 				}
 				else {
-					text = this.getSpeciesName(summary.species_id)
+					text = this.getSpeciesName(lastInspection.species_id)
 				}
 				break
 			case 'BAND_STATUS_NESTLINGS':
-				if(!summary) text = '---'
-				else if(summary.state == 'STATE_NESTLINGS' || summary.state == 'STATE_SUCCESS'){
-					if(summary.nestlingsBanded > 0){
-						text = `Beringt: ${summary.nestlingsBanded}`,
+				if(!lastInspection) text = '---'
+				else if(lastInspection.state == 'STATE_NESTLINGS' || lastInspection.state == 'STATE_SUCCESS'){
+					if(lastInspection.nestlingsBanded > 0){
+						text = `Beringt: ${lastInspection.nestlingsBanded}`,
 						className = 'banded'
 					}
-					else if(summary.bandingWindowStart && summary.bandingWindowStart){
+					else if(lastInspection.bandingWindowStart && lastInspection.bandingWindowStart){
 						const now = new Date()
-						const daysRemaining = (new Date(summary.bandingWindowEnd).getTime() - now.getTime()) / 86400000
-						if(now > new Date(summary.bandingWindowStart)){
+						const daysRemaining = (new Date(lastInspection.bandingWindowEnd).getTime() - now.getTime()) / 86400000
+						if(now > new Date(lastInspection.bandingWindowStart)){
 							className = 'banding'
 							if(daysRemaining < 0) {
 								text = 'Verpasst'
@@ -179,29 +176,29 @@ export class PageOverview extends Page {
 						}
 						else {
 							className += ' todo'
-							text = `${getShortDate(summary.bandingWindowStart)}-${getShortDate(summary.bandingWindowEnd)}`
+							text = `${getShortDate(lastInspection.bandingWindowStart)}-${getShortDate(lastInspection.bandingWindowEnd)}`
 						}
 					}
 				}
 				// if we have another state, display that other state
 				if(text.length) break 
 			case 'STATUS':
-				if(!summary) text = '---'
-				else if(summary.state == 'STATE_EMPTY') {
+				if(!lastInspection) text = '---'
+				else if(lastInspection.state == 'STATE_EMPTY') {
 					text = 'Leer'
 				}
 				else {
-					const species = this.getSpeciesName(summary.species_id)
-					text = translate(summary.state)
+					const species = this.getSpeciesName(lastInspection.species_id)
+					text = translate(lastInspection.state)
 				}
 				break
 			case 'LAST_INSPECTION':
-				if(box.summaries.length == 0) text = 'Keine'
-				else text = new Date(box.summaries[0].lastInspection).toLocaleDateString()
+				if(!lastInspection) text = 'Keine'
+				else text = new Date(lastInspection.date).toLocaleDateString()
 				break
 			case 'BAND_STATUS_PARENTS':
-				if(summary) { 
-					text = `M: ${summary.maleBanded?'ja':'nein'}, W: ${summary.femaleBanded?'ja':'nein'}`
+				if(lastInspection?.occupancy) { 
+					text = `M: ${lastInspection.maleBanded?'ja':'nein'}, W: ${lastInspection.femaleBanded?'ja':'nein'}`
 				}
 				break
 		}

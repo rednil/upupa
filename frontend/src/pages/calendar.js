@@ -30,7 +30,7 @@ export class PageCalendar extends Page {
 			.dates {
 				padding-right: 0.5em;
 			}
-			.date, .banding {
+			.date, .day > * {
 				padding: 0.5em;
 				white-space: nowrap;
 			}
@@ -91,8 +91,9 @@ export class PageCalendar extends Page {
 				${this.calendar.map(day => html`
 					<div class="day">
 						${day.bandings.map(banding => html`
-							<a href="${banding ? `#/overview?info=BAND_STATUS_NESTLINGS&box_id=${banding.box_id}` : ''}" class="banding day_${banding?banding.day:'false'}">${banding?banding.box_name:''}</a>	
+							<a href="${banding ? `#/overview?info=BAND_STATUS_NESTLINGS&box_id=${banding.box_id}` : ''}" class="banding day_${banding?banding.day:'false'}">${banding?banding.box_name:'---'}</a>	
 						`)}
+						${day.bandings.length?'':html`<div>&nbsp;</div>`}
 					</div>
 				`)}
 				
@@ -105,12 +106,12 @@ export class PageCalendar extends Page {
 	}
 	async fetchData(){
 		var [summaries, boxes] = await Promise.all([
-			this.proxy.idStartsWith(
-				`summary-2025-`,
-				{
-					include_docs: true,
-				}
-			),
+			this.proxy.queryReduce('summaryByBox', {
+				group: true,
+				endkey: [2025],
+				startkey: [2025, {}],
+				descending: true
+			}),
 			this.proxy.getByType('box')
 		])
 		const events = summaries
@@ -126,7 +127,6 @@ export class PageCalendar extends Page {
 			end: new Date(bandingWindowEnd),
 		}))
 		.sort((a,b) => a.start - b.start)
-
 		const firstEvent = events[0].start
 		const lastEvent = events[events.length - 1].end
 		const calendar = []

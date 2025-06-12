@@ -121,7 +121,8 @@ const parser = {
 					'Altvogel verunglückt',
 					'Nest aufgegeben',
 					'Brut aufgegeben',
-					'Keine Eier mehr auffindbar'
+					'Keine Eier mehr auffindbar',
+					'alle Nestlinge verschwunden'
 				],
 				disAllow: 'Nest-Okkupation BM'
 			},

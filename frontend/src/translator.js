@@ -18,7 +18,7 @@ const translations = {
 	"STATE_SUCCESS": "Erfolg",
 	"STATE_OCCUPIED": "Okkupiert",
 	"STATE_ABANDONED": "Verlassen",
-	"BAND_STATUS_FEMALE": "Beringung Altvögel",
+	"BAND_STATUS_PARENTS": "Beringung Altvögel",
 	"BAND_STATUS_NESTLINGS": "Beringung Nestlinge",
 	"BOXES": "Nistkästen",
 	"LAST_INSPECTION": "Letzte Inspektion",

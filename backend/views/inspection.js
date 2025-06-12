@@ -4,8 +4,6 @@ export const map = doc => {
 		emit([doc.box_id, date.getFullYear(), date.getMonth()+1, date.getDate()]); 
 	} 
 }
-export const view = {
+export const inspection = {
 	map: map.toString(),
 }
-
-export default view

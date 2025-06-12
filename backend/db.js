@@ -1,21 +1,39 @@
 import PouchDB from 'pouchdb'
-import inspection from './views/inspection.js'
-import pouchdbFind from 'pouchdb-find'
-PouchDB.plugin(pouchdbFind)
+
+// cannot get pouchdbFind to work in browser with esm style import
+// import pouchdbFind from 'pouchdb-find'
+// PouchDB.plugin(pouchdbFind)
+
+import { inspection } from './views/inspection.js'
+import { summaryByBox } from './views/summaryByBox.js'
+import { lastInspection } from './views/lastInspection.js'
+import { summaries } from './views/summaries.js'
 
 const {
-	DATABASE_URL,
+	DATABASE_PROTOCOL,
+	DATABASE_HOST,
+	DATABASE_PORT,
+	DATABASE_NAME,
 	ADMIN_USERNAME,
 	ADMIN_PASSWORD
 } = process.env
 
-console.log('DATABASE_URL', DATABASE_URL)
-var db = new PouchDB(DATABASE_URL, {
-	auth: {
-		username: ADMIN_USERNAME,
-		password: ADMIN_PASSWORD
-	},
-})
+const protocol = DATABASE_PROTOCOL || 'http'
+const host = DATABASE_HOST || 'localhost'
+const port = DATABASE_PORT || 5984
+
+export const DB_ADDRESS = `${protocol}://${host}:${port}`
+export const DB_NAME = DATABASE_NAME
+export const DB_URL = `${DB_ADDRESS}/${DATABASE_NAME}`
+
+console.log('DATABASE_URL', DB_URL)
+
+const auth = {
+	username: ADMIN_USERNAME,
+	password: ADMIN_PASSWORD
+}
+
+var db = new PouchDB(DB_URL, { auth })
 
 export async function ensureDesignDocument() {
 	/*
@@ -30,6 +48,9 @@ export async function ensureDesignDocument() {
     "_id": "_design/upupa",
 		"views": {
 			inspection,
+			summaryByBox,
+			lastInspection,
+			summaries
 		}
   };
 

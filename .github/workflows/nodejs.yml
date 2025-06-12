@@ -12,15 +12,6 @@ jobs:
     permissions:
       contents: read
       packages: write
-    services:
-      mongodb:
-        image: mongo:latest
-        env:
-          MONGO_INITDB_ROOT_USERNAME: admin
-          MONGO_INITDB_ROOT_PASSWORD: admin
-          MONGO_INITDB_DATABASE: project-test
-        ports:
-          - 27017:27017
 
     strategy:
       matrix:

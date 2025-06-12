@@ -28,12 +28,12 @@ const designDocs = await db.allDocs({
 console.log('designDocs', designDocs)
 await db.destroy()
 db = new PouchDB('http://localhost:5984/dev', {auth})
-db.bulkDocs(designDocs.rows.map(doc => {
+await db.bulkDocs(designDocs.rows.map(doc => {
 	delete doc.doc._rev
 	return doc.doc
 }))
 const oneBoxOnly = process.argv[2]
-const dataPath = 'data/2025-05-27.ods'
+const dataPath = 'data/2025-06-10.ods'
 
 const idCache = {}
 
@@ -125,7 +125,7 @@ async function getId(type, obj){
 		...obj
 	})
 	idCache[type][name] = _id
-	console.log(`Created ${type} ${name}`)
+	//console.log(`Created ${type} ${name}`)
 	return _id
 }
 
@@ -154,158 +154,136 @@ function dateToId(date){
 }
 async function importLine(line){
 	const entries = Object.entries(line)
+	entries.forEach((entry, idx) => {
+		const [dateStr, note] = entry
+		if(note.search('//')>0){
+			const doubleNote = note.split('//')
+			const date = new Date(dateStr.replace(/(.*)\.(.*)\.(.*)/, '$3-$2-$1'))
+			const newDate = incDate(date, -1).toLocaleDateString()
+			console.log('newDate', newDate, dateStr)
+			entries[idx] = [newDate, doubleNote[0]]
+			entries.splice(idx+1,0,[dateStr, '# Geteilter Doppeleintrag # '+doubleNote[1]])
+			console.error('Split double entry', entries.slice(idx, idx+2))
+		}
+	})
 	const inspections = []
 	const summaries = []
 	const header = entries.shift()
 	const boxName = fixBoxName(header[1])
 	if(oneBoxOnly && oneBoxOnly != boxName) return
 	const box_id = await getId('box', {name: boxName})
-	var summary = null
-	//let occupancy = 0
+	let occupancy = 0
 	var lastInspection = {}
 	for(var x in entries){
-		const inspection = {
-			type: 'inspection',
-			box_id,
-		}
 		const [dateStr, note] = entries[x]
 		if(note == 'NK') continue
-		inspection.date = new Date(dateStr.replace(/(.*)\.(.*)\.(.*)/, '$3-$2-$1'))
-		inspection._id = `inspection-${box_id}-${dateToId(inspection.date)}`
-		inspection.note = note
-		inspection.scope = valueParser('scope', note)
-		if(inspection.scope == 'INSIDE'){
-			// if there is no state noted, but there was one before, fallback
-			const state = inspection.state = valueParser('state', note) || lastInspection.state
-			if(
-				(summary?.state == 'STATE_SUCCESS') ||
-				(isFinished(summary) && !isFinished(inspection))){ // allow catastrophe to continue
-				summary = null
-			}
-			if(!summary && isOccupied(inspection)){
-				const occupancy = summaries.length + 1
-				const year = inspection.date.getFullYear()
-				summary = {
-					_id: `summary-${year}-${box_id}-${occupancy}`,
-					type: 'summary',
-					occupancy,
-					year,
-					box_id,
-					clutchSize: 0
-				}
-				summaries.push(summary)
-			}
-			inspection.occupancy = summary?.occupancy
+		const date = new Date(dateStr.replace(/(.*)\.(.*)\.(.*)/, '$3-$2-$1'))
+		const scope = valueParser('scope', note)
+		// if there is no state noted, but there was one before, fallback
+		var state = valueParser('state', note) 
+		if(
+			isCatastrophic({state}) && 
+			(isOccupied(lastInspection) || isFinished(lastInspection)) &&
+			(lastInspection.state != 'STATE_SUCCESS')
+		) state = 'STATE_FAILURE'
+		if(
+			(lastInspection.state == 'STATE_SUCCESS') ||
+			(isFinished(lastInspection) && !isFinished({state})) // allow catastrophe to continue
+		){
+			lastInspection = {}
+		}
+		
+		const inspection = {
+			...lastInspection,
+			_id: `inspection-${uuid()}`,
+			type: 'inspection',
+			box_id,
+			date,
+			note,
+			scope,
+			state: state || lastInspection.state
+		}
+		inspections.push(inspection)
+		if(scope == 'OUTSIDE' || note.match(/UV/)) continue
 			
-			if(!state && !note.match(/UV/) && !note.match(/NK/)){
-				console.error('No state:', boxName, inspection.date.toLocaleDateString(), note)
+		
+		if(inPreparation(inspection)) delete inspection.occupancy
+		else if(isOccupied(inspection) && !isOccupied(lastInspection))	{
+			inspection.occupancy = ++occupancy
+		}
+		
+		
+		if(state == 'STATE_OCCUPIED' || state == 'STATE_FAILURE'){
+			const perpetratorName = valueParser('perpetrator', note)
+			if(perpetratorName) {
+				inspection.perpetrator_id = await getId('perpetrator', {name: perpetratorName})
 			}
-			if(state == 'STATE_OCCUPIED' || state == 'STATE_ABANDONED'){
-				const perpetratorName = valueParser('perpetrator', note)
-				if(perpetratorName) {
-					inspection.perpetrator_id = await getId('perpetrator', {name: perpetratorName})
-				}
-				if(isOccupied(summary)) {
-					summary.reasonForLoss = inspection.reasonForLoss = valueParser('reasonForLoss', note)
-				}
+			if(isOccupied(lastInspection)) {
+				inspection.reasonForLoss = inspection.reasonForLoss = valueParser('reasonForLoss', note)
 			}
-
+		}
+		if(!inPreparation(inspection)){
 			inspection.eggs = valueParser('eggs', note)
 			inspection.nestlings = valueParser('nestlings', note)
-			bandingParser(inspection, note)
+			inspection.clutchSize = Math.max(inspection.eggs, inspection.nestlings, inspection.clutchSize || 0)
+		} 
+		// Something like "alle Nestlinge ausgeflogen"
+		if(state == 'STATE_SUCCESS' && inspection.nestlings == 0){
+			inspection.nestlings = lastInspection.nestlings
+		}
+		bandingParser(inspection, note)
 
-			if(state != 'STATE_EMPTY') {
-				const speciesName = valueParser('speciesName', note)
-				if(speciesName) {
-					inspection.species_id = await getId('species', {name: speciesName})					
-					if(
-						lastInspection.species_id && 
-						(lastInspection.species_id != inspection.species_id) 
-					){
-						inspection.takeover = valueParser('takeover', note)
-						if(!inspection.takeover){
-							console.error('Species changed without explicit takeover', boxName, inspection.date.toLocaleDateString())
-						}
-						if(isOccupied(summary)){
-							console.error(`Species changed after STATE_EGGS: ${boxName} ${inspection.date.toLocaleDateString()}`)
-						}
+		if(state != 'STATE_EMPTY') {
+			const speciesName = valueParser('speciesName', note)
+			if(speciesName) {
+				inspection.species_id = await getId('species', {name: speciesName})					
+				if(
+					lastInspection.species_id && 
+					(lastInspection.species_id != inspection.species_id) 
+				){
+					inspection.takeover = valueParser('takeover', note)
+					if(!inspection.takeover){
+						console.error('Species changed without explicit takeover', boxName, inspection.date.toLocaleDateString())
+					}
+					if(isOccupied(inspection)){
+						console.error(`Species changed after STATE_EGGS: ${boxName} ${inspection.date.toLocaleDateString()}`)
 					}
 				}
 			}
-			if(summary) {
-				summary.lastInspection = inspection.date
-				// Something like "alle Nestlinge ausgeflogen"
-				if(state == 'STATE_SUCCESS' && inspection.nestlings == 0){
-					inspection.nestlings = summary.nestlings
-				}
-				// last wins (only if present)
-				[
-					'state',
-					'nestlings',
-					'reasonForLoss',
-					'perpetrator_id',
-					'nestlingsBanded',
-					'femaleBanded',
-					'maleBanded',
-					'species_id'
-				]
-				.forEach(prop => {
-					if(inspection[prop]) summary[prop] = inspection[prop]
-				})
-				if(isCatastrophic(inspection)) summary.state = 'STATE_FAILURE'
-				actualizeDate(summary, 'breedingStart', note)
-				actualizeDate(summary, 'layingStart', note)
-				actualizeDate(summary, 'hatchDate', note)
-				if(
-					state == 'STATE_BREEDING' && 
-					!summary.breedingStart &&
-					summary.layingStart
-				){
-					summary.breedingStart = incDate(summary.layingStart, summary.clutchSize)
-				}
-				if(
-					inspection.eggs &&
-					!summary.layingStart
-				){
-					summary.layingStart = incDate(inspection.date, -inspection.eggs)
-				}
-				if(summary.hatchDate){
-					//if(!summary.bandingWindowStart){
-						summary.bandingWindowStart = incDate(summary.hatchDate, bandingStartAge)
-					//}
-					//if(!summary.bandingWindowEnd){
-						summary.bandingWindowEnd = incDate(summary.hatchDate, bandingEndAge)
-					//}
-				}
-				
-				summary.clutchSize = Math.max(summary.clutchSize, inspection.eggs, inspection.nestlings)
-			}
-
-			
 		}
-		inspections.push(sparse(inspection))
+			
+			
+		actualizeDate(inspection, 'breedingStart', note)
+		actualizeDate(inspection, 'layingStart', note)
+		actualizeDate(inspection, 'hatchDate', note)
+		if(
+			state == 'STATE_BREEDING' && 
+			!inspection.breedingStart &&
+			inspection.layingStart
+		){
+			inspection.breedingStart = incDate(inspection.layingStart, inspection.clutchSize)
+		}
+		if(
+			inspection.eggs &&
+			!inspection.layingStart
+		){
+			inspection.layingStart = incDate(inspection.date, -inspection.eggs)
+		}
+		if(inspection.hatchDate){
+			inspection.bandingWindowStart = incDate(inspection.hatchDate, bandingStartAge)
+			inspection.bandingWindowEnd = incDate(inspection.hatchDate, bandingEndAge)
+		}
 		lastInspection = inspection
 	}
-	/*
-	const summaries = await agent.get(`/api/summaries?box_id=${inspection.box_id}`)
-	console.log(
-		'summaries',
-		summaries.data.map(summary => Object.fromEntries(
-			Object.entries(summary)
-			.filter(([key]) => !(key.endsWith('_id') || key.endsWith('At')))
-		))
-	)
-	*/
 	docs.push(...inspections)
-	docs.push(...summaries.map(summary => sparse(summary)))
 }
 function isFinished(stateholder){
 	const state = stateholder?.state
 	return (
 		state=='STATE_SUCCESS' ||
-		state=='STATE_FAILURE' ||
-		state=='STATE_ABANDONED' ||
-		state=='STATE_OCCUPIED'
+		state=='STATE_FAILURE' 
+		//state=='STATE_ABANDONED' ||
+		//state=='STATE_OCCUPIED'
 	)
 }
 function isOccupied(stateholder){
@@ -330,9 +308,10 @@ function isCatastrophic(stateholder){
 	return state == 'STATE_ABANDONED' || state == 'STATE_OCCUPIED'
 }
 function bandingParser(target, note){
-	target.nestlingsBanded = valueParser('nestlingsBanded', note)
-	target.femaleBanded = valueParser('femaleBanded', note)
-	target.maleBanded = valueParser('maleBanded', note)
+	['nestlingsBanded', 'femaleBanded', 'maleBanded'].forEach(prop => {
+		const parsedValue = valueParser(prop, note)
+		if(parsedValue) target[prop] = parsedValue
+	})
 	if(
 		note.match(/ring/) &&
 		!target.nestlingsBanded &&
@@ -355,4 +334,11 @@ function sparse(obj){
 		if(obj[key] == null) delete obj[key]
 	})
 	return obj
+}
+function removeIDs(input){
+	const output = {}
+	Object.keys(input).sort().forEach(key => {
+		if(input[key] != null && !key.endsWith('_id')) output[key] = input[key]
+	})
+	return output
 }

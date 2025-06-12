@@ -13,6 +13,10 @@ export class Proxy {
 	async query(view, options = {}) {
 		return this._handleResponse(await this.db.query(`upupa/${view}`, options), options)
 	}
+	async queryReduce(view, options = {}) {
+		const response = await this.db.query(`upupa/${view}`, options)
+		return response.rows.map(({key, value}) => value)
+	}
 	async getByType(type){
 		return typeCache[type] = typeCache[type] || 
 		this.idStartsWith(`${type}-`, {

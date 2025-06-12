@@ -198,25 +198,14 @@ export class PageInspection extends LitElement {
 	}
 	async fetchLastInspection(){
 		console.log('fetchLastInspection')
-		this.lastInspection = await this.proxy.fetchSingle(
-			'inspections',
-			`box_id=${this.box_id}`,
-			`date=$lte:${this.inspection.date}`,
-			'$sort=date:-1',
-			'$limit=1',
-		)
-		if(!isFinished(this.lastInspection)) await this.fetchSummary()
+		this.lastInspection = await this.proxy.queryReduce('lastInspection', {
+			group: true,
+			key: [2025, this.box_id],
+		})
+		console.log('lastInspection', this.lastInspection)
 		this.updateInspection()
 	}
-	async fetchSummary(){
-		this.summary = await this.proxy.fetchSingle(
-			'summaries',
-			`box_id=${this.box_id}`,
-			`lastInspection=$gte:${this.lastInspection.date}`,
-			'$sort=occupancy:-1'
-		)
-		
-	}
+	
 	updateInspection(){
 		if(this.inspection_id) return
 		if(this.lastInspection && !isFinished(this.lastInspection)){
@@ -230,13 +219,7 @@ export class PageInspection extends LitElement {
 			}
 		}
 		this.inspection.date = this.date
-		if(this.summary){
-			events.forEach(event => {
-				if(this?.summary[event]){
-					this.inspection[event] = formatDateForInput(this.summary[event])
-				}
-			})
-		}		
+		
 	}
 	renderInput(prop, type){
 		return html`
@@ -255,16 +238,15 @@ export class PageInspection extends LitElement {
 		this.inspection_id = null
 	}
 	async fetchInspection(){
+		console.log('fetchInspection', this.inspection_id)
 		delete this.lastInspection
 		delete this.summary
 		//if(this.inspection_id && (this.inspection_id == this.inspection._id)) return
-		const existingInspection = await this.proxy.fetchSingle(
-			'inspections',
-			...(this.inspection_id ? [`_id=${this.inspection_id}`] : [
-				`box_id=${this.box_id}`,
-				`date=${this.inspection.date}`
-			])
-		)
+		const existingInspection = this.inspection_id ? 
+			await this.proxy.db.get(this.inspection_id) :
+			await this.proxy.query('inspection', {
+				key: [this.box_id, ...formatDateForInput(this.inspection.date).split('-')]
+			})
 		if(existingInspection){
 			this.inspection = existingInspection
 			this.inspection_id = this.inspection._id
