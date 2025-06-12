@@ -6,9 +6,9 @@ import morgan from 'morgan'
 import { fileURLToPath } from 'url'
 import path from 'path'
 import couch from './routes/couch.js'
-import { ensureDesignDocument } from './db.js'
+import { db, ensureDesignDocument } from './db.js'
 
-await ensureDesignDocument()
+await ensureDesignDocument(db)
 
 var app = express()
 if(environment != 'test') app.use(morgan('dev'))

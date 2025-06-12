@@ -28,14 +28,14 @@ export const DB_URL = `${DB_ADDRESS}/${DATABASE_NAME}`
 
 console.log('DATABASE_URL', DB_URL)
 
-const auth = {
+export const auth = {
 	username: ADMIN_USERNAME,
 	password: ADMIN_PASSWORD
 }
 
-var db = new PouchDB(DB_URL, { auth })
+export const db = new PouchDB(DB_URL, { auth })
 
-export async function ensureDesignDocument() {
+export async function ensureDesignDocument(db) {
 	/*
 	await db.createIndex({
 		"index": {

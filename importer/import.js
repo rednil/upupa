@@ -3,35 +3,28 @@ import XLSX from 'xlsx'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import parser from './parser.js'
+import { db as oldDb, auth, ensureDesignDocument, DB_URL } from '../backend/db.js'
 
 const bandingStartAge = 7
 const bandingEndAge = 12
 
-const {
-	API_PROTOCOL,
-	API_HOST,
-	API_PORT,
-	ADMIN_USERNAME,
-	ADMIN_PASSWORD
-} = process.env
 
-const auth = {
-	username: 'admin',
-	password: 'admin'
-}
-var db = new PouchDB('http://localhost:5984/dev', {auth})
+/*
 const designDocs = await db.allDocs({
 	startkey: "_design/",
 	endkey: "_design0",
 	include_docs: true
 })
-console.log('designDocs', designDocs)
-await db.destroy()
-db = new PouchDB('http://localhost:5984/dev', {auth})
+*/
+await oldDb.destroy()
+const db = new PouchDB(DB_URL, {auth})
+await ensureDesignDocument(db)
+/*
 await db.bulkDocs(designDocs.rows.map(doc => {
 	delete doc.doc._rev
 	return doc.doc
 }))
+*/
 const oneBoxOnly = process.argv[2]
 const dataPath = 'data/2025-06-10.ods'
 
