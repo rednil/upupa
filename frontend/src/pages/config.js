@@ -59,13 +59,13 @@ export class PageConfig extends LitElement {
 						<option value="box">Nistkasten</option>
 						<option value="species">Vogelart</option>
 						<option value="perpetrator">Eindringling</option>
+						<option value="user">Benutzer</option>
 					</select>
 					<select-item 
 						style=${(this.item && !this.item._id) ? 'visibility:hidden' : ''}
 						.type=${this.type} 
 						.value=${this._id} 
 						autoselect
-						key=${this.type == 'users' ? 'username' : 'name'}
 						@change=${this.changeItemCb}
 					></select-item>
 					<button @click=${this.addCb}>+</button>
@@ -107,7 +107,7 @@ export class PageConfig extends LitElement {
 			case 'species':
 			case 'perpetrator':
 				return html`<generic-edit .item=${this.copy}></generic-edit>`
-			case 'users':
+			case 'user':
 				return html`<user-edit .item=${this.copy}></user-edit>`
 		}
 	}
@@ -122,7 +122,7 @@ export class PageConfig extends LitElement {
 	}
 	async delete(){
 		this.shadowRoot.querySelector('#delete-dialog').open = false
-		const response = await this.proxy.db.remove(this.item)
+		const response = await this.proxy.remove(this.item)
 		if(response?.deletedCount){
 			this.shadowRoot.querySelector('select-item').fetchData()
 		}

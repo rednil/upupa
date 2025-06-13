@@ -18,18 +18,22 @@ export class UserEdit extends LitElement {
 		}
 		render() {
 			return [
-				this.renderInput('username'),
+				this.renderInput('name'),
 				this.renderInput('password', this.item._id ? 'beibehalten' : ''),
-				html`
-					<div>
-						<label for="rolw">${translate('USERS.ROLE')}</label>
-						<select id="role" label=${this.getLabel('role')} .value=${this.item?.role || 'USER'}>
-							<option value='USER'>${translate('USERS.ROLE.USER')}</option>
-							<option value='ADMIN'>${translate('USERS.ROLE.ADMIN')}</option>   
-						</select>
-					</div>
-				`
+				//this.renderRoles()
+				
 			]
+		}
+		renderRoles(){
+			return html`
+				<div>
+					<label for="role">${translate('USERS.ROLE')}</label>
+					<select id="role" label=${this.getLabel('role')} .value=${this.item?.role || 'USER'}>
+						<option value='USER'>${translate('USERS.ROLE.USER')}</option>
+						<option value='ADMIN'>${translate('USERS.ROLE.ADMIN')}</option>   
+					</select>
+				</div>
+			`
 		}
 		renderInput(prop, placeholder){
 			return html`
