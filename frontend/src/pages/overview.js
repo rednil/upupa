@@ -114,8 +114,9 @@ export class PageOverview extends Page {
 		var [boxes, species, lastInspections=[]] = await Promise.all([
 			this.proxy.getByType('box'),
 			this.proxy.getByType('species'),
-			this.proxy.queryReduce('lastInspection', {
+			this.proxy.queryReduce('inspections', {
 				group: true,
+				group_level: 2,
 				startkey: [2025],
 				endkey: [2025, {}],
 			}),

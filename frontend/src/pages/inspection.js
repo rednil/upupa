@@ -198,8 +198,9 @@ export class PageInspection extends LitElement {
 	}
 	async fetchLastInspection(){
 		console.log('fetchLastInspection')
-		this.lastInspection = await this.proxy.queryReduce('lastInspection', {
+		this.lastInspection = await this.proxy.queryReduce('inspections', {
 			group: true,
+			group_level: 2,
 			key: [2025, this.box_id],
 		})
 		console.log('lastInspection', this.lastInspection)
@@ -245,7 +246,7 @@ export class PageInspection extends LitElement {
 		const existingInspection = this.inspection_id ? 
 			await this.proxy.db.get(this.inspection_id) :
 			await this.proxy.query('inspection', {
-				key: [this.box_id, ...formatDateForInput(this.inspection.date).split('-')]
+				key: [2025, this.box_id, ...formatDateForInput(this.inspection.date).split('-').slice(1)]
 			})
 		if(existingInspection){
 			this.inspection = existingInspection

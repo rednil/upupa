@@ -118,14 +118,15 @@ export class PageStatus extends LitElement {
 	async _fetchData(box_id){
 		var [boxes, inspections=[], summaries=[]] = await Promise.all([
 			this.proxy.getByType('box'),
-			this.proxy.query('inspection', {
-				endkey: [box_id],
-				startkey: [box_id, {}],
-				include_docs: true,
+			this.proxy.queryReduce('inspections', {
+				endkey: [2025, box_id],
+				startkey: [2025, box_id, {}],
+				reduce: false,
 				descending: true
 			}),
-			this.proxy.queryReduce('summaryByBox', {
+			this.proxy.queryReduce('summaries', {
 				group: true,
+				group_level: 3,
 				endkey: [2025, box_id],
 				startkey: [2025, box_id, {}],
 				descending: true

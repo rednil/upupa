@@ -106,8 +106,9 @@ export class PageCalendar extends Page {
 	}
 	async fetchData(){
 		var [summaries, boxes] = await Promise.all([
-			this.proxy.queryReduce('summaryByBox', {
+			this.proxy.queryReduce('summaries', {
 				group: true,
+				group_level: 2,
 				endkey: [2025],
 				startkey: [2025, {}],
 				descending: true

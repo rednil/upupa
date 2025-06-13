@@ -4,10 +4,8 @@ import PouchDB from 'pouchdb'
 // import pouchdbFind from 'pouchdb-find'
 // PouchDB.plugin(pouchdbFind)
 
-import { inspection } from './views/inspection.js'
-import { summaryByBox } from './views/summaryByBox.js'
-import { lastInspection } from './views/lastInspection.js'
-import { summaries } from './views/summaries.js'
+import inspections from './views/inspections.js'
+import summaries from './views/summaries.js'
 
 const {
 	DATABASE_PROTOCOL,
@@ -47,9 +45,7 @@ export async function ensureDesignDocument(db) {
   const newDesignDoc = {
     "_id": "_design/upupa",
 		"views": {
-			inspection,
-			summaryByBox,
-			lastInspection,
+			inspections,
 			summaries
 		}
   };
