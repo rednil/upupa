@@ -5,18 +5,19 @@ export const INSPECTION_STATES = [
 	'STATE_EMPTY',
 	'STATE_NEST_BUILDING',
 	'STATE_NEST_READY',
+	'STATE_OCCUPIED',
 	'STATE_EGGS',
 	'STATE_BREEDING',
 	'STATE_NESTLINGS',
 	'STATE_SUCCESS',
-	'STATE_OCCUPIED',
-	'STATE_ABANDONED'
+	'STATE_FAILURE'
 ]
 export class SelectState extends LitElement {
 
   static get properties() {
     return {
       value: { Type: String },
+			lastValue: { Type: String }
     }
   }
 
@@ -30,12 +31,26 @@ export class SelectState extends LitElement {
   render() {
     return html`
       <select @change=${this.changeCb} .value=${this.value}>
-				${INSPECTION_STATES.map(state => html`
-					<option value=${state}>${translate(state)}</option>
+				${INSPECTION_STATES.map((state, idx) => html`
+					<option
+						.disabled=${this.isDisabled(idx)}
+						.value=${state}
+						.selected=${state==this.value}
+						>${translate(state)}</option>
 				`)}
 			</select>
     `
   }
+	isDisabled(idx){
+		const lastIdx = this.lastValue ? INSPECTION_STATES.indexOf(this.lastValue) : 0
+		const occupancyStarted = (lastIdx >= INSPECTION_STATES.indexOf('STATE_EGGS'))
+		const finished = (idx > INSPECTION_STATES.indexOf('STATE_NESTLINGS'))
+		const regression = (idx < lastIdx)
+		return (
+			(occupancyStarted && regression) ||
+			(!occupancyStarted && finished)
+		)
+	}
 	changeCb(evt){
 		this.value = evt.target.value
 		this.dispatchEvent(new CustomEvent('change'))

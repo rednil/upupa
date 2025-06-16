@@ -74,8 +74,9 @@ export class SelectItem extends LitElement {
 			(this.autoselect && !this.value && this.options.length>0)
 		){
 			this.value = this.options[0]._id
+			this.dispatchEvent(new Event('change'))
 		}
-		if(oldItem != this.getSelectedItem()) this.dispatchEvent(new Event('change'))
+		//if(oldItem != this.getSelectedItem()) this.dispatchEvent(new Event('change'))
 	}
 	
 	

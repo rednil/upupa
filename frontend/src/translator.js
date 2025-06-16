@@ -1,12 +1,19 @@
 const translations = {
-	'#/overview': 'Übersicht',
-	'#/status': 'Status',
-	'#/calendar': 'Kalender',
-	'#/users': 'Benutzer',
-	'#/map': 'Karte',
-	'#/config': 'Konfiguration',
-	'#/inspection': 'Inspektion',
-	'#/about': 'Über Upupua',
+	'#/OVERVIEW': 'Übersicht',
+	'#/STATUS': 'Status',
+	'#/CALENDAR': 'Kalender',
+	'#/CONFIG': 'Konfiguration',
+	'#/INSPECTION': 'NK-Kontrolle',
+	'#/ABOUT': 'Über Upupua',
+	"BAND_STATUS_PARENTS": "Beringung Altvögel",
+	"BAND_STATUS_NESTLINGS": "Beringung Nestlinge",
+	"BOXES": "Nistkästen",
+	"BOXES.NAME": "Beschriftung",
+	"BOXES.LAT": "Breitengrad",
+	"BOXES.LON": "Längengrad",
+	"CLUTCHSIZE": "Gelegegröße",
+	"INSPECTION.EGGS": "Anzahl Eier",
+	"INSPECTION.NESTLINGS": "Anzahl Nestlinge",
 	"NAME": "Name",
 	"STATE_EMPTY": "Leer",
 	"STATE_NEST_BUILDING": "Nestbau",
@@ -18,18 +25,14 @@ const translations = {
 	"STATE_SUCCESS": "Erfolg",
 	"STATE_OCCUPIED": "Okkupiert",
 	"STATE_ABANDONED": "Verlassen",
-	"BAND_STATUS_PARENTS": "Beringung Altvögel",
-	"BAND_STATUS_NESTLINGS": "Beringung Nestlinge",
-	"BOXES": "Nistkästen",
+	
 	"LAST_INSPECTION": "Letzte Inspektion",
 	"PERPETRATOR": "Eindringling",
 	"PREDATION.PERPETRATOR": "Prädator",
 	"NEST_OCCUPATION.PERPETRATOR": "Okkupator",
 	"STATUS": "Status",
 	"SPECIES": "Vogelart",
-	"BOXES.NAME": "Beschriftung",
-	"BOXES.LAT": "Breitengrad",
-	"BOXES.LON": "Längengrad",
+	
 	"USERS.USERNAME": "Benutzername",
 	"USERS.PASSWORD": "Passwort",
 	"USERS.ROLE.USER": "USER",
@@ -38,13 +41,16 @@ const translations = {
 	"PREDATION": "Prädation",
 	"NEST_OCCUPATION": "Nest-Okkupation",
 	"PARENT_MISSING": "Nest aufgegeben",
-	"UNKNOWN": "Unbekannt"
+	"UNKNOWN": "Unbekannt",
+	"HATCHDATE": "Schlüpfdatum",
+	"BREEDINGSTART": "Brutbeginn",
+	"LAYINGSTART": "Legebeginn"
 }
 
 export function translate(str){
 	if(str == null) return ''
 	var translation
-	var arr = str.split('.')
+	var arr = str.toUpperCase().split('.')
 	while (arr.length && !translation) {
 		translation = translations[arr.join('.')]
 		arr.shift()

@@ -13,7 +13,14 @@ function getMediumDate(date){
 	return new Date(date)
 	.toLocaleDateString(undefined, {day: "numeric", month: "long"})
 }
-
+const banding = val => {
+	switch(val){
+		case true: return 'Ja'
+		case false: return 'Nein'
+		default: return '?'
+	}
+}
+export const bandingDisplay = inspection => `M: ${banding(inspection.maleBanded)} | F: ${banding(inspection.femaleBanded)} | N: ${inspection.nestlingsBanded}`
 export class SummaryDisplay extends LitElement {
 	static get properties() {
 		return {
@@ -62,7 +69,7 @@ export class SummaryDisplay extends LitElement {
 		const summary = this.summary
 		return [
 			this.renderHead(),
-			summary.state != 'STATE_EMPTY' ? this.renderDetail() : '',
+			this.renderDetail(),
 			summary.state == 'STATE_FAILURE' ? this.renderFailure() : '',
 			this.renderPerpetrator()
 		]
@@ -80,36 +87,35 @@ export class SummaryDisplay extends LitElement {
 	renderDetail(){
 		const summary = this.summary
 		return html`
-			<div><span>Gelegegröße</span><span>${summary.clutchSize}</span></div>
+			<div>
+				<span>Gelegegröße</span>
+				<span>${summary.clutchSize}</span>
+			</div>
 			${summary.state=='STATE_SUCCESS'?html`
 				<div><span>Nestlinge ausgeflogen</span><span>${summary.nestlings}</span></div>
 			`:''}
-			<div class="date"><label for="layingStart">Legebeginn</label><span id="layingStart">${getMediumDate(summary.layingStart)}</span></div>
-			<div class="date"><label for="breedingStart">Brutbeginn</label><span id="breedingStart">${getMediumDate(summary.breedingStart)}</span></div>
-			<div class="date"><label for="hatchDate">Schlüpfdatum</label><span id="hatchDate">${getMediumDate(summary.hatchDate)}</span></div>
+			<div class="date">
+				<label for="layingStart">Legebeginn</label>
+				<span id="layingStart">${getMediumDate(summary.layingStart)}</span>
+			</div>
+			<div class="date">
+				<label for="breedingStart">Brutbeginn</label>
+				<span id="breedingStart">${getMediumDate(summary.breedingStart)}</span>
+			</div>
+			<div class="date">
+				<label for="hatchDate">Schlüpfdatum</label>
+				<span id="hatchDate">${getMediumDate(summary.hatchDate)}</span>
+			</div>
 			${summary.hatchDate ? html`
 				<div><span>Beringungszeitfenster</span><span>${getMediumDate(summary.bandingWindowStart)}-${getMediumDate(summary.bandingWindowEnd)}</span></div>	
 			`:''}
 			<div>
 				<span>Beringung</span>
-				<span>
-					<span>
-						<input type="checkbox" .checked=${summary.maleBanded} disabled>
-						<span>M</span>
-					</span>
-					<span>
-						<input type="checkbox" .checked=${summary.femaleBanded} disabled>
-						<span>W</span>
-					</span>
-					<span>
-						<input type="checkbox" .checked=${summary.nestlingsBanded} disabled>
-						<span>N</span>
-						<span>${summary.nestlingsBanded}</span>
-					</span>
-				</span>
+				<span>${bandingDisplay(summary)}</span>
 			</div>
 		`
 	}
+	
 	renderFailure(){
 		const summary = this.summary
 		return html`

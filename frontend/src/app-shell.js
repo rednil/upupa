@@ -97,6 +97,10 @@ export class AppShell extends LitElement {
 			select-route{
 				display: flex;
 			}
+			a {
+				text-decoration: none;
+				color: black;
+			}
 		
     `
   }
@@ -210,7 +214,7 @@ export class AppShell extends LitElement {
 			<div class="top ${this.self?'logged-in':'logged-out'}">
 				<select-route .self=${this.self} .routes=${this.routes} selected=${this.route.path}></select-route>
 				<div class="user">
-					<a href="#/config?collection=users&item_id=${this.self?._id}">${this.self?.username}</a>
+					<a href="#/config?collection=users&item_id=${this.self?._id}">${this.self?.name}</a>
 					<button-logout @click=${this.requestLogout}></button-logout>
 				</div>
 			</div>

@@ -33,6 +33,10 @@ export class InspectionDisplay extends LitElement {
 			label {
 				padding-right: 1em;
 			}
+			.controls {
+				justify-content: center
+			}
+			
 		`
 	}
 	constructor(){
@@ -41,6 +45,18 @@ export class InspectionDisplay extends LitElement {
 	}
 	render() {
 		const {date, note, species_id, type} = this.inspection
+		return [
+			this.renderHead(),
+			this.detail=='LONG' ? this.renderDetails() : '',
+			html`<div>Bemerkung: ${note}</div>`,
+			this.detail=='LONG' ? this.renderEditButton() : ''
+		]	
+	}
+	renderEditButton(){
+		return html`<a href="#/inspection?inspection_id=${this.inspection._id}" class="controls"><button>Edit</button></a>`
+	}
+	renderHead(){
+		const {date, species_id, type} = this.inspection
 		return html`
 			<div class="head" @click=${this.clickCb}>
 				<span class="date">${this.getLongDate(date)}</span>
@@ -49,11 +65,8 @@ export class InspectionDisplay extends LitElement {
 					<span>${this.getStateLabel(this.inspection)}</span>
 				`}
 			</div>
-			${this.detail=='LONG'?this.renderDetails():''}
-			<div>Bemerkung: ${note}</div>
-			`
+		`
 	}
-	
 	renderDetails(){
 		return Object.entries(this.inspection)
 		.filter(([key, value]) => !(
@@ -69,7 +82,7 @@ export class InspectionDisplay extends LitElement {
 			<div>
 				<label>${translate(key)}</label>
 				<span>${this.formatDetailValue(value)}</span>
-			</div>`,
+			</div>`
 		)
 	}
 	getLongDate(date){
