@@ -36,7 +36,13 @@ export class InspectionDisplay extends LitElement {
 			.controls {
 				justify-content: center
 			}
-			
+			a {
+				text-decoration: none;
+				color: black;
+			}
+			button {
+				width: 100%;
+			}
 		`
 	}
 	constructor(){

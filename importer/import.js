@@ -35,6 +35,7 @@ const workbook = getWorkbook()
 const docs = []
 await importBoxes(XLSX.utils.sheet_to_json(workbook.Sheets.Box_Status))
 await importInspections(XLSX.utils.sheet_to_json(workbook.Sheets['Breeding_(25)']))
+docs.map(doc => console.log(removeIDs(doc)))
 await db.bulkDocs(docs)
 
 
@@ -156,7 +157,7 @@ async function importLine(line){
 			console.log('newDate', newDate, dateStr)
 			entries[idx] = [newDate, doubleNote[0]]
 			entries.splice(idx+1,0,[dateStr, '# Geteilter Doppeleintrag # '+doubleNote[1]])
-			console.error('Split double entry', entries.slice(idx, idx+2))
+			console.log('Split double entry', entries.slice(idx, idx+2))
 		}
 	})
 	const inspections = []
@@ -167,25 +168,40 @@ async function importLine(line){
 	const box_id = await getId('box', {name: boxName})
 	let occupancy = 0
 	var lastInspection = {}
+	var _hiddenLastInspection = {} // for accessing the lastInspection after it got cleared
 	for(var x in entries){
 		const [dateStr, note] = entries[x]
-		if(note == 'NK') continue
+		if(note == 'NK' || note.match(/,\s*NK\s*,/)) continue
 		const date = new Date(dateStr.replace(/(.*)\.(.*)\.(.*)/, '$3-$2-$1'))
 		const scope = valueParser('scope', note)
 		// if there is no state noted, but there was one before, fallback
-		var state = valueParser('state', note) 
+		var state = valueParser('state', note)
+		if(state == 'STATE_EGGS' && lastInspection.state == 'STATE_BREEDING'){
+			state = 'STATE_BREEDING'
+		}
 		if(
 			isCatastrophic({state}) && 
-			(isOccupied(lastInspection) || isFinished(lastInspection)) &&
+			isOccupied(lastInspection) &&
 			(lastInspection.state != 'STATE_SUCCESS')
-		) state = 'STATE_FAILURE'
+		) {
+			state = 'STATE_FAILURE'
+		}
+		
+		if(
+			state == 'STATE_ABANDONED' &&
+			!isOccupied(lastInspection)
+		){
+			state = 'STATE_EMPTY'
+		}
+		
 		if(
 			(lastInspection.state == 'STATE_SUCCESS') ||
 			(isFinished(lastInspection) && !isFinished({state})) // allow catastrophe to continue
 		){
+			_hiddenLastInspection = lastInspection
 			lastInspection = {}
 		}
-		
+		state = state || lastInspection.state
 		const inspection = {
 			...lastInspection,
 			_id: `inspection-${uuid()}`,
@@ -194,32 +210,68 @@ async function importLine(line){
 			date,
 			note,
 			scope,
-			state: state || lastInspection.state
+			state
 		}
+		
 		inspections.push(inspection)
-		if(scope == 'OUTSIDE' || note.match(/UV/)) continue
-			
+		if(scope == 'SCOPE_OUTSIDE' || note.match(/UV/)) continue
+		if(state == 'STATE_EMPTY') delete inspection.species_id
 		
 		if(inPreparation(inspection)) delete inspection.occupancy
 		else if(isOccupied(inspection) && !isOccupied(lastInspection))	{
 			inspection.occupancy = ++occupancy
 		}
 		
-		
+		const perpetratorName = valueParser('perpetrator', note)
+		const reasonForLoss = valueParser('reasonForLoss', note)
 		if(state == 'STATE_OCCUPIED' || state == 'STATE_FAILURE'){
-			const perpetratorName = valueParser('perpetrator', note)
 			if(perpetratorName) {
 				inspection.perpetrator_id = await getId('perpetrator', {name: perpetratorName})
 			}
 			if(isOccupied(lastInspection)) {
-				inspection.reasonForLoss = inspection.reasonForLoss = valueParser('reasonForLoss', note)
+				inspection.reasonForLoss = reasonForLoss
 			}
 		}
-		if(!inPreparation(inspection)){
+		if(
+			reasonForLoss == 'PREDATION' && 
+			_hiddenLastInspection.state == 'STATE_FAILURE' && 
+			perpetratorName &&
+			!_hiddenLastInspection.perpetrator_id
+		){
+			_hiddenLastInspection.perpetrator_id = await getId('perpetrator', {name: perpetratorName})
+		}
+		
+		if(inspection.occupancy){
 			inspection.eggs = valueParser('eggs', note)
 			inspection.nestlings = valueParser('nestlings', note)
-			inspection.clutchSize = Math.max(inspection.eggs, inspection.nestlings, inspection.clutchSize || 0)
-		} 
+			if(
+				((state == 'STATE_EGGS') || (state == 'STATE_BREEDING')) &&
+				!inspection.eggs &&
+				lastInspection.eggs
+			){
+				inspection.eggs = lastInspection.eggs
+			}
+			if(
+				((state == 'STATE_NESTLINGS') || (state == 'STATE_SUCCESS')) &&
+				!inspection.nestlings && 
+				lastInspection.nestlings
+			){
+				inspection.nestlings = lastInspection.nestlings
+			}
+			if(
+				(state == 'STATE_NESTLINGS') &&
+				!inspection.nestlings && 
+				lastInspection.eggs
+			){
+				inspection.nestlings = lastInspection.eggs - (inspection.eggs || 0)
+			}
+			inspection.clutchSize = Math.max(
+				inspection.eggs || 0,
+				inspection.nestlings || 0,
+				inspection.clutchSize || 0
+			)
+		}
+		
 		// Something like "alle Nestlinge ausgeflogen"
 		if(state == 'STATE_SUCCESS' && inspection.nestlings == 0){
 			inspection.nestlings = lastInspection.nestlings
@@ -266,6 +318,16 @@ async function importLine(line){
 			inspection.bandingWindowStart = incDate(inspection.hatchDate, bandingStartAge)
 			inspection.bandingWindowEnd = incDate(inspection.hatchDate, bandingEndAge)
 		}
+		if(isFinished(inspection) && isFinished(lastInspection)){
+			console.error(`Double entry for state ${state}: ${boxName} ${date.toLocaleDateString()}`)
+		}
+		if(state == 'STATE_EGGS' && !inspection.eggs) {
+			console.error(`STATE_EGG without eggs: ${boxName} ${date.toLocaleDateString()}`, note)
+		}
+		if(state == 'STATE_NESTLINGS' && !inspection.nestlings) {
+			console.error(`STATE_NESTLINGS without nestlings: ${boxName} ${date.toLocaleDateString()}`, note)
+		}
+		if(state == 'STATE_ABANDONED') console.error(`STATE_ABANDONED: ${boxName} ${date.toLocaleDateString()}`)
 		lastInspection = inspection
 	}
 	docs.push(...inspections)
@@ -322,16 +384,21 @@ function log(obj, attachments = {}){
 	})
 	console.log(obj)
 }
+
+/*
 function sparse(obj){
-	Object.keys(obj).forEach(key => {
-		if(obj[key] == null) delete obj[key]
-	})
+	Object.entries(obj).forEach((([key, value]) => {
+		if(value == null) delete obj[key]
+	}))
 	return obj
 }
+*/
 function removeIDs(input){
 	const output = {}
 	Object.keys(input).sort().forEach(key => {
-		if(input[key] != null && !key.endsWith('_id')) output[key] = input[key]
+		if(input[key] != null){
+			output[key] = key.endsWith('_id') ? 'XXX' : input[key]
+		}
 	})
 	return output
 }

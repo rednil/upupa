@@ -42,7 +42,11 @@ export class SelectState extends LitElement {
     `
   }
 	isDisabled(idx){
-		const lastIdx = this.lastValue ? INSPECTION_STATES.indexOf(this.lastValue) : 0
+		let lastIdx = (
+			this.lastValue && 
+			this.lastValue != 'STATE_SUCCESS' &&
+			this.lastValue != 'STATE_FAILURE'
+		 ) ? INSPECTION_STATES.indexOf(this.lastValue) : 0
 		const occupancyStarted = (lastIdx >= INSPECTION_STATES.indexOf('STATE_EGGS'))
 		const finished = (idx > INSPECTION_STATES.indexOf('STATE_NESTLINGS'))
 		const regression = (idx < lastIdx)

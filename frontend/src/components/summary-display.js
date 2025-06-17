@@ -20,7 +20,7 @@ const banding = val => {
 		default: return '?'
 	}
 }
-export const bandingDisplay = inspection => `M: ${banding(inspection.maleBanded)} | F: ${banding(inspection.femaleBanded)} | N: ${inspection.nestlingsBanded}`
+export const bandingDisplay = inspection => `M: ${banding(inspection.maleBanded)} | F: ${banding(inspection.femaleBanded)} | N: ${inspection.nestlingsBanded || 0}`
 export class SummaryDisplay extends LitElement {
 	static get properties() {
 		return {

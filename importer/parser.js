@@ -5,13 +5,12 @@ const parser = {
 		options: [
 			{ 
 				allow: [
-					/(\d+)\s*Eier/,
-					/\((\d+)\?\)\s*Eier/
+					/(\d+)\s*Ei/,
+					/\((\d+)\?\)\s*Ei/
 				],
 				value: match => Number(match[1])
 			}
-		],
-		default: 0
+		]
 	},
 	nestlings: {
 		options: [
@@ -19,12 +18,13 @@ const parser = {
 				allow: [
 					/(\d+)\s*Nestling/,
 					/\((\d+)\?\)\s*Nestling/,
-					/Nestlinge\s*\((\d+)\?\)/
+					/(\d+)\s..\sNestlinge\sberingt/,
+					/Nestlinge\s*\((\d+)\?\)/,
+					/(\d).\sNestling\sgeschlüpft/
 				],
 				value: match => Number(match[1])
 			}
-		],
-		default: 0
+		]
 	},
 	breedingStart: {
 		options: [
@@ -95,13 +95,13 @@ const parser = {
 			{ value: 'Kohlmeise', 		allow: ['KM']							},
 			{ value: 'Sumpfmeise', 		allow: ['SM']							},
 			{ value: 'Wasseramsel', 	allow: ['WA']							},
-			{ value: 'Feldsperling', 	allow: []									},
+			{ value: 'Feldsperling', 	allow: ['FS']							},
 			{ value: 'Tannenmeise', 	allow: ['TM']							}
 		]
 	},
 	state: {
 		options: [
-			{ value: 'STATE_SUCCESS', allow: ['ausgeflogen']},
+			{ value: 'STATE_SUCCESS', allow: ['ausgeflogen', 'ausgefolgen']},
 			{ 
 				value: 'STATE_OCCUPIED',
 				allow: [
@@ -128,7 +128,15 @@ const parser = {
 			},
 			{ value: 'STATE_NESTLINGS', allow: ['Nestling'] },
 			{ value: 'STATE_BREEDING', allow: ['brütet'] },
-			{ value: 'STATE_EGGS', allow: ['Ei'], disAllow: ['Eichhörnchen', /[kK]eine Eier/] },
+			{ 
+				value: 'STATE_EGGS',
+				allow: [
+					/(\d+)\s*Ei/,
+					/\((\d+)\?\)\s*Ei/,
+					'FS, Eier waren kurz vor Schlupf'
+				],
+				disAllow: ['Eichhörnchen', /[kK]eine Eier/]
+			},
 			{ value: 'STATE_NEST_BUILDING', allow: [
 				'halbfertiges Nest',
 				'Nestanfang',
@@ -174,12 +182,12 @@ const parser = {
 	scope: {
 		options: [
 			{ 
-				value: 'OUTSIDE',
+				value: 'SCOPE_OUTSIDE',
 				allow: ['O.K.', 'Altvögel am Nest'],
 				disAllow: /\d+\sNestlinge beringt/
 			},
 		],
-		default: 'INSIDE'
+		default: 'SCOPE_INSIDE'
 	},
 	takeover: {
 		options: [
@@ -190,7 +198,7 @@ const parser = {
 function dateFormatter(match){
 	const month = ('0' + match[2]).slice(-2)
 	const date = ('0' + match[1]).slice(-2)
-	const dateStr = `${year}-${month}-${date}T00:00:00Z`
+	const dateStr = `${year}-${month}-${date}`
 	return new Date(dateStr)
 }
 export default parser

@@ -5,6 +5,7 @@ import { Proxy } from '../proxy'
 import '../forms/select-item.js'
 import '../forms/select-state.js'
 import '../components/inspection-display.js'
+import { incDate } from './calendar.js'
 
 const formatDateForInput = date => date ? new Date(date).toISOString().split('T')[0] : null
 const dateToArr = date => formatDateForInput(date).split('-').map(x => Number(x))
@@ -16,7 +17,7 @@ export class PageInspection extends LitElement {
 		return {
 			box_id: { type: String },
 			inspection_id: { type: String },
-			lastInspection: { type: Object },
+			previousInspection: { type: Object },
 			inspection: { type: Object }
 			//date: { type: String }
 		}
@@ -27,25 +28,16 @@ export class PageInspection extends LitElement {
 				flex: 1;
 				overflow-y: auto;
 			}
+			:host > div {
+			}
 			:host > div > div {
 				max-width: 40em;
 				margin: 0 auto;
-				padding: 0.5em;
-				
-			}
-			.mode {
-				display: flex;
-				justify-content: space-around;
-			}
-			.mode > div {
-				display: flex;
-				padding: 0.5em 0;
-			}
-			.editor > div {
-				display: flex;
 				justify-content: space-between;
-				padding: 0.5em 0;
+				display: flex;
+				padding: 0.5em ;
 			}
+			
 			
 			.banding > span {
 				display: flex;
@@ -61,154 +53,195 @@ export class PageInspection extends LitElement {
 			button {
 				margin: 1em 0;
 			}
-		`
-	}
-	/*
-			.editor .state,
-			.editor .species_id,
-			.editor .note,
-			.editor .head {
-				display: flex;
+			.MODE_EDIT .mode {
+				background-color: red;
 			}
-			.STATE_OCCUPIED .perpetrator_id {
-				display: flex;
+			.tainted {
+				background-color: rgba(255,0,0,0.1);
 			}
-			.STATE_OCCUPIED .species_id {
+			:host > div.SCOPE_OUTSIDE > div {
 				display: none;
 			}
-			.STATE_EGGS .eggs,
-			.STATE_EGGS .clutchSize,
-			.STATE_EGGS .layingStart,
-			.STATE_EGGS .banding.parents {
+			:host > div.SCOPE_OUTSIDE > .outside,
+			:host > div.SCOPE_OUTSIDE > .date {
 				display: flex;
 			}
-			.STATE_BREEDING .eggs,
-			.STATE_BREEDING .clutchSize,
-			.STATE_BREEDING .layingStart,
-			.STATE_BREEDING .breedingStart,
-			.STATE_BREEDING .banding.parents
-			{
-				display: flex;
+			.previousInspection {
+				flex-direction: column;
 			}
-			.STATE_NESTLINGS .eggs,
-			.STATE_NESTLINGS .clutchSize,
-			.STATE_NESTLINGS .layingStart,
-			.STATE_NESTLINGS .breedingStart,
-			.STATE_NESTLINGS .hatchDate,
-			.STATE_NESTLINGS .nestlings,
-			.STATE_NESTLINGS .nestlingsAge,
-			.STATE_NESTLINGS .banding
-			{
-				display: flex;
-			}
-			.STATE_SUCCESS .eggs,
-			.STATE_SUCCESS .clutchSize,
-			.STATE_SUCCESS .layingStart,
-			.STATE_SUCCESS .breedingStart,
-			.STATE_SUCCESS .hatchDate,
-			.STATE_SUCCESS .nestlings,
-			.STATE_SUCCESS .banding
-			{
-				display: flex;
-			}
-
 		`
 	}
-		*/
+	
 	constructor(){
 		super()
-		this.lastInspection = {}
-		this.inspection = {
-			date: formatDateForInput(new Date())
-		}
-		this.mode = 'CREATE'
+		this.previousInspection = {}
+		this.createInspection()
+		this.mode = 'MODE_CREATE'
 		this.summary = {}
 		//this.date = formatDateForInput(new Date())
 		this.proxy = new Proxy(this)
 	}
 	
 	render() {
-		
+		const i = this.inspection
+		console.log('render clutchSize', i.clutchSize )
 		return html`
-			<div class="${this.inspection.state}">
+			<div class="${this.inspection.state} ${this.mode} ${this.inspection.scope}">
 				${[
 					this.renderMode(),
-					this.renderEditor(),
+					
+					this.renderBox(),
+					this.renderEvent('date', this.changeDateCb),
+					this.renderScope(),
+					i.state ? this.renderState() : '',
+					this.renderSpecies(),
+					this.renderNumber('eggs'),
+					this.renderNumber('nestlings'),
+					this.renderNumber('clutchSize'),
+					this.renderNumber('nestlingsAge'),
+					this.renderReasonForLoss(),
+					this.renderPerpetrator(),
+					this.renderEvent('layingStart'), 
+					this.renderEvent('breedingStart'), 
+					this.renderEvent('hatchDate'),
+					this.renderEvent('bandingWindowStart'),
+					this.renderEvent('bandingWindowEnd'),
+					i.occupancy || (i.maleBanded != null) ? this.renderParentBanding('maleBanded', 'Beringung Männchen') : '',
+					i.occupancy || (i.maleBanded != null) ? this.renderParentBanding('femaleBanded', 'Beringung Weibchen'): '',
+					(i.state == 'STATE_NESTLINGS') || i.nestlingsBanded ? this.renderNumber('nestlingsBanded') : '',
+					this.renderNote(),
 					this.renderButtons(),
-					this.lastInspection ? this.renderLastInspection() : ''
+					this.previousInspection ? this.renderPreviousInspection() : ''
 				]}
 			</div>
 		`
 	}
 	renderMode(){
 		return html`	
-			<div class="mode">
-				<div>
-					<input 
-						type="radio"
-						.checked=${this.mode == 'EDIT'}
-						@change=${this.changeModeCb}
-						name="mode"
-						value="EDIT"
-					>
-					<label for="html">Bestehende ändern</label>
-				</div>
-				<div>
-					<input
-						type="radio"
-						.checked=${this.mode == 'CREATE'}
-						@change=${this.changeModeCb}
-						name="mode"
-						value="CREATE"
-					>
-					<label for="css">Neue eintragen</label>
-				</div>
+			<div class="mode outside">
+				<label for="mode">Modus</label>
+				<select id="mode" @change=${this.changeModeCb} .value=${this.mode}>
+					<option value="MODE_CREATE">Neu eintragen</option>
+					<option value="MODE_EDIT">Nachträglich ändern</option>
+				</select>
+				
 			</div>
 		`
+	
+	}
+	renderScope(){
+		return html`	
+			<div class="scope outside">
+				<label>Umfang</label>
+				<select id="scope" .value=${this.inspection.scope} @change=${this.genericChangeCb}>
+					<option value="SCOPE_INSIDE">Nistkasten inspiziert</option>
+					<option value="SCOPE_OUTSIDE">Nur von außen</option>
+				</select>
+				
+			</div>
+		`
+	
 	}
 	
-	renderEditor(){
-		const i = this.inspection
-		return html`
-			<div class="editor">
-			${[
-				this.renderHead(),
-				i.state ? this.renderState() : '',
-				(
-					(i.state != 'STATE_EMPTY') && 
-					(i.state != 'STATE_OCCUPIED')
-				) ||
-				i.species_id ? this.renderSpecies() : '',
-				this.renderNumber('eggs'),
-				this.renderNumber('clutchSize'),
-				this.renderNumber('nestlings'),
-				this.renderNumber('nestlingsAge'),
-				this.renderReasonForLoss(),
-				this.renderPerpetrator(),
-				this.renderEvent('layingStart'), 
-				this.renderEvent('breedingStart'), 
-				this.renderEvent('hatchDate'),
-				i.occupancy || (i.maleBanded != null) ? this.renderParentBanding('maleBanded', 'Beringung Männchen') : '',
-				i.occupancy || (i.maleBanded != null) ? this.renderParentBanding('femaleBanded', 'Beringung Weibchen'): '',
-				(i.state == 'STATE_NESTLINGS') || i.nestlingsBanded ? this.renderNumber('nestlingsBanded') : '',
-				this.renderNote()
-			]}
-			</div>
-		`
+	
+	stateChangeCb(evt){
+		const state = evt.target.value
+		let i = this.inspection
+		const {_id, _rev, box_id, date, note, scope, species_id, eggs, clutchSize, layingStart, breedingStart} = i
+		const fixed = {_id, _rev, box_id, date, note, scope}
+		switch(state){
+			case 'STATE_EMPTY':
+			case 'STATE_NEST_BUILDING':
+			case 'STATE_NEST_READY':
+				this.inspection = {...fixed}
+				break
+			case 'STATE_EGGS':
+				this.inspection = {
+					...fixed,
+					species_id,
+					eggs: clutchSize || 1
+				}
+				this.postProcess('eggs')
+				break
+			case 'STATE_BREEDING':
+				i.breedingStart = incDate(i.layingStart, i.eggs)
+				break
+			case 'STATE_NESTLINGS':
+				this.inspection = {
+					...fixed,
+					species_id,
+					eggs,
+					layingStart,
+					breedingStart,
+					eggs: 0,
+					nestlings: clutchSize || 1,
+					hatchDate: i.date
+				}
+				this.postProcess('nestlings')
+				break
+			case 'STATE_FAILURE':
+				delete i.nestlings
+				delete i.eggs
+				break
+		}
+		this.inspection.state = state
+		this.requestUpdate()
 	}
-	renderHead(){
+	updateClutchSize(){
+		const i = this.inspection
+		i.clutchSize = Math.max(this.initialInspection.clutchSize || 0, (i.eggs || 0) + (i.nestlings || 0))
+	}
+	
+	postProcess(key){
+		const i = this.inspection
+		switch(key){
+			case 'eggs':
+				this.guessLayingStart()
+				this.updateClutchSize()
+				break
+			case 'nestlings':
+				
+				this.updateClutchSize()
+				console.log('postProcess', key, i.clutchSize)
+				if(!this.initialInspection.breedingStart){
+					i.breedingStart = incDate(i.hatchDate, -14)
+				}
+				if(!this.initialInspection.layingStart){
+					i.layingStart = incDate(i.breedingStart, -i.clutchSize)
+				}
+				break
+		}
+		this.requestUpdate()
+	}
+	guessLayingStart(){
+		const i = this.inspection
+		if(!this.initialInspection.eggs){
+			i.layingStart = incDate(i.date, -i.eggs)
+		}
+	}
+	genericChangeNumberCb(evt){
+		const {id: key, value} = evt.target
+		this.inspection[key] = Number(value)
+		this.postProcess(key)
+	}
+	genericChangeCb(evt){
+		const {id: key, value} = evt.target
+		this.inspection[key] = value
+		this.postProcess(key)
+		
+	}
+	renderBox(){
 		const i = this.inspection
 		return html`		
-			<div class="head">
+			<div class="box outside">
+				<label for="box_id">Nistkasten</label>
 				<select-item 
-					id="select-box" 
-					class="bold"
+					id="box_id" 
 					type="box"
 					.value=${this.box_id}
 					.autoselect=${!this.inspection_id}
 					@change=${this.boxSelectCb}
 				></select-item>
-				<input id="date" type="date" .value=${formatDateForInput(i.date)} @change=${this.changeDateCb}> 
 			</div>
 		`
 	}
@@ -219,45 +252,67 @@ export class PageInspection extends LitElement {
 				<select-state
 					id="state"
 					.value=${this.inspection.state}
-					.lastValue=${this.lastInspection.state}
+					.lastValue=${this.initialInspection.state}
 					@change=${this.stateChangeCb}
 				></select-state>
 			</div>
 		`
 	}
 	renderSpecies(){
+		const { state, species_id } = this.inspection
+		if(!species_id && (
+			(state == 'STATE_EMPTY') || 
+			(state == 'STATE_OCCUPIED')
+		)) return '' 
 		return html`
 			<div class="species_id">
 				<label for="species_id">Vogelart</label>
 				<select-item
+					
 					id="species_id"
 					type="species"
-					value=${this.inspection.species_id}
+					value=${species_id}
+					@change=${this.genericChangeCb}
 				></select-item>
 			</div>
 		`
 	}
 	renderPerpetrator(){
-		const value = this.inspection.perpetrator_id
-		if(value == null) return ''
+		const {state, perpetrator_id} = this.inspection
+		if(!(
+			state == 'STATE_OCCUPIED' ||
+			perpetrator_id
+		)) return '' 
 		return html`
 			<div class="perpetrator_id">
 				<label for="perpetrator_id">Eindringling</label>
 				<select-item
+					
 					id="perpetrator_id"
 					type="perpetrator"
-					value=${value}
+					value=${perpetrator_id}
+					@change=${this.genericChangeCb}
 				></select-item>
 			</div>
 		`
 	}
-	renderNumber(key){
+	renderNumber(key, cb = this.genericChangeNumberCb){
 		const value = this.inspection[key]
 		if(value == null) return ''
 		return html`
 			<div class=${key}>
 				<label for=${key}>${translate('INSPECTION.'+key)}</label>
-				<input id=${key} type="number" value=${value} @change=${this.genericChangeCb}>
+				<select  id=${key} .value=${value} @change=${cb}>
+					${[...Array(15)].map((_,idx) => html`
+					<option .selected=${value == idx} value=${idx}>${idx}</option>	
+					`)}
+				</select>
+			</div>
+		`
+		return html`
+			<div class=${key}>
+				<label for=${key}>${translate('INSPECTION.'+key)}</label>
+				<input id=${key} type="number" value=${value} @change=${cb}>
 			</div>
 		`
 	}
@@ -267,7 +322,7 @@ export class PageInspection extends LitElement {
 		return html`
 			<div class="reasonForLoss">
 				<label for="reasonForLoss">Grund für Verlust</label>
-				<select>
+				<select  id="reasonForLoss" @change=${this.genericChangeCb}>
 					<option value="UNKNOWN">${translate('UNKNOWN')}</option>
 					<option value="PREDATION">${translate('PREDATION')}</option>
 					<option value="PARENT_MISSING">${translate('PARENT_MISSING')}</option>
@@ -336,8 +391,13 @@ export class PageInspection extends LitElement {
 	
 	renderNote(){
 		return html`
-			<div class="note">
-				<textarea placeholder="Bemerkung"></textarea>
+			<div class="note outside">
+				<textarea
+					id="note"
+					placeholder="Bemerkung"
+					.value=${this.inspection.note || ''}
+					@input=${this.genericChangeCb}
+				></textarea>
 			</div>
 		`
 	}
@@ -345,35 +405,49 @@ export class PageInspection extends LitElement {
 	renderButtons(){
 		return html`
 			<div class="buttons">
-				<button>Abbrechen</button>
-				<button>Speichern</button>
+				<button id="cancel" @click=${this.cancel}>Abbrechen</button>
+				<button id="save" @click=${this.save}>Speichern</button>
 			</div>
 		`
 	}
-	renderLastInspection(){
+	cancel(){
+		this.inspection = {...this.initialInspection}
+	}
+	renderPreviousInspection(){
 		return html`
-			<div class="lastInspection">
-				<div>Vorherige Inspektion</div>
-				<inspection-display .inspection=${this.lastInspection}></inspection-display>
+			<div class="previousInspection">
+				<label>Vorherige Inspektion</label>
+				<inspection-display .inspection=${this.previousInspection}></inspection-display>
 			</div>
 		`
 	}
 	updated(changedProps){
-		console.log('updated', changedProps)
-		;['lastInspection', 'inspection', 'box_id', 'inspection_id']
-		.map(str => console.log(str, this[str]))
-		
 		if(
 			(changedProps.has('inspection_id') && this.inspection._id != this.inspection_id) ||
 			(changedProps.has('box_id') && this.inspection.box_id != this.box_id) 
-			//changedProps.has('date')
 		){
 			this.fetchInspection()
 		}
+		this.updateTainting()
+	}
+	updateTainting(){
+		let somethingTainted = false
+		Object.entries(this.inspection).forEach(([key, value]) => {
+			const form = this.shadowRoot.querySelector(`.${key}`)
+			if(value != this.initialInspection[key]){
+				form?.classList.add('tainted')
+				somethingTainted = true
+				console.log('tainted', value , this.initialInspection[key])
+			}
+			else {
+				form?.classList.remove('tainted')
+			}
+		})
+		this.shadowRoot.querySelector('#save').disabled = !somethingTainted && this.mode == 'MODE_EDIT'
+		this.shadowRoot.querySelector('#cancel').disabled = !somethingTainted
 	}
 	async fetchInspection(){
-		console.log('fetchInspection', this.inspection_id)
-		delete this.lastInspection
+		delete this.previousInspection
 		delete this.summary
 		//if(this.inspection_id && (this.inspection_id == this.inspection._id)) return
 		const existingInspection = this.inspection_id ? 
@@ -384,58 +458,75 @@ export class PageInspection extends LitElement {
 			}))[0]
 		console.log('existingInspection',existingInspection)
 		if(existingInspection){
-			this.inspection = existingInspection
+			this.initInspection(existingInspection)
 			this.inspection_id = this.inspection._id
 			this.box_id = this.inspection.box_id
 			//this.date = this.inspection.date
-			this.mode = 'EDIT'
+			this.mode = 'MODE_EDIT'
 		}
-		await this.fetchLastInspection()
+		await this.fetchPreviousInspection()
 	}
 
-	async fetchLastInspection(){
-		console.log('fetchLastInspection', this.inspection.date)
+	initInspection(source){
+		this.initialInspection = source
+		this.inspection = {...source}
+	}
+
+	async fetchPreviousInspection(){
 		const date = new Date(this.inspection.date)
 		const dayBeforeArr = dateToArr(date.setDate(date.getDate()-1))
 		
-		this.lastInspection = (await this.proxy.queryReduce('inspections', {
+		this.previousInspection = (await this.proxy.queryReduce('inspections', {
 			endkey: [dayBeforeArr[0], this.box_id, 0],
 			startkey: [dayBeforeArr[0], this.box_id, dayBeforeArr[1], dayBeforeArr[2]],
 			descending: true,
 			inclusive_start: false,
 			limit:1
 		}))[0]
-		console.log('lastInspection', this.lastInspection)
+		console.log('previousInspection', this.previousInspection)
 		this.updateInspection()
 	}
-	stateChangeCb(evt){
-		const state = evt.target.value
-		let i = this.inspection
-		switch(state){
-			case 'STATE_EMPTY':
-				const {_id, _rev, box_id, date, note} = i
-				this.inspection = i = {_id, _rev, box_id, date, note}
 
+	updateInspection(){
+		const date = this.inspection.date
+		if(this.inspection_id) return
+		if(this.previousInspection && !isFinished(this.previousInspection)){
+			this.initInspection({
+				...this.previousInspection,
+				date,
+				note: undefined
+			})
+			delete this.inspection._id
+			this.inspection.date = new Date(date).toISOString()
 		}
-		i.state = state
+		else{
+			this.createInspection(date)
+		}
 	}
-	genericChangeCb(evt){
-		console.log('genericChangeCb', evt.target.id, evt.target.value)
-		this.inspection[evt.target.id] = evt.target.value
-		this.requestUpdate()
+	createInspection(date = formatDateForInput(new Date())){
+		this.initInspection({
+			box_id: this.box_id,
+			state: 'STATE_EMPTY',
+			scope: 'SCOPE_INSIDE',
+			date: new Date(date).toISOString()
+		})
 	}
 	changeModeCb(evt){
-		console.log('changeMode', evt.target.value)
-		switch(evt.target.value){
-			case 'CREATE':
+		const {value} = evt.target
+		console.log('changeMode', value)
+		switch(value){
+			case 'MODE_CREATE':
 				this.inspection.date = formatDateForInput(new Date())
 				this.inspection_id = null
 				history.replaceState({},null,`#/inspection?box_id=${this.box_id}`)
 				break
-			case 'EDIT':
-				history.replaceState({},null,`#/inspection?inspection_id=${this.lastInspection._id}`)
+			case 'MODE_EDIT':
+				this.inspection_id = this.previousInspection._id
+				history.replaceState({},null,`#/inspection?inspection_id=${this.previousInspection._id}`)
 				break
 		}
+		this.mode = value
+		this.requestUpdate()
 	}
 	boxSelectCb(evt){
 		console.log('boxSelectCb', evt.target.value)
@@ -451,23 +542,7 @@ export class PageInspection extends LitElement {
 	}
 	
 	
-	updateInspection(){
-		const date = this.inspection.date
-		if(this.inspection_id) return
-		if(this.lastInspection && !isFinished(this.lastInspection)){
-			this.inspection = {...this.lastInspection}
-			delete this.inspection._id
-		}
-		else{
-			this.inspection = {
-				box_id: this.box_id,
-				state: 'STATE_EMPTY'
-			}
-		}
-		
-		this.inspection.date = date
-		
-	}
+	
 	
 	renderInput(prop, type){
 		return html`

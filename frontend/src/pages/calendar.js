@@ -163,9 +163,9 @@ export class PageCalendar extends Page {
 
 }
 
-function incDate(date, days){
+export function incDate(date, days){
 	const newDate = new Date(date)
-	newDate.setDate(date.getDate() + days)
+	newDate.setDate(newDate.getDate() + days)
 	return newDate
 }
 customElements.define('page-calendar', PageCalendar)
