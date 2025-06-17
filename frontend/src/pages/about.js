@@ -35,22 +35,11 @@ export class PageAbout extends Page {
 			
 			<div>
 				<div><span>Version</span><span>__APP_VERSION__</span></div>
-				<div>
-				<label for="db">Datenbank</label>
-				<select id="db" .value=${this.proxy.dbUrl} @change=${this.dbChangeCb}>
-					${dbOptions.map(option => html`
-						<option .selected=${option == this.proxy.dbUrl} .value=${option}>${option}</option>
-					`)}
-				</select>
-			</div>
 			</div>
 			
 		`
 	}
-	dbChangeCb(evt){
-		console.log('db', evt.target.value)
-		this.proxy.setDb(evt.target.value)
-	}
+	
 }
 	
 customElements.define('page-about', PageAbout)

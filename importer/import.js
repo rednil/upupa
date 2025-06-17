@@ -26,15 +26,17 @@ await db.bulkDocs(designDocs.rows.map(doc => {
 }))
 */
 const oneBoxOnly = process.argv[2]
-const dataPath = 'data/2025-06-10.ods'
+const dataPath = 'data/2025-06-17.ods'
 
 const idCache = {}
 
 
 const workbook = getWorkbook()
 const docs = []
+console.log(Object.keys(workbook.Sheets))
 await importBoxes(XLSX.utils.sheet_to_json(workbook.Sheets.Box_Status))
-await importInspections(XLSX.utils.sheet_to_json(workbook.Sheets['Breeding_(25)']))
+await importInspections(XLSX.utils.sheet_to_json(workbook.Sheets['Breeding (25)']))
+
 docs.map(doc => console.log(removeIDs(doc)))
 await db.bulkDocs(docs)
 

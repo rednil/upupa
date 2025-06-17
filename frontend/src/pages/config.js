@@ -26,7 +26,9 @@ export class PageConfig extends LitElement {
 				margin: 0 auto;
 				padding: 0.5em;
 			}
-			
+			.top {
+				display: flex;
+			}
 			.bottom {
 				overflow-y: auto;
 			}

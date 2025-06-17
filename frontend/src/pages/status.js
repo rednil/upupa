@@ -55,7 +55,7 @@ export class PageStatus extends LitElement {
 				text-align: center;
 				padding: 1em;
 			}
-			.left *, a {
+			 a {
 				margin: auto 0;
 			}
 			
@@ -80,12 +80,12 @@ export class PageStatus extends LitElement {
 				<div class="top">
 					<div class="controls">
 						<div class="left">
-							<select-item id="select-box" class="bold" type="box" .value=${this.box_id} autoselect @change=${this._boxSelectCb}></select-item>
+							<select-item buttons id="select-box"  type="box" .value=${this.box_id} autoselect @change=${this._boxSelectCb}></select-item>
 							<link-map .box_id=${this.box_id} .nocoor=${this.boxHasNoCoors()}></link-map>
 							<link-boxconfig .box_id=${this.box_id}></link-boxconfig>
 						</div>
 						<a href="#/inspection?box_id=${this.box_id}">
-							<button>Nistkastenkontrolle</button>
+							<button>NK-Kontrolle</button>
 						</a>
 					</div>
 				</div>

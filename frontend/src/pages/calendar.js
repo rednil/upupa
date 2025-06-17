@@ -119,7 +119,11 @@ export class PageCalendar extends Page {
 		.filter(summary => (
 			!summary.nestlingsBanded &&
 			summary.bandingWindowStart && 
-			((summary.state == 'STATE_EGGS') || (summary.state == 'STATE_NESTLINGS'))
+			(
+				(summary.state == 'STATE_EGGS') || 
+				(summary.state == 'STATE_NESTLINGS') || 
+				(summary.state == 'STATE_BREEDING')
+			)
 		))
 		.map(({box_id, bandingWindowStart, bandingWindowEnd}) => ({
 			box_name: boxes.find(box => box._id == box_id).name,

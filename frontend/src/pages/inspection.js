@@ -84,7 +84,6 @@ export class PageInspection extends LitElement {
 	
 	render() {
 		const i = this.inspection
-		console.log('render clutchSize', i.clutchSize )
 		return html`
 			<div class="${this.inspection.state} ${this.mode} ${this.inspection.scope}">
 				${[
@@ -202,7 +201,6 @@ export class PageInspection extends LitElement {
 			case 'nestlings':
 				
 				this.updateClutchSize()
-				console.log('postProcess', key, i.clutchSize)
 				if(!this.initialInspection.breedingStart){
 					i.breedingStart = incDate(i.hatchDate, -14)
 				}
@@ -235,7 +233,8 @@ export class PageInspection extends LitElement {
 		return html`		
 			<div class="box outside">
 				<label for="box_id">Nistkasten</label>
-				<select-item 
+				<select-item
+					buttons
 					id="box_id" 
 					type="box"
 					.value=${this.box_id}
@@ -413,6 +412,10 @@ export class PageInspection extends LitElement {
 	cancel(){
 		this.inspection = {...this.initialInspection}
 	}
+	async save(){
+		const response = await this.proxy.put(this.inspection)
+		
+	}
 	renderPreviousInspection(){
 		return html`
 			<div class="previousInspection">
@@ -437,7 +440,6 @@ export class PageInspection extends LitElement {
 			if(value != this.initialInspection[key]){
 				form?.classList.add('tainted')
 				somethingTainted = true
-				console.log('tainted', value , this.initialInspection[key])
 			}
 			else {
 				form?.classList.remove('tainted')
@@ -513,7 +515,6 @@ export class PageInspection extends LitElement {
 	}
 	changeModeCb(evt){
 		const {value} = evt.target
-		console.log('changeMode', value)
 		switch(value){
 			case 'MODE_CREATE':
 				this.inspection.date = formatDateForInput(new Date())
@@ -529,7 +530,6 @@ export class PageInspection extends LitElement {
 		this.requestUpdate()
 	}
 	boxSelectCb(evt){
-		console.log('boxSelectCb', evt.target.value)
 		this.box_id = evt.target.value
 		this.inspection_id = null
 		/*

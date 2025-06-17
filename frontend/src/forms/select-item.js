@@ -12,16 +12,22 @@ export class SelectItem extends LitElement {
 			key: { type: String }, // the key used to name each option, e.g. "name"
 			autoselect: { type: Boolean },
 			disabled: { type: Boolean },
-			readonly: { type: Boolean }
+			readonly: { type: Boolean },
+			buttons: { type: Boolean }
 		}
 	}
 
 	static get styles() {
 		return css`
+			:host{
+				display: flex;
+			}
 			:host(.bold), :host(.bold) select {
 				font-weight: bold;
 			}
-			
+			select {
+				height: 100%;
+			}
 		`
 	}
 	constructor(){
@@ -29,7 +35,7 @@ export class SelectItem extends LitElement {
 		this.options = []
 		this.key = 'name'
 		this.proxy = new Proxy(this)
-
+		this.buttons = false
 	}
 	
 	render() {
@@ -39,12 +45,15 @@ export class SelectItem extends LitElement {
 			`
 		}
 		return html`
+			${this.buttons ? html`<button @click=${() => this.skip(-1)}><</button>`:''}
 			<select ?disabled=${this.disabled} .value=${this.value} id="select" @change=${this._changeCb}>
 				${this.autoselect ? '' : html`<option>---</option>`}
+				
 				${this.options.map(option => html`
 					<option ?selected=${option._id==this.value} value="${option._id}">${option[this.key]}</option>
 				`)}
 			</select>
+			${this.buttons ? html`<button @click=${() => this.skip(1)}>></button>`:''}
 		`
 	}
 	set value(value){
@@ -53,6 +62,18 @@ export class SelectItem extends LitElement {
 	}
 	get value(){
 		return this._value
+	}
+	
+	skip(n){
+		let idx = this.findOptionIdx() + n
+		if(idx<0) idx = this.options.length - 1
+		if(idx>=this.options.length) idx = 0
+		this.value = this.options[idx]._id
+		this.dispatchEvent(new Event('change'))
+	}
+	
+	findOptionIdx(){
+		return this.options.findIndex(({_id}) => _id == this.value)
 	}
 	_changeCb(evt){
 		this.value = evt.target.value
@@ -76,7 +97,8 @@ export class SelectItem extends LitElement {
 			this.value = this.options[0]._id
 			this.dispatchEvent(new Event('change'))
 		}
-		//if(oldItem != this.getSelectedItem()) this.dispatchEvent(new Event('change'))
+		// required if parent hands in _id but requires item 
+		if(oldItem != this.getSelectedItem()) this.dispatchEvent(new Event('change'))
 	}
 	
 	
