@@ -6,6 +6,7 @@ import PouchDB from 'pouchdb'
 
 import inspections from './views/inspections.js'
 import summaries from './views/summaries.js'
+import statistics from './views/statistics.js'
 
 const {
 	DATABASE_PROTOCOL,
@@ -46,7 +47,8 @@ export async function ensureDesignDocument(db) {
     "_id": "_design/upupa",
 		"views": {
 			inspections,
-			summaries
+			summaries,
+			statistics
 		}
   };
 

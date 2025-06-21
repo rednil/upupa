@@ -11,6 +11,7 @@ import './pages/inspection.js'
 import './pages/config.js'
 import './components/error-display.js'
 import './pages/about'
+import './pages/start'
 /* 
 Routing can be done via hashed or non-hashed URL paths
 See https://blog.bitsrc.io/using-hashed-vs-nonhashed-url-paths-in-single-page-apps-a66234cefc96
@@ -110,8 +111,15 @@ export class AppShell extends LitElement {
 		this.proxy = new Proxy(this)
     this.routes = [
 			{
-				path: '#/overview',
+				path: '#/start',
+				menu: true,
 				default: true,
+				render: () => html`
+					<page-start id="page"></page-start>
+				`
+			},
+			{
+				path: '#/overview',
 				menu: true,
 				render: () => {
 					return html`
@@ -134,7 +142,6 @@ export class AppShell extends LitElement {
 			},
 			{
 				path: '#/inspection',
-				menu: true,
 				render: () => html`
 					<page-inspection id="page"></page-inspection>
 				`
@@ -146,6 +153,7 @@ export class AppShell extends LitElement {
 					<page-config id="page"></page-config>
 				`
 			},
+			/*
 			{
 				path: '#/about',
 				menu: true,
@@ -153,6 +161,7 @@ export class AppShell extends LitElement {
 					<page-about id="page"></page-about>
 				`
 			},
+			*/
       { 
 				path: '#/login',
 				render: () => html`

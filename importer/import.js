@@ -3,7 +3,10 @@ import XLSX from 'xlsx'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import parser from './parser.js'
-import { db as oldDb, auth, ensureDesignDocument, DB_URL } from '../backend/db.js'
+import { auth, ensureDesignDocument, DB_URL } from '../backend/db.js'
+import PouchDBSecurityHelper from 'pouchdb-security-helper'
+
+PouchDB.plugin(PouchDBSecurityHelper)
 
 const bandingStartAge = 7
 const bandingEndAge = 12
@@ -16,8 +19,20 @@ const designDocs = await db.allDocs({
 	include_docs: true
 })
 */
+
+const oldDb = new PouchDB(DB_URL, {auth})
+const oldSecurity = oldDb.security()
+await oldSecurity.fetch()
+
 await oldDb.destroy()
 const db = new PouchDB(DB_URL, {auth})
+
+const newSecurity = db.security()
+await newSecurity.fetch()
+newSecurity.members = oldSecurity.members
+newSecurity.admins = oldSecurity.admins
+
+await newSecurity.save()
 await ensureDesignDocument(db)
 /*
 await db.bulkDocs(designDocs.rows.map(doc => {
@@ -203,6 +218,10 @@ async function importLine(line){
 			_hiddenLastInspection = lastInspection
 			lastInspection = {}
 		}
+		if(state == 'STATE_EMPTY' && lastInspection.state == 'STATE_NESTLINGS'){
+			// nobody at home but nothing happened
+			state = 'STATE_SUCCESS'
+		}
 		state = state || lastInspection.state
 		const inspection = {
 			...lastInspection,
@@ -214,7 +233,7 @@ async function importLine(line){
 			scope,
 			state
 		}
-		
+		delete inspection.perpetrator_id 
 		inspections.push(inspection)
 		if(scope == 'SCOPE_OUTSIDE' || note.match(/UV/)) continue
 		if(state == 'STATE_EMPTY') delete inspection.species_id
@@ -304,18 +323,19 @@ async function importLine(line){
 		actualizeDate(inspection, 'layingStart', note)
 		actualizeDate(inspection, 'hatchDate', note)
 		if(
+			inspection.eggs &&
+			!inspection.layingStart
+		){
+			inspection.layingStart = incDate(inspection.date, -inspection.eggs)
+		}
+		if(
 			state == 'STATE_BREEDING' && 
 			!inspection.breedingStart &&
 			inspection.layingStart
 		){
 			inspection.breedingStart = incDate(inspection.layingStart, inspection.clutchSize)
 		}
-		if(
-			inspection.eggs &&
-			!inspection.layingStart
-		){
-			inspection.layingStart = incDate(inspection.date, -inspection.eggs)
-		}
+		
 		if(inspection.hatchDate){
 			inspection.bandingWindowStart = incDate(inspection.hatchDate, bandingStartAge)
 			inspection.bandingWindowEnd = incDate(inspection.hatchDate, bandingEndAge)

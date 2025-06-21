@@ -43,6 +43,9 @@ export class InspectionDisplay extends LitElement {
 			button {
 				width: 100%;
 			}
+			select-item {
+				justify-content: center;
+			}
 		`
 	}
 	constructor(){
@@ -68,7 +71,7 @@ export class InspectionDisplay extends LitElement {
 				<span class="date">${this.getLongDate(date)}</span>
 				${type=='OUTSIDE' ? html`<span></span><span>Nistkasten nicht geöffnet</span>` : html`
 					<select-item type="species" .value=${species_id} readonly></select-item>
-					<span>${this.getStateLabel(this.inspection)}</span>
+					<span>${getStateLabel(this.inspection)}</span>
 				`}
 			</div>
 		`
@@ -77,16 +80,17 @@ export class InspectionDisplay extends LitElement {
 		return Object.entries(this.inspection)
 		.filter(([key, value]) => !(
 			//key.endsWith('_id') ||
-			key=='_id' ||
+			//key=='_id' ||
+			key=='species_id' ||
 			key=='box_id' ||
 			key=='note' ||
 			key=='date' ||
-			key=='_rev' ||
+			//key=='_rev' ||
 			key=='type'
 		))
 		.map(([key, value]) => html`
 			<div>
-				<label>${translate(key)}</label>
+				<label>${key}</label>
 				<span>${this.formatDetailValue(value)}</span>
 			</div>`
 		)
@@ -104,13 +108,15 @@ export class InspectionDisplay extends LitElement {
 	clickCb(){
 		this.detail = this.detail == 'SHORT' ? 'LONG' : 'SHORT'
 	}
-	getStateLabel({state, eggs, nestlings}){
-		switch(state){
-			case 'STATE_NESTLINGS': return `${nestlings} Nestlinge`
-			case 'STATE_EGGS': return `${eggs} Eier`
-			default: return translate(state)
-		} 
-	}
+	
+}
+
+export function getStateLabel({state, eggs, nestlings}){
+	switch(state){
+		case 'STATE_NESTLINGS': return `${nestlings} Nestlinge`
+		case 'STATE_EGGS': return `${eggs} Eier`
+		default: return translate(state)
+	} 
 }
 
 customElements.define('inspection-display', InspectionDisplay)

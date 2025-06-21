@@ -110,11 +110,11 @@ export class BoxList extends LitElement {
 								<span class="name">${box.name}</span>
 								<span class="links">
 									<link-map box_id=${box._id} .nocoor=${!(box.lat && box.lon)}></link-map>
-									<link-status box_id=${box._id} .nodata=${box.summaries.length == 0}></link-status>
+									<link-status box_id=${box._id} .nodata=${!box.lastInspection}></link-status>
 									<link-boxconfig box_id=${box._id} ></link-boxconfig>
 								</span>
 							</span>
-							<span class="body cell right ${box._info.className}">${this.info=='BOXES'?'':box._info.text}</span>
+							<span class="body cell right ${box._info.className}">${this.info=='BOXES'?'':(box._info.text == '' ? '---' : box._info.text)}</span>
 						</div>
 					`)}
 				</div>

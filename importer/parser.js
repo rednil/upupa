@@ -96,7 +96,8 @@ const parser = {
 			{ value: 'Sumpfmeise', 		allow: ['SM']							},
 			{ value: 'Wasseramsel', 	allow: ['WA']							},
 			{ value: 'Feldsperling', 	allow: ['FS']							},
-			{ value: 'Tannenmeise', 	allow: ['TM']							}
+			{ value: 'Tannenmeise', 	allow: ['TM']							},
+			{ value: 'Wendehals', 		allow: []									}
 		]
 	},
 	state: {
@@ -122,11 +123,12 @@ const parser = {
 					'Nest aufgegeben',
 					'Brut aufgegeben',
 					'Keine Eier mehr auffindbar',
-					'alle Nestlinge verschwunden'
+					'alle Nestlinge verschwunden',
+					'Nest ausgeräubert'
 				],
 				disAllow: 'Nest-Okkupation BM'
 			},
-			{ value: 'STATE_NESTLINGS', allow: ['Nestling'] },
+			{ value: 'STATE_NESTLINGS', allow: ['Nestling', 'H obs.'] },
 			{ value: 'STATE_BREEDING', allow: ['brütet'] },
 			{ 
 				value: 'STATE_EGGS',
@@ -163,7 +165,8 @@ const parser = {
 				'Siebenschläfer',
 				'Eichhörnchen',
 				'Prädation',
-				'Keine Eier mehr auffindbar'
+				'Keine Eier mehr auffindbar',
+				'Nest ausgeräubert'
 			] },
 			{ value: 'PARENT_MISSING', allow: [
 				'Altvogel verunglückt',

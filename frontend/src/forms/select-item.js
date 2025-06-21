@@ -13,7 +13,8 @@ export class SelectItem extends LitElement {
 			autoselect: { type: Boolean },
 			disabled: { type: Boolean },
 			readonly: { type: Boolean },
-			buttons: { type: Boolean }
+			buttons: { type: Boolean },
+			emptyLabel: { type: String }
 		}
 	}
 
@@ -25,14 +26,13 @@ export class SelectItem extends LitElement {
 			:host(.bold), :host(.bold) select {
 				font-weight: bold;
 			}
-			select {
-				height: 100%;
-			}
+			
 		`
 	}
 	constructor(){
 		super()
 		this.options = []
+		this.emptyLabel = '---'
 		this.key = 'name'
 		this.proxy = new Proxy(this)
 		this.buttons = false
@@ -47,7 +47,7 @@ export class SelectItem extends LitElement {
 		return html`
 			${this.buttons ? html`<button @click=${() => this.skip(-1)}><</button>`:''}
 			<select ?disabled=${this.disabled} .value=${this.value} id="select" @change=${this._changeCb}>
-				${this.autoselect ? '' : html`<option>---</option>`}
+				${this.autoselect ? '' : html`<option>${this.emptyLabel}</option>`}
 				
 				${this.options.map(option => html`
 					<option ?selected=${option._id==this.value} value="${option._id}">${option[this.key]}</option>

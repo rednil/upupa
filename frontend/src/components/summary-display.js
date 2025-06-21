@@ -1,6 +1,7 @@
 import { LitElement, html, css } from 'lit'
 import { translate } from '../translator.js'
 import { Proxy } from '../proxy.js'
+import { getStateLabel } from './inspection-display.js'
 
 function getDateValue(date){
 	return (date || '').split('T')[0]
@@ -80,7 +81,7 @@ export class SummaryDisplay extends LitElement {
 			<div class="head">
 				<span>${summary.occupancy}. Belegung</span>
 				<span>${this.getName(this.species, summary.species_id)}</span>
-				<span>${translate(summary.state)}</span>
+				<span>${getStateLabel(summary)}</span>
 			</div>
 		`
 	}
@@ -94,18 +95,14 @@ export class SummaryDisplay extends LitElement {
 			${summary.state=='STATE_SUCCESS'?html`
 				<div><span>Nestlinge ausgeflogen</span><span>${summary.nestlings}</span></div>
 			`:''}
-			<div class="date">
-				<label for="layingStart">Legebeginn</label>
-				<span id="layingStart">${getMediumDate(summary.layingStart)}</span>
-			</div>
-			<div class="date">
-				<label for="breedingStart">Brutbeginn</label>
-				<span id="breedingStart">${getMediumDate(summary.breedingStart)}</span>
-			</div>
-			<div class="date">
-				<label for="hatchDate">Schlüpfdatum</label>
-				<span id="hatchDate">${getMediumDate(summary.hatchDate)}</span>
-			</div>
+			${
+				['layingStart', 'breedingStart', 'hatchDate'].map(key => summary[key] ? html`
+					<div class="date">
+						<label for=${key}>${translate(key)}</label>
+						<span id=${key}>${getMediumDate(summary[key])}</span>
+					</div>
+				`:'')
+			}
 			${summary.hatchDate ? html`
 				<div><span>Beringungszeitfenster</span><span>${getMediumDate(summary.bandingWindowStart)}-${getMediumDate(summary.bandingWindowEnd)}</span></div>	
 			`:''}

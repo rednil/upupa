@@ -15,6 +15,8 @@
   "dependencies": {
     "@dotenvx/dotenvx": "^1.44.1",
     "pouchdb": "^9.0.0",
+    "pouchdb-security": "^4.2.0",
+    "pouchdb-security-helper": "^2.1.2",
     "xlsx": "^0.18.5"
   }
 }

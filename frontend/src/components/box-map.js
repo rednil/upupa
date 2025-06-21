@@ -143,7 +143,7 @@ export class BoxMap extends LitElement {
         container.style.display = 'flex';
         container.style.justifyContent = 'center';
         container.style.alignItems = 'center';
-        container.title = 'Center map on my location';
+        container.title = 'Turn on GPS';
 
         // You can use an SVG icon or an image for the icon
         container.innerHTML = location_on
@@ -301,7 +301,7 @@ export class BoxMap extends LitElement {
 		.filter(box => box.lat && box.lon)
 		.forEach(box => {
 			var { text, className } = box._info
-			//text = `${box.label}: ${text}`
+			if(!text || text=='') return box.marker.closeTooltip()
 			if(box._id == this.box_id) className += ' selected'
 			box.marker.bindTooltip(text, {
 				permanent: true,

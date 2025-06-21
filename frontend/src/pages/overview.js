@@ -128,7 +128,14 @@ export class PageOverview extends Page {
 			return box
 		})
 	}
-
+	speciesShouldBeKnown(state){
+		return (
+			state != 'STATE_EMPTY' &&
+			state != 'STATE_NEST_BUILDING' &&
+			state != 'STATE_NEST_READY' &&
+			state != 'STATE_OCCUPIED'
+		)
+	}
 	getInfoText(box){
 		const {lastInspection} = box
 		var text = ''
@@ -138,22 +145,30 @@ export class PageOverview extends Page {
 				text = box.name
 				break
 			case 'SPECIES':
-				if(!lastInspection) text = '---'
-				else if(lastInspection.state == 'STATE_EMPTY') {
-					text = 'Leer'
-				}
-				else {
+				if(
+					lastInspection &&
+					(
+						lastInspection.species_id ||
+						this.speciesShouldBeKnown(lastInspection.state)
+					)
+				) {
 					text = this.getSpeciesName(lastInspection.species_id)
 				}
 				break
 			case 'BAND_STATUS_NESTLINGS':
-				if(!lastInspection) text = '---'
-				else if(lastInspection.state == 'STATE_NESTLINGS' || lastInspection.state == 'STATE_SUCCESS'){
+				if(
+					lastInspection?.state == 'STATE_BREEDING' ||
+					lastInspection?.state == 'STATE_NESTLINGS'
+				){
 					if(lastInspection.nestlingsBanded > 0){
 						text = `Beringt: ${lastInspection.nestlingsBanded}`,
 						className = 'banded'
 					}
-					else if(lastInspection.bandingWindowStart && lastInspection.bandingWindowStart){
+					else if(
+						lastInspection.bandingWindowStart && 
+						lastInspection.bandingWindowStart 
+						
+					){
 						const now = new Date()
 						const daysRemaining = (new Date(lastInspection.bandingWindowEnd).getTime() - now.getTime()) / 86400000
 						if(now > new Date(lastInspection.bandingWindowStart)){
@@ -181,17 +196,10 @@ export class PageOverview extends Page {
 						}
 					}
 				}
-				// if we have another state, display that other state
-				if(text.length) break 
+				break 
 			case 'STATUS':
-				if(!lastInspection) text = '---'
-				else if(lastInspection.state == 'STATE_EMPTY') {
-					text = 'Leer'
-				}
-				else {
-					const species = this.getSpeciesName(lastInspection.species_id)
-					text = translate(lastInspection.state)
-				}
+				if(!lastInspection) text = ''
+				else text = translate(lastInspection.state)
 				break
 			case 'LAST_INSPECTION':
 				if(!lastInspection) text = 'Keine'

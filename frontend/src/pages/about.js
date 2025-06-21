@@ -1,12 +1,6 @@
 import { html, css } from 'lit'
 import { Page } from './base'
 
-const dbOptions = [
-	
-	'https://couchdb.chr.ddnss.de/upupa',
-	'http://localhost:5984/dev',
-	window.location.origin + '/api/couch/db',
-]
 export class PageAbout extends Page {
 	static get styles() {
 		return css`
