@@ -10,7 +10,8 @@ export class PageConfig extends LitElement {
 		return {
 			_id: { type: String },
 			copy: { type: Object},
-			type: { type: String }
+			type: { type: String },
+			tainted: { type: Boolean }
 		}
 	}
 	static get styles() {
@@ -28,6 +29,7 @@ export class PageConfig extends LitElement {
 			}
 			.top {
 				display: flex;
+				justify-content: space-between;
 			}
 			.bottom {
 				overflow-y: auto;
@@ -44,7 +46,7 @@ export class PageConfig extends LitElement {
 		this.type = 'box'
 		this._item = {}
 		this.copy = {}
-		
+		this.tainted = false
 	}
 	set item(item = {}){
 		this._item = item
@@ -55,32 +57,6 @@ export class PageConfig extends LitElement {
 	}
 	render() {
 		return html`
-			<div>
-				<div class="top">
-					<select .value=${this.type} @change=${this.changeCollectionCb}>
-						<option value="box">Nistkasten</option>
-						<option value="species">Vogelart</option>
-						<option value="perpetrator">Eindringling</option>
-						<option value="user">Benutzer</option>
-					</select>
-					<select-item 
-						style=${(this.item && !this.item._id) ? 'visibility:hidden' : ''}
-						.type=${this.type} 
-						.value=${this._id} 
-						autoselect
-						@change=${this.changeItemCb}
-					></select-item>
-					<button @click=${this.addCb}>+</button>
-				</div>
-				<div class="center">
-					${this.renderConfig()}
-				</div>
-				<div class="bottom">
-					<button @click=${this.confirmDeletion}>Löschen</button>
-					<button @click=${this.cancel}>Änderungen verwerfen</button>
-					<button @click=${this.submit}>Speichern</button>
-				</div>
-			</div>
 			<app-dialog
 				id="delete-dialog"
 				primary="Abbrechen"
@@ -91,6 +67,57 @@ export class PageConfig extends LitElement {
 			>
 				<div>${this.item.name || this.item.username}</div>
       </app-dialog>
+			<app-dialog
+				id="missing-prop"
+				primary="OK"
+				discard="primary"
+				title="Fehlende Information"
+			>
+				<div>Der Eintrag braucht einen Namen!</div>
+      </app-dialog>
+			<div>
+				<div class="top">
+					${this.renderHead()}
+				</div>
+				<div class="center">
+					${this.renderConfig()}
+				</div>
+				<div class="bottom">
+					<button @click=${this.confirmDeletion}>Löschen</button>
+					<button .disabled=${!this.tainted} @click=${this.cancel}>Änderungen verwerfen</button>
+					<button .disabled=${!this.tainted} @click=${this.submit}>Speichern</button>
+				</div>
+			</div>
+			
+		`
+	}
+	renderHead(){
+		return [
+			this.renderTypeSelector(),
+			this.renderItemSelector(),
+			(this.item && !this.item._id) ? html`<span>Neuer Eintrag</span>` : '' ,
+			html`<button .disabled=${this.tainted} @click=${this.addCb}>+</button>`
+		]
+	}
+	renderTypeSelector(){
+		return html`
+			<select .value=${this.type} @change=${this.changeCollectionCb}>
+				<option value="box">Nistkasten</option>
+				<option value="species">Vogelart</option>
+				<option value="perpetrator">Eindringling</option>
+				<option value="user">Benutzer</option>
+			</select>
+		`
+	}
+	renderItemSelector(){
+		return html`
+			<select-item 
+				style=${(this.item && !this.item._id) ? 'display:none' : ''}
+				.type=${this.type} 
+				.value=${this._id} 
+				autoselect
+				@change=${this.changeItemCb}
+			></select-item>
 		`
 	}
 	changeCollectionCb(evt){
@@ -105,19 +132,23 @@ export class PageConfig extends LitElement {
 	renderConfig(){
 		switch(this.type){
 			case 'box':
-				return html`<box-edit .item=${this.copy} ></box-edit>`
+				return html`<box-edit .item=${this.copy} @change=${this.editorChangeCb}></box-edit>`
 			case 'species':
 			case 'perpetrator':
-				return html`<generic-edit .item=${this.copy}></generic-edit>`
+				return html`<generic-edit .item=${this.copy} @change=${this.editorChangeCb}></generic-edit>`
 			case 'user':
-				return html`<user-edit .item=${this.copy}></user-edit>`
+				return html`<user-edit .item=${this.copy} @change=${this.editorChangeCb}></user-edit>`
 		}
 	}
 	addCb(){
 		this._backupItem = {...this.item}
+		this.tainted = true
 		this.item = {
 			type: this.type,
 		} 
+	}
+	editorChangeCb(){
+		this.tainted = JSON.stringify(this._item) != JSON.stringify(this.copy)
 	}
 	confirmDeletion(){
 		this.shadowRoot.querySelector('#delete-dialog').open = true
@@ -134,15 +165,22 @@ export class PageConfig extends LitElement {
 			this.item = this._backupItem
 			delete this._backupItem
 		}
-		this.copy = {...this.item} 
+		this.copy = {...this.item}
+		this.tainted = false
 	}
 	updateHash(){
 		history.replaceState({},null,`#/config?type=${this.type}&_id=${this._id}`)
 	}
 	async submit(){
-		const response = await this.proxy.put(this.copy)
-		if(response?.insertedId){
-			this._id=response.insertedId
+		if(!this.copy.name) return this.shadowRoot.querySelector('#missing-prop').open = true
+		const items = [this.copy] 
+		if(this.item._id && !this.copy._id) {
+			this.item.validUntil = this.copy.validFrom
+			items.push(this.item)
+		}
+		const response = await this.proxy.bulkDocs(items)
+		if(response[0].ok){
+			this._id=response[0].id
 			this.updateHash()
 		}
 		this.proxy.clearTypeCache(this.type)

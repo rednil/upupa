@@ -29,7 +29,7 @@ export class GenericEdit extends LitElement {
 			return html`
 				<div>
 					<label for=${prop}>${this.getLabel(prop)}</label>
-					<input id=${prop} .value=${live(this.item[prop] || '')} @change=${this.changeCb}>
+					<input id=${prop} .value=${live(this.item[prop] || '')} @input=${this.changeCb}>
 				</div>
 			`
 		}
@@ -39,6 +39,7 @@ export class GenericEdit extends LitElement {
 		changeCb(evt){
 			const { id, value } = evt.target
 			this.item[id] = value
+			this.dispatchEvent(new CustomEvent('change'))
 		}
 }
 

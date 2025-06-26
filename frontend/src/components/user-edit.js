@@ -39,7 +39,7 @@ export class UserEdit extends LitElement {
 			return html`
 				<div>
 					<label for=${prop}>${this.getLabel(prop)}</label>
-					<input id=${prop} placeholder=${placeholder} .value=${this.item[prop] || ''} @change=${this.changeCb}>
+					<input id=${prop} placeholder=${placeholder} .value=${this.item[prop] || ''} @input=${this.changeCb}>
 				</div>
 			`
 		}
@@ -49,6 +49,7 @@ export class UserEdit extends LitElement {
 		changeCb(evt){
 			const { id, value } = evt.target
 			this.item[id] = value
+			this.dispatchEvent(new CustomEvent('change'))
 		}
 }
 

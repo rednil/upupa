@@ -72,8 +72,15 @@ export class Proxy {
 	}
 	async put(item){
 		if(item.type == 'user') return this.putUser(item)
-		if(!item._id) item._id = this.uuid()
+		this.addMissingId(item)
 		return this.db.put(item)
+	}
+	addMissingId(item){
+		if(!item._id) item._id = `${item.type}-${this.uuid()}`
+	}
+	async bulkDocs(items){
+		items.forEach(item => this.addMissingId(item))
+		return this.db.bulkDocs(items)
 	}
 
 	async remove(item){

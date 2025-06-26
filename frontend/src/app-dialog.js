@@ -21,6 +21,7 @@ export class AppDialog extends LitElement {
 				top: 0;
 				width: 100%;
 				height: 100%;
+				z-index: 6000;
 			}
 
 			.centerer {
@@ -30,6 +31,7 @@ export class AppDialog extends LitElement {
 				top: 0;
 				width: 100%;
 				height: 100%;
+				z-index:6001;
 			}
 			.window {
 				margin: auto;

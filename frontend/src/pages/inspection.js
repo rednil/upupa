@@ -6,6 +6,7 @@ import '../forms/select-item.js'
 import '../forms/select-state.js'
 import '../components/inspection-display.js'
 import { incDate } from './calendar.js'
+import { Page } from './base.js'
 
 const bandingStartAge = 7
 const bandingEndAge = 12
@@ -15,7 +16,7 @@ const dateToArr = date => formatDateForInput(date).split('-').map(x => Number(x)
 
 const events = ['layingStart', 'breedingStart', 'hatchDate']
 
-export class PageInspection extends LitElement {
+export class PageInspection extends Page {
 	static get properties() {
 		return {
 			box_id: { type: String },
@@ -592,6 +593,7 @@ export class PageInspection extends LitElement {
 	}
 	createInspection(date = formatDateForInput(new Date())){
 		this.initInspection({
+			type: 'inspection',
 			box_id: this.box_id,
 			state: 'STATE_EMPTY',
 			scope: 'SCOPE_INSIDE',
