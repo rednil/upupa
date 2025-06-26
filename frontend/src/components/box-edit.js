@@ -87,13 +87,15 @@ export class BoxEdit extends LitElement {
 		`
 	}
 	renderPositioningMode(){
+		const options = [POSITIONING_DISABLED, POSITIONING_CORRECTION]
+		if(!this.item.validUntil) options.push(POSITIONING_NEW_LOCATION)
 		return html`
 			<div class="changepos">
 				<label>Position</label>
 				<select .value=${this.positioning} @change=${this.changePositioningModeCb}>
-					<option .selected=${this.positioning==POSITIONING_DISABLED} value=${POSITIONING_DISABLED}>Position beibehalten</option>
-					<option .selected=${this.positioning==POSITIONING_CORRECTION} value=${POSITIONING_CORRECTION}>Position korrigieren</option>
-					<option .selected=${this.positioning==POSITIONING_NEW_LOCATION} value=${POSITIONING_NEW_LOCATION}>Nistkasten umhängen</option>
+					${options.map(option => html`
+						<option .selected=${this.positioning==option} value=${option}>${translate('BOX.'+option)}</option>
+					`)}
 				</select>
 			</div>
 		`

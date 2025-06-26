@@ -64,22 +64,8 @@ export class PageLogin extends Page {
     this.error = ''
 		const username = this.shadowRoot.querySelector('#username').value
 		const password = this.shadowRoot.querySelector('#password').value
-    if(mode==LOGIN){
-			try{
-				const userCtx = await this.proxy.db.login(username, password)
-				console.log('login', userCtx)
-				if(userCtx.name != null){
-					this.dispatchEvent(new CustomEvent('login', {
-						detail: userCtx
-					}))
-				}
-			}catch(e){
-				console.log('login exception', e)
-				this.dispatchEvent('fetch-error', {
-					detail: e
-				})
-			}
-		}
+    if(mode==LOGIN) this.proxy.login(username, password)
+				
   }
 }
 

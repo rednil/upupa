@@ -4,6 +4,7 @@ let db = new PouchDB(window.location.origin + '/api/couch/db', {
 let userDb = new PouchDB(window.location.origin + '/api/couch/_users', {
 	skip_setup: true
 })
+let userCtx = null
 const userPrefix = 'org.couchdb.user'
 const typeCache = {}
 
@@ -15,13 +16,28 @@ export class Proxy {
 	get db(){
 		return db
 	}
+	get userCtx(){
+		return userCtx
+	}
 	setDb(url){
 		this.dbUrl
 		db = new PouchDB(url, {
 			skip_setup: true
 		})
 	}
-	
+	async requestUserInfo(){
+    try{
+			const session = await this.db.getSession()
+			if(session.userCtx.name == null){
+				return this._finishLogout()
+			}
+			userCtx = session.userCtx
+			if(window.location.hash == '#/login') window.location.hash = ''
+		}catch(e){
+			this._finishLogout()
+      this.reportError('exception', e)
+		}
+  }
 	async query(view, options = {}) {
 		return this._handleResponse(await this.db.query(`upupa/${view}`, options), options)
 	}
@@ -62,7 +78,7 @@ export class Proxy {
 		return options.include_docs ? rows.map(view => view.doc) : rows
 	}
 	uuid(length = 10){
-		const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+		const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
 		let result = ''
 		const charactersLength = characters.length
 		for (let i = 0; i < length; i++) {
@@ -72,14 +88,15 @@ export class Proxy {
 	}
 	async put(item){
 		if(item.type == 'user') return this.putUser(item)
-		this.addMissingId(item)
+		this.finalize(item)
 		return this.db.put(item)
 	}
-	addMissingId(item){
+	finalize(item){
 		if(!item._id) item._id = `${item.type}-${this.uuid()}`
+		item.user_id = userCtx.name
 	}
 	async bulkDocs(items){
-		items.forEach(item => this.addMissingId(item))
+		items.forEach(item => this.finalize(item))
 		return this.db.bulkDocs(items)
 	}
 
@@ -110,5 +127,24 @@ export class Proxy {
 		}
 		return false
 	}
+	async login(username, password){
+		try{
+			userCtx = await this.db.login(username, password)
+			window.location.hash = ""
+		}catch(e){
+			this.reportError('exception', e)
+		}
+	}
+	async logout(){
+    const response = await this.db.logout()
+    if(response.ok) {
+      return this._finishLogout()
+    }
+    this.reportError('response-not-ok', response)
+  }
+  _finishLogout(){
+    userCtx = null
+    window.location.hash = "#/login"
+  }
 }
 

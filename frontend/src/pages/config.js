@@ -127,17 +127,17 @@ export class PageConfig extends LitElement {
 	changeItemCb(evt){
 		this.item = evt.target.item
 		this._id = evt.target.value
-		this.updateHash()
+		this.updateHistory()
 	}
 	renderConfig(){
 		switch(this.type){
 			case 'box':
-				return html`<box-edit .item=${this.copy} @change=${this.editorChangeCb}></box-edit>`
+				return html`<box-edit .item=${this.copy} @change=${this.updateTainted}></box-edit>`
 			case 'species':
 			case 'perpetrator':
-				return html`<generic-edit .item=${this.copy} @change=${this.editorChangeCb}></generic-edit>`
+				return html`<generic-edit .item=${this.copy} @change=${this.updateTainted}></generic-edit>`
 			case 'user':
-				return html`<user-edit .item=${this.copy} @change=${this.editorChangeCb}></user-edit>`
+				return html`<user-edit .item=${this.copy} @change=${this.updateTainted}></user-edit>`
 		}
 	}
 	addCb(){
@@ -147,8 +147,8 @@ export class PageConfig extends LitElement {
 			type: this.type,
 		} 
 	}
-	editorChangeCb(){
-		this.tainted = JSON.stringify(this._item) != JSON.stringify(this.copy)
+	updateTainted(){
+		this.tainted = (JSON.stringify(this._item) != JSON.stringify(this.copy))
 	}
 	confirmDeletion(){
 		this.shadowRoot.querySelector('#delete-dialog').open = true
@@ -168,7 +168,7 @@ export class PageConfig extends LitElement {
 		this.copy = {...this.item}
 		this.tainted = false
 	}
-	updateHash(){
+	updateHistory(){
 		history.replaceState({},null,`#/config?type=${this.type}&_id=${this._id}`)
 	}
 	async submit(){
@@ -181,10 +181,12 @@ export class PageConfig extends LitElement {
 		const response = await this.proxy.bulkDocs(items)
 		if(response[0].ok){
 			this._id=response[0].id
-			this.updateHash()
+			this.updateHistory()
 		}
 		this.proxy.clearTypeCache(this.type)
 		this.shadowRoot.querySelector('select-item').fetchOptions()
+		this.item = {...this.copy}
+		this.updateTainted()
 	}
 }
 

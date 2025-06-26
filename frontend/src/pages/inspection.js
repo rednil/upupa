@@ -223,7 +223,6 @@ export class PageInspection extends Page {
 				this.inspection = {
 					...fixed,
 					species_id,
-					eggs,
 					layingStart,
 					breedingStart,
 					nestlingsBanded: nestlingsBanded || 0,

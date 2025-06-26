@@ -44,7 +44,6 @@ function getUrlParams(){
 export class AppShell extends LitElement {
   static get properties() {
     return {
-      self: { type: Object },
       error: { type: Object },
 			route: { type: Object },
 			params: { type: Object }
@@ -165,7 +164,7 @@ export class AppShell extends LitElement {
       { 
 				path: '#/login',
 				render: () => html`
-					<page-login id="page" @login=${this.requestUserInfo}></page-login>
+					<page-login id="page"></page-login>
 				` 
 			}
     ]
@@ -175,8 +174,8 @@ export class AppShell extends LitElement {
 			console.log('error', evt.detail)
 			this.error = evt.detail
 		})
-    this.requestUserInfo()
-    this.error = ''
+		this.error = ''
+    this.verifySessionStatus()
   }
 	navigate(){
 		this.route = this.routes.find(route => window.location.hash.search(route.path) == 0)
@@ -200,48 +199,29 @@ export class AppShell extends LitElement {
 		Object.assign(this.shadowRoot.querySelector('#page'), this.params)
   }
 
-  async requestUserInfo(){
-    try{
-			const session = await this.proxy.db.getSession()
-			if(session.userCtx.name == null){
-				return this.logout()
-			}
-			this.self = session.userCtx
-			if(window.location.hash == '#/login') window.location.hash = ''
-		}catch(e){
-			this.logout()
-      this.handleFetchError(e)
-		}
+  async verifySessionStatus(){
+		await this.proxy.requestUserInfo()
+    this.requestUpdate()
   }
 
- 
 	shouldUpdate(){
 		return this.route
 	}
   render() {
+		const userCtx = this.proxy.userCtx
     return html`
-			<div class="top ${this.self?'logged-in':'logged-out'}">
-				<select-route .self=${this.self} .routes=${this.routes} selected=${this.route.path}></select-route>
+			<div class="top ${userCtx?'logged-in':'logged-out'}">
+				<select-route .self=${this.userCtx} .routes=${this.routes} selected=${this.route.path}></select-route>
 				<div class="user">
-					<a href="#/config?collection=users&item_id=${this.self?._id}">${this.self?.name}</a>
-					<button-logout @click=${this.requestLogout}></button-logout>
+					<a href="#/config?collection=users&item_id=${userCtx?._id}">${userCtx?.name}</a>
+					<button-logout @click=${() => this.proxy.logout()}></button-logout>
 				</div>
 			</div>
 			<main>${this.route.render(this.params)}</main>
       <error-display class="bottom error" .error=${this.error}></error-display>
     `
   }
-  async requestLogout(){
-    const response = await this.proxy.db.logout()
-    if(response.ok) {
-      this.logout()
-    }
-    else this.error = { type: 'fetch-status', detail: response }
-  }
-  logout(){
-    this.self = null
-    window.location.hash = "#/login"
-  }
+  
   
 }
 
