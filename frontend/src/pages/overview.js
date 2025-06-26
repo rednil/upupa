@@ -199,7 +199,10 @@ export class PageOverview extends Page {
 				break 
 			case 'STATUS':
 				if(!lastInspection) text = ''
-				else text = translate(lastInspection.state)
+				else {
+					text = translate(lastInspection.state)
+					className = lastInspection.state
+				}
 				break
 			case 'LAST_INSPECTION':
 				if(!lastInspection) text = 'Keine'

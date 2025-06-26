@@ -46,18 +46,35 @@ export class BoxMap extends MapBase {
 			.banding.possible {
 				background-color: green;
 				color: white;
+				z-index: 1;
 			}
 			.banding.required {
 				background-color: yellow;
+				z-index: 2;
 			}
 			.banding.urgent {
 				background-color: orange;
+				z-index: 3;
 			}
 			.banding.overdue {
 				background-color: red;
 				color: white;
+				z-index: 4;
 			}
-			
+			.STATE_EGGS {
+				background-color: yellow;
+				z-index: 1;
+			}
+			.STATE_BREEDING{
+				background-color: green;
+				color: white;
+				z-index: 2;
+			}
+			.STATE_NESTLINGS {
+				background-color: blue;
+				color: white;
+				z-index: 3;
+			}
     `])
   }
 	constructor(){

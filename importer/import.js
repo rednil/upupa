@@ -41,7 +41,7 @@ await db.bulkDocs(designDocs.rows.map(doc => {
 }))
 */
 const oneBoxOnly = process.argv[2]
-const dataPath = 'data/2025-06-17.ods'
+const dataPath = 'data/2025-06-26.ods'
 
 const idCache = {}
 
