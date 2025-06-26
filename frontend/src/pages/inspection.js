@@ -182,19 +182,19 @@ export class PageInspection extends Page {
 		let i = this.inspection
 		const {
 			_id,
+			type,
 			_rev,
 			box_id,
 			date,
 			note,
 			scope,
 			species_id,
-			eggs,
 			clutchSize,
 			layingStart,
 			breedingStart,
 			nestlingsBanded
 		} = i
-		const fixed = {_id, _rev, box_id, date, note, scope}
+		const fixed = {_id, _rev, box_id, date, note, scope, type}
 		switch(state){
 			case 'STATE_EMPTY':
 			case 'STATE_NEST_BUILDING':
@@ -491,7 +491,7 @@ export class PageInspection extends Page {
 	}
 	async save(){
 		const response = await this.proxy.put(this.inspection)
-		
+		if(response.ok) history.back()
 	}
 	renderPreviousInspection(){
 		if(!this.previousInspection) return ''
@@ -598,6 +598,7 @@ export class PageInspection extends Page {
 			scope: 'SCOPE_INSIDE',
 			date: new Date(date).toISOString()
 		})
+		console.log('createInspection', this.inspection)
 	}
 	changeModeCb(evt){
 		const {value} = evt.target

@@ -88,15 +88,16 @@ export class Proxy {
 	}
 	async put(item){
 		if(item.type == 'user') return this.putUser(item)
-		this.finalize(item)
-		return this.db.put(item)
+		if(this.validate(item)) return this.db.put(item)
 	}
-	finalize(item){
+	validate(item){
+		if(!item.type) return this.reportError('VALIDATION_ERROR', 'MISSING_TYPE')
 		if(!item._id) item._id = `${item.type}-${this.uuid()}`
 		item.user_id = userCtx.name
+		return true
 	}
 	async bulkDocs(items){
-		items.forEach(item => this.finalize(item))
+		for(let i=0; i<items.length; i++) if(!this.validate(items[i])) return
 		return this.db.bulkDocs(items)
 	}
 
@@ -119,6 +120,7 @@ export class Proxy {
 			bubbles: true,
 			composed: true 
 		}))
+		return false // for validation
 	}
 	checkError(response){
 		if(response?.status > 400){
