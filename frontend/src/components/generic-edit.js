@@ -18,11 +18,16 @@ export class GenericEdit extends LitElement {
 					display: flex;
 					justify-content: space-between;
 				}
+				textarea {
+					width: 100%;
+					margin-top: 1em;
+				}
 			`
 		}
 		render() {
 			return [
 				this.renderInput('name'),
+				this.renderNote()
 			]
 		}
 		renderInput(prop){
@@ -30,6 +35,18 @@ export class GenericEdit extends LitElement {
 				<div>
 					<label for=${prop}>${this.getLabel(prop)}</label>
 					<input id=${prop} .value=${live(this.item[prop] || '')} @input=${this.changeCb}>
+				</div>
+			`
+		}
+		renderNote(){
+			return html`
+				<div class="note">
+					<textarea
+						id="note"
+						placeholder="Bemerkung"
+						.value=${this.item.note || ''}
+						@input=${this.genericChangeCb}
+					></textarea>
 				</div>
 			`
 		}

@@ -46,7 +46,8 @@ export class AppShell extends LitElement {
     return {
       error: { type: Object },
 			route: { type: Object },
-			params: { type: Object }
+			params: { type: Object },
+			firstYear: { type: Number }
     }
   }
 
@@ -90,7 +91,16 @@ export class AppShell extends LitElement {
 				background-color: red;
 				text-align: center;
 			}
-		
+			.year.past {
+				background-color: red;
+				color: white;
+				margin: auto;
+				padding: 0.1em;
+			}
+			.year.past option {
+				background-color: white;
+				color: initial;
+			}
 			select{
 				border: 0;
 			}
@@ -101,6 +111,9 @@ export class AppShell extends LitElement {
 				text-decoration: none;
 				color: black;
 			}
+			.route-login .year {
+				display: none;
+			}
 		
     `
   }
@@ -108,11 +121,14 @@ export class AppShell extends LitElement {
   constructor() {
     super()
 		this.proxy = new Proxy(this)
+		this.selectedYear = 2020 // new Date().getFullYear()
+		this.firstYear = new Date().getFullYear()
     this.routes = [
 			{
 				path: '#/start',
 				menu: true,
 				default: true,
+				
 				render: () => html`
 					<page-start id="page"></page-start>
 				`
@@ -189,14 +205,25 @@ export class AppShell extends LitElement {
 	}
   connectedCallback(){
 		super.connectedCallback()
+		this.fetchFirstInspection()
 		if(window.location.hash) this.navigate()
 		else this.navigateDefault()
+	}
+	async fetchFirstInspection(){
+		const firstInspection = await this.proxy.queryReduce('inspections', {
+			reduce: false,
+			limit: 1
+		})
+		if(firstInspection?.length){
+			this.firstYear =  new Date(firstInspection[0].date).getFullYear()
+		}
 	}
 	navigateDefault(){
 		window.location.hash = this.routes[0].path
 	}
   updated(){
-		Object.assign(this.shadowRoot.querySelector('#page'), this.params)
+		console.log('app-shell updated', this.selectedYear)
+		Object.assign(this.shadowRoot.querySelector('#page'), this.params, { year: this.selectedYear })
   }
 
   async verifySessionStatus(){
@@ -210,8 +237,9 @@ export class AppShell extends LitElement {
   render() {
 		const userCtx = this.proxy.userCtx
     return html`
-			<div class="top ${userCtx?'logged-in':'logged-out'}">
+			<div class="top ${userCtx?'logged-in':'logged-out'} route-${this.route.path.slice(2)}">
 				<select-route .self=${this.userCtx} .routes=${this.routes} selected=${this.route.path}></select-route>
+				${this.renderYearSelector()}
 				<div class="user">
 					<a href="#/config?collection=users&item_id=${userCtx?._id}">${userCtx?.name}</a>
 					<button-logout @click=${() => this.proxy.logout()}></button-logout>
@@ -221,8 +249,26 @@ export class AppShell extends LitElement {
       <error-display class="bottom error" .error=${this.error}></error-display>
     `
   }
-  
-  
+  renderYearSelector(){
+		const currentYear = new Date().getFullYear()
+		const range = []
+		for (let i = this.firstYear; i<=currentYear; i++) range.push(i)
+		return html`
+			<select class="year ${this.selectedYear==currentYear ? 'current' : 'past'}" value=${this.selectedYear} @change=${this.selectYearCb}>
+				${range.map(year => html`
+					<option 
+						.selected=${year == this.selectedYear}
+						value=${year}
+					>${year}</option>	
+				`)}
+			</select>
+		`
+	}
+  selectYearCb(evt){
+		console.log('select year', evt.target.value)
+		this.selectedYear = Number(evt.target.value)
+		this.requestUpdate()
+	}
 }
 
 customElements.define('app-shell', AppShell)

@@ -24,7 +24,8 @@ export class PageOverview extends Page {
       boxes: { type: Array },
 			box_id: { type: String },
 			info: { type: String },
-			mode: { type: String }
+			mode: { type: String },
+			year: { type: Number }
     }
   }
 
@@ -77,9 +78,13 @@ export class PageOverview extends Page {
 		this.boxes = []
 		this.info = 'BOXES'
 		this.mode = 'MAP'
-		this.fetchData()
 	}
-	
+	willUpdate(changedProps){
+		if(changedProps.has('info') || changedProps.has('boxes')) this.addInfo()
+	}
+	updated(changedProps){
+		if(changedProps.has('year')) this.fetchData()
+	}
   render() {
     return html`
 			${this.mode == 'MAP' ? html`
@@ -108,17 +113,20 @@ export class PageOverview extends Page {
 	infoChangeCb(evt){
 		window.location.hash = `#/overview?mode=${this.mode}&info=${evt.target.value}`
 	}
-	firstUpdated(){
-	}
+	
 	async fetchData(){
 		var [boxes, species, lastInspections=[]] = await Promise.all([
-			this.proxy.getByType('box'),
+			this.proxy.query('boxes', {
+				startkey: [this.year],
+				endkey: [this.year, {}],
+				include_docs: true
+			}),
 			this.proxy.getByType('species'),
 			this.proxy.queryReduce('inspections', {
 				group: true,
 				group_level: 2,
-				startkey: [2025],
-				endkey: [2025, {}],
+				startkey: [this.year],
+				endkey: [this.year, {}],
 			}),
 		])
 		this.species = species.reduce((obj, {_id, name}) => Object.assign(obj, {[_id]: name}), {})
@@ -220,9 +228,7 @@ export class PageOverview extends Page {
 	getSpeciesName(id){
 		return this.species[id] || 'Unbekannt'
 	}
-	willUpdate(changedProps){
-		if(changedProps.has('info') || changedProps.has('boxes')) this.addInfo()
-	}
+	
 	addInfo(){
 		this.boxes.forEach(box => {
 			box._info = this.getInfoText(box)

@@ -1,5 +1,5 @@
 import { LitElement, html, css } from 'lit'
-import '../forms/select-item.js'
+import '../forms/select-box.js'
 import { Proxy } from '../proxy.js'
 import '../forms/link-map.js'
 import '../forms/link-boxconfig.js'
@@ -10,11 +10,11 @@ import '../components/summary-display.js'
 export class PageStatus extends LitElement {
   static get properties() {
     return {
-      boxes: { type: Array },
-			inspections: { type: Array },
-			species: { type: Array },
-			summaries: { type: Array },
-			box_id: { type: String }
+      //boxes: { type: Array },
+			//inspections: { type: Array },
+			//summaries: { type: Array },
+			box_id: { type: String },
+			year: { type: Number }
     }
   }
 
@@ -67,7 +67,6 @@ export class PageStatus extends LitElement {
 		this.boxes = []
 		this.inspections = []
 		this.summaries = []
-		this.species = []
 	}
 	
 	boxHasNoCoors(){
@@ -80,7 +79,15 @@ export class PageStatus extends LitElement {
 				<div class="top">
 					<div class="controls">
 						<div class="left">
-							<select-item buttons id="select-box"  type="box" .value=${this.box_id} autoselect @change=${this._boxSelectCb}></select-item>
+							<select-box
+								year=${this.year}
+								buttons 
+								id="select-box"
+								type="box"
+								.value=${this.box_id}
+								autoselect
+								@change=${this._boxSelectCb}
+							></select-box>
 							<link-map .box_id=${this.box_id} .nocoor=${this.boxHasNoCoors()}></link-map>
 							<link-boxconfig .box_id=${this.box_id}></link-boxconfig>
 						</div>
@@ -104,35 +111,41 @@ export class PageStatus extends LitElement {
     `
   }
 	
-	firstUpdated(){
-		if(this.box_id){
-			this._fetchData(this.box_id)
+	updated(changedProps){
+		if(changedProps.has('year') || changedProps.has('box_id')) {
+			this._fetchData()
 		}
+		if(changedProps.has('year')) this._fetchBoxes()
 	}
 	
 	_boxSelectCb(evt){
 		this.box_id = evt.target.value
 		history.replaceState({},null,`#/status?box_id=${this.box_id}`)
-		this._fetchData(this.box_id)
+		//this._fetchData(this.box_id)
 	}
-	async _fetchData(box_id){
-		var [boxes, inspections=[], summaries=[]] = await Promise.all([
-			this.proxy.getByType('box'),
+	async _fetchBoxes(){
+		this.boxes = await this.proxy.getByType('box')
+	}
+	async _fetchData(){
+		const {year, box_id} = this
+		console.log('year', typeof year, year, box_id)
+		var [inspections=[], summaries=[]] = await Promise.all([
 			this.proxy.queryReduce('inspections', {
-				endkey: [2025, box_id],
-				startkey: [2025, box_id, {}],
+				endkey: [year, box_id],
+				startkey: [year, box_id, {}],
 				reduce: false,
 				descending: true
 			}),
 			this.proxy.queryReduce('summaries', {
 				group: true,
 				group_level: 3,
-				endkey: [2025, box_id],
-				startkey: [2025, box_id, {}],
+				endkey: [year, box_id],
+				startkey: [year, box_id, {}],
 				descending: true
-			}),
+			})
 		])
-		Object.assign(this, {inspections, summaries, boxes})
+		Object.assign(this, {inspections, summaries})
+		this.requestUpdate()
 	}
 }
 

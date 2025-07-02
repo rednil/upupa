@@ -1,5 +1,6 @@
 import { LitElement, html, css } from 'lit'
 import './select-location.js'
+import '../forms/select-item.js'
 import { translate } from '../translator.js' 
 // live directive is needed because user can edit the value of the input.
 // This tells Lit to dirty check against the live DOM value.
@@ -53,6 +54,7 @@ export class BoxEdit extends LitElement {
 	render() {
 		return [
 			this.renderInput('name'),
+			this.renderArchitecture(),
 			this.backupItem._id ? this.renderPositioningMode() : '',
 			this.renderInput('validFrom', 'date'),
 			this.item.validUntil ? this.renderInput('validUntil', 'date') : '',
@@ -71,6 +73,20 @@ export class BoxEdit extends LitElement {
 					id=${prop}
 					.value=${live(this.item[prop] || '')}
 					@input=${this.changeCb}>
+			</div>
+		`
+	}
+	renderArchitecture(){
+		console.log('renderArch', this.item)
+		return html`
+			<div>
+				<label for="architecture_id">Architektur</label>
+				<select-item 
+					id="architecture_id"
+					type="architecture"
+					@change=${this.changeCb}
+					.value=${this.item.architecture_id}
+				></select-item>
 			</div>
 		`
 	}

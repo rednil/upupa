@@ -15,7 +15,8 @@ function dateClass(date){
 export class PageCalendar extends Page {
 	static get properties() {
 		return {
-			calendar: { type: Array }
+			//calendar: { type: Array },
+			year: { type: Number }
 		}
 	}
 
@@ -100,17 +101,18 @@ export class PageCalendar extends Page {
 			</div>
 		`
 	}
-	connectedCallback(){
-		super.connectedCallback()
+	updated(){
 		this.fetchData()
 	}
 	async fetchData(){
+		console.log('fetchData', this.year)
+		this.calendar = []
 		var [summaries, boxes] = await Promise.all([
 			this.proxy.queryReduce('summaries', {
 				group: true,
 				group_level: 2,
-				endkey: [2025],
-				startkey: [2025, {}],
+				endkey: [this.year],
+				startkey: [this.year, {}],
 				descending: true
 			}),
 			this.proxy.getByType('box')
@@ -132,17 +134,18 @@ export class PageCalendar extends Page {
 			end: new Date(bandingWindowEnd),
 		}))
 		.sort((a,b) => a.start - b.start)
+		if(!events.length) return
 		const firstEvent = events[0].start
 		const lastEvent = events[events.length - 1].end
-		const calendar = []
+		
 		for(var date = firstEvent; date < lastEvent; date = incDate(date, 1)){
-			calendar.push({date, bandings: []})
+			this.calendar.push({date, bandings: []})
 		}
 		events.forEach(event => {
 			var column = 0
 			var dayIdx = 0
 			for(var date = event.start; date < event.end; date = incDate(date, 1)){
-				const day = calendar.find(day => day.date.toDateString() == date.toDateString())
+				const day = this.calendar.find(day => day.date.toDateString() == date.toDateString())
 				if(day) {
 					if(date == event.start){
 						column = day.bandings.indexOf(null)
@@ -156,13 +159,14 @@ export class PageCalendar extends Page {
 					}
 				}
 				else {
-					console.error('Calendar Error', date, calendar)
+					console.error('Calendar Error', date, this.calendar)
 				}
 				dayIdx++
 			}
 			
 		})
-		this.calendar = calendar
+		//this.calendar = calendar
+		this.requestUpdate()
 	}
 
 }

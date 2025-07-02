@@ -1,5 +1,6 @@
 import { LitElement, html, css } from 'lit'
 import '../forms/select-item.js'
+import '../forms/select-box.js'
 import '../components/box-edit.js'
 import '../components/generic-edit.js'
 import '../components/user-edit.js'
@@ -11,7 +12,8 @@ export class PageConfig extends LitElement {
 			_id: { type: String },
 			copy: { type: Object},
 			type: { type: String },
-			tainted: { type: Boolean }
+			tainted: { type: Boolean },
+			year: { type: Number }
 		}
 	}
 	static get styles() {
@@ -94,7 +96,7 @@ export class PageConfig extends LitElement {
 	renderHead(){
 		return [
 			this.renderTypeSelector(),
-			this.renderItemSelector(),
+			this.type == 'box' ? this.renderBoxSelector() : this.renderItemSelector(),
 			(this.item && !this.item._id) ? html`<span>Neuer Eintrag</span>` : '' ,
 			html`<button .disabled=${this.tainted} @click=${this.addCb}>+</button>`
 		]
@@ -103,6 +105,7 @@ export class PageConfig extends LitElement {
 		return html`
 			<select .value=${this.type} @change=${this.changeCollectionCb}>
 				<option value="box">Nistkasten</option>
+				<option value="architecture">Architektur</option>
 				<option value="species">Vogelart</option>
 				<option value="perpetrator">Eindringling</option>
 				<option value="user">Benutzer</option>
@@ -120,6 +123,17 @@ export class PageConfig extends LitElement {
 			></select-item>
 		`
 	}
+	renderBoxSelector(){
+		return html`
+			<select-box 
+				style=${(this.item && !this.item._id) ? 'display:none' : ''}
+				.value=${this._id}
+				.year=${this.year}
+				autoselect
+				@change=${this.changeItemCb}
+			></select-box>
+		`
+	}
 	changeCollectionCb(evt){
 		this.type = evt.target.value
 		history.replaceState({},null,`#/config?type=${this.type}`)
@@ -133,11 +147,10 @@ export class PageConfig extends LitElement {
 		switch(this.type){
 			case 'box':
 				return html`<box-edit .item=${this.copy} @change=${this.updateTainted}></box-edit>`
-			case 'species':
-			case 'perpetrator':
-				return html`<generic-edit .item=${this.copy} @change=${this.updateTainted}></generic-edit>`
 			case 'user':
 				return html`<user-edit .item=${this.copy} @change=${this.updateTainted}></user-edit>`
+			default:
+				return html`<generic-edit .item=${this.copy} @change=${this.updateTainted}></generic-edit>`
 		}
 	}
 	addCb(){

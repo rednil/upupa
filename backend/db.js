@@ -7,6 +7,7 @@ import PouchDB from 'pouchdb'
 import inspections from './views/inspections.js'
 import summaries from './views/summaries.js'
 import statistics from './views/statistics.js'
+import boxes from './views/boxes.js'
 
 const {
 	DATABASE_PROTOCOL,
@@ -48,7 +49,8 @@ export async function ensureDesignDocument(db) {
 		"views": {
 			inspections,
 			summaries,
-			statistics
+			statistics,
+			boxes
 		}
   };
 

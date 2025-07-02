@@ -1,12 +1,44 @@
-const year = 2025
-
 const parser = {
+	year: 2025,
+	architecture: {
+		options: [
+			{
+				allow: /^(\d+)mm/,
+				value: match => match[0]
+			},
+			{
+				allow: /oval/,
+				value: '30mm x 45mm'
+			},
+			{
+				allow: /(\d)x(\d+)mm/,
+				value: match => `${match[1]} x ${match[2]}mm`
+			},
+			{
+				allow: /Specht/,
+				value: 'Specht'
+			},
+			{
+				allow: /Wamsel/,
+				value: 'Wasseramsel'
+			},
+			{
+				allow: /Wiedehopf/,
+				value: 'Wiedehopf'
+			},
+			{
+				allow: /Waldbauml/,
+				value: 'Waldbaumläufer'
+			}
+		]
+	},
 	eggs: {
 		options: [
 			{ 
 				allow: [
 					/(\d+)\s*Ei/,
-					/\((\d+)\?\)\s*Ei/
+					/\((\d+)\?\)\s*Ei/,
+					/(\d+) E/
 				],
 				value: match => Number(match[1])
 			}
@@ -21,6 +53,9 @@ const parser = {
 					/(\d+)\s..\sNestlinge\sberingt/,
 					/Nestlinge\s*\((\d+)\?\)/,
 					/(\d).\sNestling\sgeschlüpft/
+				],
+				disAllow: [
+					/Nestling noch beringt/
 				],
 				value: match => Number(match[1])
 			}
@@ -67,7 +102,10 @@ const parser = {
 	nestlingsBanded: {
 		options: [
 			{
-				allow: /(\d+)[^\d]*Nestlinge.*ringt/,
+				allow: [
+					/(\d+)[^\d]*Nestlinge.*ringt/,
+					/(\d+)N [bB]ering/
+				],
 				value: match => Number(match[1])
 			}
 		]
@@ -75,7 +113,12 @@ const parser = {
 	femaleBanded: {
 		options: [
 			{
-				allow: ['W beringt', 'beide Altvögel beringt'],
+				allow: [
+					'W [bB]eringt',
+					'beide Altvögel beringt',
+					/[KB]M [Bb]eringt/,
+					/10 E beringt KM/
+				],
 				value: true
 			}
 		]
@@ -128,8 +171,8 @@ const parser = {
 				],
 				disAllow: 'Nest-Okkupation BM'
 			},
-			{ value: 'STATE_NESTLINGS', allow: ['Nestling', 'H obs.'] },
-			{ value: 'STATE_BREEDING', allow: ['brütet'] },
+			{ value: 'STATE_NESTLINGS', allow: ['Nestling', 'H obs.', /NK [bB]ering/] },
+			{ value: 'STATE_BREEDING', allow: ['[bB]rütet'] },
 			{ 
 				value: 'STATE_EGGS',
 				allow: [
@@ -197,11 +240,13 @@ const parser = {
 			{ value: true, allow: ['Nest-Okkupation BM'] },
 		]
 	}
+	
 }
 function dateFormatter(match){
+	console.log('dateFormatter year', parser.year)
 	const month = ('0' + match[2]).slice(-2)
 	const date = ('0' + match[1]).slice(-2)
-	const dateStr = `${year}-${month}-${date}`
+	const dateStr = `${parser.year}-${month}-${date}`
 	return new Date(dateStr)
 }
 export default parser

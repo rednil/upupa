@@ -1,6 +1,5 @@
 import { LitElement, html, css } from 'lit'
 import { Proxy } from '../proxy.js'
-const promises = {}
 
 export class SelectItem extends LitElement {
 	static get properties() {
@@ -108,3 +107,4 @@ export class SelectItem extends LitElement {
 }
 
 customElements.define('select-item', SelectItem)
+

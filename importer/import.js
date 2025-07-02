@@ -41,17 +41,20 @@ await db.bulkDocs(designDocs.rows.map(doc => {
 }))
 */
 const oneBoxOnly = process.argv[2]
-const dataPath = 'data/2025-06-26.ods'
+
+
+const dataDir = 'data'
 
 const idCache = {}
-
-
-const workbook = getWorkbook()
+const boxIdCache = {}
 const docs = []
-console.log(Object.keys(workbook.Sheets))
-await importBoxes(XLSX.utils.sheet_to_json(workbook.Sheets.Box_Status))
-await importInspections(XLSX.utils.sheet_to_json(workbook.Sheets['Breeding (25)']))
-
+for(var year = 2020; year<=2020; year++){
+	parser.year = year
+	const workbook = getWorkbook(year)
+	console.log(Object.keys(workbook.Sheets))
+	await importBoxes(XLSX.utils.sheet_to_json(workbook.Sheets.Box_Status))
+	await importInspections(XLSX.utils.sheet_to_json(workbook.Sheets['Breeding']))
+}
 docs.map(doc => console.log(removeIDs(doc)))
 await db.bulkDocs(docs)
 
@@ -62,9 +65,9 @@ function getWorkbook(){
 	const __dirname = path.dirname(__filename);
 
 	// Construct the full path to the 'data.ods' file
-	const filePath = path.join(__dirname, dataPath);
+	const filePath = path.join(__dirname, dataDir, `${year}.ods`)
 	// Read the .ods file
-	return XLSX.readFile(filePath)
+	return XLSX.readFile(filePath, { cellDates: true })
 }
 
 function incDate(date, days){
@@ -76,22 +79,53 @@ function incDate(date, days){
 async function importBoxes(json){
 	//console.log(`drop boxes`, (await agent.delete('/api/self/boxes')).status)
 	for(var i=0; i<json.length; i++){
+		
 		const entry = json[i]
 		var name = entry['Nistkastennr.']
 		if(!name) continue
+		
 		const box = {
 			type: 'box',
 			name: fixBoxName(name),
 			site: entry['Standort'],
 			lat: entry['Breite'] || entry['Breite_1'],
-			lon: entry['Länge'] || entry['Länge_1']
+			lon: entry['Länge'] || entry['Länge_1'],
+			validFrom: entry['Installation'],
+			note: entry['Zustand'],
+		}
+		if(entry['Daten']){
+			const architecture = {
+				name: valueParser('architecture', entry['Daten']),
+				...parseEntrance(entry['Daten'])
+			}
+			box.architecture_id = getId('architecture', architecture)
 		}
 		if(!box.name || !box.site) continue
-		getId('box', box)
+		getBoxId(box, true)
 		
 	}
 }
-
+function parseEntrance(str){
+	if(!str || str=='') return {}
+	let match = str.match(/oval (\d\d)x(\d\d)/)
+	if(match) return {
+		entranceWidth: Number(match[1]),
+		entranceHeight: Number(match[2]),
+		entranceCount: 1
+	}
+	match = str.match(/(\d)x(\c\c)mm/)
+	if(match) return {
+		entranceWidth: Number(match[2]),
+		entranceHeight: Number(match[2]),
+		entranceCount: match[1]
+	}
+	match = str.match(/(\d\d)mm/)
+	if(match) return {
+		entranceWidth: Number(match[1]),
+		entranceHeight: Number(match[1]),
+		entranceCount: 1
+	}
+}
 function fixBoxName(name){
 	return name
 	.toUpperCase()
@@ -124,7 +158,46 @@ function valueParser(type, str){
 	return info.default
 }
 
-async function getId(type, obj){
+function getBoxId(box, calledWithConfig=false){
+	const newBox = {
+		_id: uuid('box'),
+		validFrom: `${parser.year}-01-01`,
+		type: 'box',
+		...box
+	}
+	const cache = boxIdCache[box.name]
+	if(!cache){
+		if(!calledWithConfig) console.error(`Box ${box.name} inspected, but not configured`)
+		boxIdCache[box.name] = [newBox]
+		docs.push(newBox)
+		return newBox._id
+	}
+	const existing = cache.slice(-1)[0]
+	if(
+		!calledWithConfig ||
+		(existing.lat == box.lat && existing.lon == box.lon)
+	){
+		return existing._id
+	}
+	if(box.note=='NEU'){
+		existing.lat = box.lat
+		existing.lon = box.lon
+		return existing._id
+	}
+	if(box.validFrom){
+		console.log(`Box ${box.name} has new location, created new entry for date ${box.validFrom.getFullYear()}-${box.validFrom.getMonth()+1}`)
+		existing.validUntil = box.validFrom
+		cache.push(newBox)
+		docs.push(newBox)
+		return newBox._id
+	}
+	console.error(`Box ${box.name} has new location, but no validFrom date`)
+	existing.lat = box.lat
+	existing.lon = box.lon
+	return existing._id
+}
+
+function getId(type, obj){
 	const name = obj.name
 	idCache[type] = idCache[type] ?? {}
 	var _id = idCache[type][name]
@@ -136,10 +209,11 @@ async function getId(type, obj){
 		...obj
 	})
 	idCache[type][name] = _id
-	//console.log(`Created ${type} ${name}`)
+	console.error(`Created ${type} ${name}`)
 	return _id
 }
 
+ 
 
 async function importInspections(json){
 	
@@ -170,6 +244,7 @@ async function importLine(line){
 		if(note.search('//')>0){
 			const doubleNote = note.split('//')
 			const date = new Date(dateStr.replace(/(.*)\.(.*)\.(.*)/, '$3-$2-$1'))
+
 			const newDate = incDate(date, -1).toLocaleDateString()
 			console.log('newDate', newDate, dateStr)
 			entries[idx] = [newDate, doubleNote[0]]
@@ -182,7 +257,7 @@ async function importLine(line){
 	const header = entries.shift()
 	const boxName = fixBoxName(header[1])
 	if(oneBoxOnly && oneBoxOnly != boxName) return
-	const box_id = await getId('box', {name: boxName})
+	const box_id = await getBoxId({name: boxName})
 	let occupancy = 0
 	var lastInspection = {}
 	var _hiddenLastInspection = {} // for accessing the lastInspection after it got cleared
@@ -247,7 +322,7 @@ async function importLine(line){
 		const reasonForLoss = valueParser('reasonForLoss', note)
 		if(state == 'STATE_OCCUPIED' || state == 'STATE_FAILURE'){
 			if(perpetratorName) {
-				inspection.perpetrator_id = await getId('perpetrator', {name: perpetratorName})
+				inspection.perpetrator_id = getId('perpetrator', {name: perpetratorName})
 			}
 			if(isOccupied(lastInspection)) {
 				inspection.reasonForLoss = reasonForLoss
@@ -259,7 +334,7 @@ async function importLine(line){
 			perpetratorName &&
 			!_hiddenLastInspection.perpetrator_id
 		){
-			_hiddenLastInspection.perpetrator_id = await getId('perpetrator', {name: perpetratorName})
+			_hiddenLastInspection.perpetrator_id = getId('perpetrator', {name: perpetratorName})
 		}
 		
 		if(inspection.occupancy){
@@ -297,12 +372,12 @@ async function importLine(line){
 		if(state == 'STATE_SUCCESS' && inspection.nestlings == 0){
 			inspection.nestlings = lastInspection.nestlings
 		}
-		bandingParser(inspection, note)
+		bandingParser(inspection, note, boxName)
 
 		if(state != 'STATE_EMPTY') {
 			const speciesName = valueParser('speciesName', note)
 			if(speciesName) {
-				inspection.species_id = await getId('species', {name: speciesName})					
+				inspection.species_id = getId('species', {name: speciesName})					
 				if(
 					lastInspection.species_id && 
 					(lastInspection.species_id != inspection.species_id) 
@@ -384,7 +459,7 @@ function isCatastrophic(stateholder){
 	const state = stateholder?.state
 	return state == 'STATE_ABANDONED' || state == 'STATE_OCCUPIED'
 }
-function bandingParser(target, note){
+function bandingParser(target, note, boxName){
 	['nestlingsBanded', 'femaleBanded', 'maleBanded'].forEach(prop => {
 		const parsedValue = valueParser(prop, note)
 		if(parsedValue) target[prop] = parsedValue
@@ -395,7 +470,17 @@ function bandingParser(target, note){
 		!target.femaleBanded &&
 		!target.maleBanded
 	){
-		console.error('unknown "ring" match', note)
+		if(
+			note.match(/NK beringt/) ||
+			note.match(/1 Nestling noch beringt/) ||
+			note.match(/Nestlinge bering/)
+		) {
+			if(target.nestlings) target.nestlingsBanded = target.nestlings
+			else console.error('NK beringt but no nestlings', boxName, target.date, note)
+		}
+		else {
+			console.error('unknown "ring" match', boxName, note, 'Nestlings:', target.nestlings)
+		}
 	}
 }
 

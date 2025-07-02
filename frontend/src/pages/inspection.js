@@ -3,6 +3,7 @@ import {live} from 'lit/directives/live.js'
 import { translate } from '../translator'
 import { Proxy } from '../proxy'
 import '../forms/select-item.js'
+import '../forms/select-box.js'
 import '../forms/select-state.js'
 import '../components/inspection-display.js'
 import { incDate } from './calendar.js'
@@ -22,8 +23,8 @@ export class PageInspection extends Page {
 			box_id: { type: String },
 			inspection_id: { type: String },
 			previousInspection: { type: Object },
-			inspection: { type: Object }
-			//date: { type: String }
+			inspection: { type: Object },
+			year: { type: Number }
 		}
 	}
 	static get styles() {
@@ -82,14 +83,15 @@ export class PageInspection extends Page {
 	
 	constructor(){
 		super()
+		this.year = new Date().getFullYear()
 		this.previousInspection = {}
 		this.createInspection()
 		this.mode = 'MODE_CREATE'
 		this.summary = {}
+		
 		//this.date = formatDateForInput(new Date())
 		this.proxy = new Proxy(this)
 	}
-	
 	render() {
 		const i = this.inspection
 		return html`
@@ -295,13 +297,13 @@ export class PageInspection extends Page {
 		return html`		
 			<div class="box_id outside">
 				<label for="box_id">Nistkasten</label>
-				<select-item
+				<select-box
 					buttons
 					id="box_id" 
-					type="box"
+					.year=${this.year}
 					.value=${this.box_id}
 					@change=${this.genericChangeCb}
-				></select-item>
+				></select-box>
 			</div>
 		`
 	}
@@ -312,7 +314,7 @@ export class PageInspection extends Page {
 				<select-state
 					id="state"
 					.value=${this.inspection.state}
-					.lastValue=${this.previousInspection.state}
+					.lastValue=${this.previousInspection?.state}
 					@change=${this.stateChangeCb}
 				></select-state>
 			</div>
@@ -502,10 +504,15 @@ export class PageInspection extends Page {
 			</div>
 		`
 	}
+	
 	updated(changedProps){
+		if(changedProps.has('year')){
+			this.createInspection(`${this.year}-12-30`)
+		}
 		if(
 			(changedProps.has('inspection_id') && this.inspection._id != this.inspection_id) ||
-			(changedProps.has('box_id') && this.inspection.box_id != this.box_id) 
+			(changedProps.has('box_id') && this.inspection.box_id != this.box_id) ||
+			(changedProps.has('year'))
 		){
 			this.fetchInspection()
 		}
@@ -541,7 +548,11 @@ export class PageInspection extends Page {
 			await this.proxy.db.get(this.inspection_id) :
 			(await this.proxy.queryReduce('inspections', {
 				reduce: false,
-				key: [2025, this.box_id, ...dateToArr(this.inspection.date).slice(1)]
+				key: [
+					new Date(this.inspection.date).getFullYear(),
+					this.box_id,
+					...dateToArr(this.inspection.date).slice(1)
+				]
 			}))[0]
 		console.log('existingInspection',existingInspection)
 		if(existingInspection){
