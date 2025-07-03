@@ -3,8 +3,8 @@ const parser = {
 	architecture: {
 		options: [
 			{
-				allow: /^(\d+)mm/,
-				value: match => match[0]
+				allow: /^(\d+)\s*mm/,
+				value: match => `${match[1]}mm`
 			},
 			{
 				allow: /oval/,
@@ -29,6 +29,18 @@ const parser = {
 			{
 				allow: /Waldbauml/,
 				value: 'Waldbaumläufer'
+			},
+			{
+				allow: /Wendehals/,
+				value: 'Wendehals'
+			},
+			{
+				allow: /TS 32mm/,
+				value: 'TS 32mm'
+			},
+			{
+				allow: /HalbHöhle/,
+				value: 'Halb-Höhle'
 			}
 		]
 	},
@@ -40,7 +52,8 @@ const parser = {
 					/\((\d+)\?\)\s*Ei/,
 					/(\d+) E/
 				],
-				value: match => Number(match[1])
+				value: match => Number(match[1]),
+				default: 0
 			}
 		]
 	},
@@ -57,7 +70,8 @@ const parser = {
 				disAllow: [
 					/Nestling noch beringt/
 				],
-				value: match => Number(match[1])
+				value: match => Number(match[1]),
+				default: 0
 			}
 		]
 	},
@@ -103,8 +117,9 @@ const parser = {
 		options: [
 			{
 				allow: [
-					/(\d+)[^\d]*Nestlinge.*ringt/,
-					/(\d+)N [bB]ering/
+					/(\d+)[^\d]*Nestling.*ringt/,
+					/(\d+)N [bB]ering/,
+					/(\d+) Kleiber beringt/
 				],
 				value: match => Number(match[1])
 			}
@@ -116,8 +131,12 @@ const parser = {
 				allow: [
 					'W [bB]eringt',
 					'beide Altvögel beringt',
-					/[KB]M [Bb]eringt/,
-					/10 E beringt KM/
+					/[KB]M[ \(]*[Bb]eringt/,
+					/10 E beringt KM/,
+					/Altvogel ist beringt/,
+					/Altvogel beringt/,
+					/Wberingt/,
+					/aduklt  beringt/
 				],
 				value: true
 			}
@@ -140,19 +159,36 @@ const parser = {
 			{ value: 'Wasseramsel', 	allow: ['WA']							},
 			{ value: 'Feldsperling', 	allow: ['FS']							},
 			{ value: 'Tannenmeise', 	allow: ['TM']							},
-			{ value: 'Wendehals', 		allow: []									}
+			{ value: 'Wendehals', 		allow: []									},
+			{ value: 'Weidenmeise',		allow: ['WM']							}
 		]
 	},
 	state: {
 		options: [
-			{ value: 'STATE_SUCCESS', allow: ['ausgeflogen', 'ausgefolgen']},
+			{ 
+				value: 'STATE_SUCCESS',
+				allow: [
+					'[Aa]usgeflogen',
+					'ausgefolgen',
+					'Nestling tot NK sauber',
+					'Ausflugskontrolle nachholen'
+				],
+				boxDates: [
+					// {box: 'A03', date: '2023-07-01'}
+					{box: 'B12', date: '2024-05-06'},
+					{box: 'S02', date: '2024-06-10'},
+					{box: 'S10', date: '2024-05-20'},
+					{box: 'SF305', date: '2024-04-29'}
+				]
+			},
 			{ 
 				value: 'STATE_OCCUPIED',
 				allow: [
 					'Nest-Okkupation',
 					'Siebenschläfer',
 					'Nestprädation',
-					'Hornisse'
+					'Hornisse',
+					'Wespennest'
 				],
 				disAllow: 'Nest-Okkupation BM'
 			},
@@ -167,9 +203,19 @@ const parser = {
 					'Brut aufgegeben',
 					'Keine Eier mehr auffindbar',
 					'alle Nestlinge verschwunden',
-					'Nest ausgeräubert'
+					'Nest ausgeräubert',
+					'alle Nestlinge tot',
+					'Nestaufgegeben',
+					'Gel[e]*ge aufgegeben',
+					'Eier kalt/ Nest entfernen',
+					'Eier fehlen/ Nest entfernt',
 				],
-				disAllow: 'Nest-Okkupation BM'
+				disAllow: 'Nest-Okkupation BM',
+				boxDates: [
+					{ box: 'K03', date: '2021-05-20' },
+					{ box: 'PAPA', date: '2023-06-03' },
+					{ box: 'S09', date: '2024-05-27' }
+				]
 			},
 			{ value: 'STATE_NESTLINGS', allow: ['Nestling', 'H obs.', /NK [bB]ering/] },
 			{ value: 'STATE_BREEDING', allow: ['[bB]rütet'] },
@@ -222,7 +268,8 @@ const parser = {
 		options: [
 			{ value: 'Siebenschläfer' },
 			{ value: 'Eichhörnchen' },
-			{ value: 'Hornisse' }
+			{ value: 'Hornisse' },
+			{ value: 'Wespe' }
 		]
 	},
 	scope: {
@@ -243,7 +290,6 @@ const parser = {
 	
 }
 function dateFormatter(match){
-	console.log('dateFormatter year', parser.year)
 	const month = ('0' + match[2]).slice(-2)
 	const date = ('0' + match[1]).slice(-2)
 	const dateStr = `${parser.year}-${month}-${date}`

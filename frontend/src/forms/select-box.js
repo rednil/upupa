@@ -23,6 +23,23 @@ export class SelectBox extends SelectItem {
 			include_docs: true
 		})
 	}
+	getLabel(option){
+		let label = option.name
+		
+		if(option.validUntil){
+			const validFrom = new Date(option.validFrom)
+			const validUntil = new Date(option.validUntil)
+			const fromYear = validFrom.getFullYear()
+			const toYear = validUntil.getFullYear()
+			if(fromYear == toYear) label += ` (${fromYear})`
+			else {
+				const from = `${fromYear.toString().slice(-2)}/${validFrom.getMonth()+1}`
+				const to = `${toYear.toString().slice(-2)}/${validUntil.getMonth()+1}`
+				label += ` (${from}-${to})`
+			}
+		}
+		return label
+	}
 	
 }
 

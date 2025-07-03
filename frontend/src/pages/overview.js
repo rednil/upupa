@@ -7,6 +7,7 @@ import { Page } from './base'
 
 const infoOptions = [
 	'BOXES',
+	'ARCHITECTURES',
 	'SPECIES',
 	'STATUS',
 	'LAST_INSPECTION',
@@ -115,12 +116,13 @@ export class PageOverview extends Page {
 	}
 	
 	async fetchData(){
-		var [boxes, species, lastInspections=[]] = await Promise.all([
+		var [boxes, architectures, species, lastInspections=[]] = await Promise.all([
 			this.proxy.query('boxes', {
 				startkey: [this.year],
 				endkey: [this.year, {}],
 				include_docs: true
 			}),
+			this.proxy.getByType('architecture'),
 			this.proxy.getByType('species'),
 			this.proxy.queryReduce('inspections', {
 				group: true,
@@ -130,11 +132,13 @@ export class PageOverview extends Page {
 			}),
 		])
 		this.species = species.reduce((obj, {_id, name}) => Object.assign(obj, {[_id]: name}), {})
+		this.architectures = architectures.reduce((obj, {_id, name}) => Object.assign(obj, {[_id]: name}), {})
 		this.boxes = boxes
 		.map(box => {
 			box.lastInspection = lastInspections.find(lastInspection => lastInspection.box_id == box._id)
 			return box
 		})
+		console.log(this.boxes.map(box => box.name), this.architectures)
 	}
 	speciesShouldBeKnown(state){
 		return (
@@ -162,6 +166,9 @@ export class PageOverview extends Page {
 				) {
 					text = this.getSpeciesName(lastInspection.species_id)
 				}
+				break
+			case 'ARCHITECTURES':
+				text = this.architectures[box.architecture_id] || ''
 				break
 			case 'BAND_STATUS_NESTLINGS':
 				if(

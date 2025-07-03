@@ -90,9 +90,13 @@ export class PageStart extends Page {
 		this.summaries = []
 		this.statistics = {}
 		this.fetchSummaries()
+		this.fetchStatistics()
 	}
 	async fetchSummaries(){
+		const currentYear = new Date().getFullYear()
 		this.summaries = await this.proxy.queryReduce('summaries', {
+			//startkey: [currentYear],
+			//endkey: [currentYear, {}],
 			group: true,
 			group_level: 3
 		})
@@ -100,7 +104,10 @@ export class PageStart extends Page {
 			stat[summary.state] = (stat[summary.state] || 0) + 1
 			stat.eggs += summary.clutchSize
 			stat.banded += summary.nestlingsBanded || 0
-			if(summary.state == 'STATE_SUCCESS') stat.survivors += summary.nestlings
+			if(summary.state == 'STATE_SUCCESS') {
+				stat.survivors += summary.nestlings
+				if(isNaN(summary.nestlings)) console.error('isNaN(summary.nestlings', summary)
+			}
 			return stat
 		}, {
 			eggs: 0,
@@ -109,11 +116,11 @@ export class PageStart extends Page {
 		})
 		this.requestUpdate()
 	}
-	/*
+	
 	async fetchStatistics(){
 		const response = await this.proxy.queryReduce('statistics', {
 			group: true,
-			group_level: 2
+			group_level: 1
 		})
 		const s = this.statistics = {
 			failure: parseStats(response[0]),
@@ -128,7 +135,7 @@ export class PageStart extends Page {
 		
 		this.requestUpdate()
 	}
-	*/
+	
 }
 
 function parseStats([clutchSize, nestlings, nestlingsBanded]){

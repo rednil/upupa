@@ -10,8 +10,8 @@ export const map = doc =>  {
 		const date = new Date(doc.date)
 		emit(
 		[
-			date.getFullYear(),
 			doc.state,
+			date.getFullYear(),
 			doc.species_id,
 			doc.occupancy
 		],

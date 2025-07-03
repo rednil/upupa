@@ -48,10 +48,12 @@ const dataDir = 'data'
 const idCache = {}
 const boxIdCache = {}
 const docs = []
-for(var year = 2020; year<=2020; year++){
+const startYear = 2020
+const endYear = 2025
+for(var year = startYear; year<=endYear; year++){
 	parser.year = year
 	const workbook = getWorkbook(year)
-	console.log(Object.keys(workbook.Sheets))
+	//console.log(Object.keys(workbook.Sheets))
 	await importBoxes(XLSX.utils.sheet_to_json(workbook.Sheets.Box_Status))
 	await importInspections(XLSX.utils.sheet_to_json(workbook.Sheets['Breeding']))
 }
@@ -83,21 +85,24 @@ async function importBoxes(json){
 		const entry = json[i]
 		var name = entry['Nistkastennr.']
 		if(!name) continue
-		
+		if(oneBoxOnly && oneBoxOnly != name) continue
 		const box = {
 			type: 'box',
 			name: fixBoxName(name),
 			site: entry['Standort'],
 			lat: entry['Breite'] || entry['Breite_1'],
 			lon: entry['Länge'] || entry['Länge_1'],
-			validFrom: entry['Installation'],
 			note: entry['Zustand'],
+		}
+		if(entry['Installation']) {
+			box.validFrom = new Date(entry['Installation']).toISOString().split('T')[0]
 		}
 		if(entry['Daten']){
 			const architecture = {
 				name: valueParser('architecture', entry['Daten']),
-				...parseEntrance(entry['Daten'])
+				//...parseEntrance(entry['Daten'])
 			}
+			if(!architecture.name) console.error(parser.year, `Missing parser for architecture "${entry['Daten']}"`)
 			box.architecture_id = getId('architecture', architecture)
 		}
 		if(!box.name || !box.site) continue
@@ -105,6 +110,7 @@ async function importBoxes(json){
 		
 	}
 }
+/*
 function parseEntrance(str){
 	if(!str || str=='') return {}
 	let match = str.match(/oval (\d\d)x(\d\d)/)
@@ -126,6 +132,7 @@ function parseEntrance(str){
 		entranceCount: 1
 	}
 }
+	*/
 function fixBoxName(name){
 	return name
 	.toUpperCase()
@@ -140,15 +147,20 @@ function actualizeDate(target, key, str){
 		target[key] = date
 	}
 }
-function valueParser(type, str){
+function valueParser(type, str, boxName, date){
 	const info = parser[type]
 	for(var i in info.options) {
 		const option = info.options[i]
 		const allow = [option.allow || []].flat()
 		const disAllow = [option.disAllow || []].flat()
 		const getValue = (typeof option.value == 'function') ? option.value : () => option.value
+		if(
+			boxName &&
+			date &&
+			option.boxDates &&
+			option.boxDates.find(boxDate => boxDate.box == boxName && boxDate.date == new Date(date).toISOString().split('T')[0])
+		) return getValue()
 		if(disAllow.find(regExp => str.match(regExp))) continue
-		
 		if((typeof option.value == 'string') && str.match(option.value)) return option.value
 		for(var j in allow){
 			const match = str.match(allow[j])
@@ -167,37 +179,69 @@ function getBoxId(box, calledWithConfig=false){
 	}
 	const cache = boxIdCache[box.name]
 	if(!cache){
-		if(!calledWithConfig) console.error(`Box ${box.name} inspected, but not configured`)
+		if(!calledWithConfig) console.error(parser.year, `Box ${box.name} inspected, but not configured`)
 		boxIdCache[box.name] = [newBox]
 		docs.push(newBox)
 		return newBox._id
 	}
 	const existing = cache.slice(-1)[0]
+	if(box.note?.match(/Auschuss OKT 2024/)) {
+		existing.validUntil=new Date('2024-11-15')
+		return existing._id
+	}
+	if(box.note?.match(/H11 wurde H25 . H11 zerstört 2022/)){
+		existing.validUntil=new Date('2022-12-30')
+		return existing._id
+	}
+	if(calledWithConfig && existing.architecture_id && (box.architecture_id != existing.architecture_id)){
+		console.error(
+			parser.year,
+			'Box architecture changed',
+			box.name,
+			getNameById('architecture',existing.architecture_id),
+			'=>',
+			getNameById('architecture',box.architecture_id),
+		)
+	}
 	if(
 		!calledWithConfig ||
-		(existing.lat == box.lat && existing.lon == box.lon)
+		(
+			(existing.lat == box.lat) &&
+			(existing.lon == box.lon) &&
+			(existing.architecture_id == box.architecture_id)
+		)
 	){
+		if(box.note && (box.note != existing.note)){
+			existing.note = (existing.note ? (existing.note + ', ') : '') + box.note
+		} 
 		return existing._id
 	}
-	if(box.note=='NEU'){
+	/*
+	if(parser.year == 2021){
 		existing.lat = box.lat
 		existing.lon = box.lon
+		if(box.architecture_id) existing.architecture_id = box.architecture_id
 		return existing._id
 	}
-	if(box.validFrom){
-		console.log(`Box ${box.name} has new location, created new entry for date ${box.validFrom.getFullYear()}-${box.validFrom.getMonth()+1}`)
-		existing.validUntil = box.validFrom
-		cache.push(newBox)
-		docs.push(newBox)
-		return newBox._id
-	}
-	console.error(`Box ${box.name} has new location, but no validFrom date`)
-	existing.lat = box.lat
-	existing.lon = box.lon
-	return existing._id
+	*/
+	
+	
+	existing.validUntil = `${parser.year-1}-12-31`
+	newBox.validFrom = `${parser.year}-01-01`
+	console.log(parser.year, `Box ${box.name} has new location, created new entry`, existing, newBox)
+	cache.push(newBox)
+	docs.push(newBox)
+	return newBox._id
 }
-
+function getNameById(type, id){
+	let name = ''
+	Object.entries(idCache[type]).forEach(([key, value])=>{
+		if(value == id) name = key 
+	})
+	return name
+}
 function getId(type, obj){
+	if(!obj.name) console.error(parser.year, 'getId called without name', type, obj)
 	const name = obj.name
 	idCache[type] = idCache[type] ?? {}
 	var _id = idCache[type][name]
@@ -209,7 +253,7 @@ function getId(type, obj){
 		...obj
 	})
 	idCache[type][name] = _id
-	console.error(`Created ${type} ${name}`)
+	//console.error(`Created ${type} ${name}`)
 	return _id
 }
 
@@ -221,8 +265,6 @@ async function importInspections(json){
 		const line = json[y]
 		await importLine(line,)
 	}
-	
-	
 }
 function uuid(prefix, length=10) {
   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -234,9 +276,6 @@ function uuid(prefix, length=10) {
   return result
 }
 
-function dateToId(date){
-	return date.getFullYear() + ('0' + (date.getMonth()+1)).slice(-2) + ('0' + date.getDate()).slice(-2)
-}
 async function importLine(line){
 	const entries = Object.entries(line)
 	entries.forEach((entry, idx) => {
@@ -244,9 +283,7 @@ async function importLine(line){
 		if(note.search('//')>0){
 			const doubleNote = note.split('//')
 			const date = new Date(dateStr.replace(/(.*)\.(.*)\.(.*)/, '$3-$2-$1'))
-
 			const newDate = incDate(date, -1).toLocaleDateString()
-			console.log('newDate', newDate, dateStr)
 			entries[idx] = [newDate, doubleNote[0]]
 			entries.splice(idx+1,0,[dateStr, '# Geteilter Doppeleintrag # '+doubleNote[1]])
 			console.log('Split double entry', entries.slice(idx, idx+2))
@@ -265,9 +302,17 @@ async function importLine(line){
 		const [dateStr, note] = entries[x]
 		if(note == 'NK' || note.match(/,\s*NK\s*,/)) continue
 		const date = new Date(dateStr.replace(/(.*)\.(.*)\.(.*)/, '$3-$2-$1'))
+		if(date == 'Invalid Date'){
+			console.error(`Invalid date "${dateStr}"`)
+			process.exit()
+		}
+		if(date.getFullYear() != parser.year){
+			console.error(`File vs column head year mismatch: ${parser.year} <=> ${dateStr}`)
+			process.exit()
+		}
 		const scope = valueParser('scope', note)
 		// if there is no state noted, but there was one before, fallback
-		var state = valueParser('state', note)
+		var state = valueParser('state', note, boxName, date)
 		if(state == 'STATE_EGGS' && lastInspection.state == 'STATE_BREEDING'){
 			state = 'STATE_BREEDING'
 		}
@@ -297,6 +342,8 @@ async function importLine(line){
 			// nobody at home but nothing happened
 			state = 'STATE_SUCCESS'
 		}
+		if(x == entries.length-1 && state == 'STATE_NESTLINGS') state = 'STATE_SUCCESS'
+		if(boxName == 'SF02' && note =='2 Eier ?') state = 'STATE_EMPTY'
 		state = state || lastInspection.state
 		const inspection = {
 			...lastInspection,
@@ -347,6 +394,9 @@ async function importLine(line){
 			){
 				inspection.eggs = lastInspection.eggs
 			}
+			if(state == 'STATE_SUCCESS' && note.match(/(\d) Nestling[e]* tot/)){
+				inspection.nestlings = lastInspection.nestlings - inspection.nestlings
+			}
 			if(
 				((state == 'STATE_NESTLINGS') || (state == 'STATE_SUCCESS')) &&
 				!inspection.nestlings && 
@@ -355,12 +405,13 @@ async function importLine(line){
 				inspection.nestlings = lastInspection.nestlings
 			}
 			if(
-				(state == 'STATE_NESTLINGS') &&
+				(state == 'STATE_NESTLINGS' || state == 'STATE_SUCCESS') &&
 				!inspection.nestlings && 
 				lastInspection.eggs
 			){
 				inspection.nestlings = lastInspection.eggs - (inspection.eggs || 0)
 			}
+			
 			inspection.clutchSize = Math.max(
 				inspection.eggs || 0,
 				inspection.nestlings || 0,
@@ -384,10 +435,10 @@ async function importLine(line){
 				){
 					inspection.takeover = valueParser('takeover', note)
 					if(!inspection.takeover){
-						console.error('Species changed without explicit takeover', boxName, inspection.date.toLocaleDateString())
+						console.error(inspection.date.toLocaleDateString(), 'Species changed without explicit takeover', boxName )
 					}
 					if(isOccupied(inspection)){
-						console.error(`Species changed after STATE_EGGS: ${boxName} ${inspection.date.toLocaleDateString()}`)
+						console.error(inspection.date.toLocaleDateString(), `Species changed after STATE_EGGS: ${boxName}`)
 					}
 				}
 			}
@@ -416,15 +467,15 @@ async function importLine(line){
 			inspection.bandingWindowEnd = incDate(inspection.hatchDate, bandingEndAge)
 		}
 		if(isFinished(inspection) && isFinished(lastInspection)){
-			console.error(`Double entry for state ${state}: ${boxName} ${date.toLocaleDateString()}`)
+			console.error(date.toLocaleDateString(), `Double entry for state ${state}: ${boxName}`)
 		}
 		if(state == 'STATE_EGGS' && !inspection.eggs) {
-			console.error(`STATE_EGG without eggs: ${boxName} ${date.toLocaleDateString()}`, note)
+			console.error(date.toLocaleDateString(), `STATE_EGG without eggs: ${boxName}`, note)
 		}
 		if(state == 'STATE_NESTLINGS' && !inspection.nestlings) {
-			console.error(`STATE_NESTLINGS without nestlings: ${boxName} ${date.toLocaleDateString()}`, note)
+			console.error(date.toLocaleDateString(), `STATE_NESTLINGS without nestlings: ${boxName}`, note)
 		}
-		if(state == 'STATE_ABANDONED') console.error(`STATE_ABANDONED: ${boxName} ${date.toLocaleDateString()}`)
+		if(state == 'STATE_ABANDONED') console.error(date.toLocaleDateString(), `STATE_ABANDONED: ${boxName}`)
 		lastInspection = inspection
 	}
 	docs.push(...inspections)
@@ -464,23 +515,30 @@ function bandingParser(target, note, boxName){
 		const parsedValue = valueParser(prop, note)
 		if(parsedValue) target[prop] = parsedValue
 	})
+	const date = new Date(target.date).toISOString().split('T')[0]
+	if(
+		!target.nestlingsBanded && (
+			note.match(/NK beringt/) ||
+			note.match(/1 Nestling noch beringt/) ||
+			note.match(/Nestlinge [Bb]ering/) ||
+			note.match(/beringt 3.5/) ||
+			note.match(/Nestlinge \+ Altvogel beringt/) ||
+			(date == '2022-05-07' && boxName == 'WH2') ||
+			(date == '2024-05-06' && boxName == 'OV1') ||
+			(date == '2022-05-13' && boxName == 'K11') ||
+			(date == '2024-05-06' && boxName == 'K02') 
+		)
+	) {
+		if(target.nestlings) target.nestlingsBanded = target.nestlings
+		else console.error(target.date.toLocaleDateString(), '"NK beringt" but no nestlings', boxName, note)
+	}
 	if(
 		note.match(/ring/) &&
 		!target.nestlingsBanded &&
 		!target.femaleBanded &&
 		!target.maleBanded
 	){
-		if(
-			note.match(/NK beringt/) ||
-			note.match(/1 Nestling noch beringt/) ||
-			note.match(/Nestlinge bering/)
-		) {
-			if(target.nestlings) target.nestlingsBanded = target.nestlings
-			else console.error('NK beringt but no nestlings', boxName, target.date, note)
-		}
-		else {
-			console.error('unknown "ring" match', boxName, note, 'Nestlings:', target.nestlings)
-		}
+		console.error(target.date.toLocaleDateString(), 'unknown "ring" match', boxName, note, 'Nestlings:', target.nestlings)
 	}
 }
 

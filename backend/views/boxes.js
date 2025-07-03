@@ -6,7 +6,17 @@ export const map = doc =>  {
 		if(validFrom.getMonth()>5) startYear++
 		let endYear = validUntil.getFullYear()
 		for(let year = startYear; year <= endYear; year ++){
-			emit([year, doc.name], null)
+			let name = doc.name
+			if(doc.validUntil) {
+				const fromYear = validFrom.getFullYear()
+				if(fromYear == endYear) name += ` (${fromYear})`
+				else {
+					const from = `${fromYear.toString().slice(-2)}/${validFrom.getMonth()+1}`
+					const to = `${endYear.toString().slice(-2)}/${validUntil.getMonth()+1}`
+					name += ` (${from}-${to})`
+				}
+			}
+			emit([year, name], null)
 		} 
 	}
 }

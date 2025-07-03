@@ -49,7 +49,7 @@ export class SelectItem extends LitElement {
 				${this.autoselect ? '' : html`<option>${this.emptyLabel}</option>`}
 				
 				${this.options.map(option => html`
-					<option ?selected=${option._id==this.value} value="${option._id}">${option[this.key]}</option>
+					<option ?selected=${option._id==this.value} value="${option._id}">${this.getLabel(option)}</option>
 				`)}
 			</select>
 			${this.buttons ? html`<button @click=${() => this.skip(1)}>></button>`:''}
@@ -62,7 +62,10 @@ export class SelectItem extends LitElement {
 	get value(){
 		return this._value
 	}
-	
+	// overwritten in select-box
+	getLabel(option){
+		return option[this.key]
+	}
 	skip(n){
 		let idx = this.findOptionIdx() + n
 		if(idx<0) idx = this.options.length - 1

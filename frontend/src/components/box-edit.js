@@ -80,7 +80,7 @@ export class BoxEdit extends LitElement {
 		console.log('renderArch', this.item)
 		return html`
 			<div>
-				<label for="architecture_id">Architektur</label>
+				<label for="architecture_id">${translate('ARCHITECTURE')}</label>
 				<select-item 
 					id="architecture_id"
 					type="architecture"

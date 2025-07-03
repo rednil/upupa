@@ -6,6 +6,8 @@ import '../components/generic-edit.js'
 import '../components/user-edit.js'
 import '../app-dialog.js'
 import { Proxy } from '../proxy.js'
+import { translate } from '../translator.js'
+
 export class PageConfig extends LitElement {
 	static get properties() {
 		return {
@@ -105,7 +107,7 @@ export class PageConfig extends LitElement {
 		return html`
 			<select .value=${this.type} @change=${this.changeCollectionCb}>
 				<option value="box">Nistkasten</option>
-				<option value="architecture">Architektur</option>
+				<option value="architecture">${translate('ARCHITECTURE')}</option>
 				<option value="species">Vogelart</option>
 				<option value="perpetrator">Eindringling</option>
 				<option value="user">Benutzer</option>

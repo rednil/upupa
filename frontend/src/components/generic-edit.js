@@ -45,7 +45,7 @@ export class GenericEdit extends LitElement {
 						id="note"
 						placeholder="Bemerkung"
 						.value=${this.item.note || ''}
-						@input=${this.genericChangeCb}
+						@input=${this.changeCb}
 					></textarea>
 				</div>
 			`
@@ -56,6 +56,7 @@ export class GenericEdit extends LitElement {
 		changeCb(evt){
 			const { id, value } = evt.target
 			this.item[id] = value
+			if(value == '') delete this.item[id]
 			this.dispatchEvent(new CustomEvent('change'))
 		}
 }
