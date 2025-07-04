@@ -70,7 +70,6 @@ export class AppShell extends LitElement {
       }
 			.user {
 				display: flex;
-				
 			}
 			.user > * {
 				margin: auto;
@@ -111,7 +110,9 @@ export class AppShell extends LitElement {
 				text-decoration: none;
 				color: black;
 			}
-			.route-login .year, .route-start .year {
+			.route-login .year,
+			.route-start .year,
+			.route-analysis .year {
 				display: none;
 			}
 		
@@ -175,15 +176,6 @@ export class AppShell extends LitElement {
 					<page-config id="page"></page-config>
 				`
 			},
-			/*
-			{
-				path: '#/about',
-				menu: true,
-				render: () => html`
-					<page-about id="page"></page-about>
-				`
-			},
-			*/
       { 
 				path: '#/login',
 				render: () => html`
@@ -229,7 +221,6 @@ export class AppShell extends LitElement {
 		window.location.hash = this.routes[0].path
 	}
   updated(){
-		console.log('app-shell updated', this.selectedYear)
 		Object.assign(this.shadowRoot.querySelector('#page'), this.params, { year: this.selectedYear })
   }
 
@@ -272,7 +263,6 @@ export class AppShell extends LitElement {
 		`
 	}
   selectYearCb(evt){
-		console.log('select year', evt.target.value)
 		this.selectedYear = Number(evt.target.value)
 		this.requestUpdate()
 	}

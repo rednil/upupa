@@ -138,7 +138,6 @@ export class PageOverview extends Page {
 			box.lastInspection = lastInspections.find(lastInspection => lastInspection.box_id == box._id)
 			return box
 		})
-		console.log(this.boxes.map(box => box.name), this.architectures)
 	}
 	speciesShouldBeKnown(state){
 		return (
