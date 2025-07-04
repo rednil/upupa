@@ -1,7 +1,7 @@
 import { html, css } from 'lit'
 import { Page } from './base'
 
-export class PageAbout extends Page {
+export class PageAnalysis extends Page {
 	static get styles() {
 		return css`
       :host {
@@ -36,4 +36,4 @@ export class PageAbout extends Page {
 	
 }
 	
-customElements.define('page-about', PageAbout)
+customElements.define('page-analysis', PageAnalysis)

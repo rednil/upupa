@@ -101,8 +101,8 @@ export class PageCalendar extends Page {
 			</div>
 		`
 	}
-	updated(){
-		this.fetchData()
+	updated(changedProps){
+		if(changedProps.has('year')) this.fetchData()
 	}
 	async fetchData(){
 		console.log('fetchData', this.year)
@@ -134,7 +134,7 @@ export class PageCalendar extends Page {
 			end: new Date(bandingWindowEnd),
 		}))
 		.sort((a,b) => a.start - b.start)
-		if(!events.length) return
+		if(!events.length) return this.requestUpdate()
 		const firstEvent = events[0].start
 		const lastEvent = events[events.length - 1].end
 		

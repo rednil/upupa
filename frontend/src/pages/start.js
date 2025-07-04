@@ -4,37 +4,41 @@ import { Page } from './base'
 export class PageStart extends Page {
 	static get styles() {
 		return css`
+			:host, :host * {
+				display: flex;
+			}
       :host {
 				flex:1;
-        display: flex;
 				justify-content: center;
-
       }
       :host > div:first-child {
 				width: 100%;
 				max-width: 20em;
-				display: flex;
 				flex-direction: column;
-
+				margin-bottom: 4em;
       }
-			:host > div > div {
-				display: flex;
-				padding: 2em;
+			.paragraph {
+				flex: 1;
+				justify-content: space-around;
 			}
+			:host > div > div {
+				padding: 2em;
+				flex-direction: column;
+			}
+			
 			.clutch, .total {
 				flex-direction: column;
 			}
 			.clutch > div, .total > div {
-				display: flex;
 				justify-content: space-between;
-
 			}
 			.number {
 				font-weight: bold
 			}
-			.year {
+			.head {
 				justify-content: center;
 				font-weight: bold;
+				font-size: x-large;
 			}
 			.version {
 				position: absolute;
@@ -44,64 +48,127 @@ export class PageStart extends Page {
     `
   }
 	render() {
-		const s = this.statistics
 		return html`
 			<div>
-				<div class="year">2025</div>
+				${[
+					this.renderCurrentYearStats(),
+					this.renderTotalStats()
+				]}
+			</div>
+			<div class="version">Version __APP_VERSION__</div>
+		`
+	}
+	renderCurrentYearStats(){
+		const s = this.currentYearStats
+		if(!s) return ''
+		return html`
+			<div class="paragraph">
+				<div class="head">2025</div>
 				<div class="clutch">
 					<div>
-						<span>Anzahl Gelege</span><span>${this.summaries.length}</span>
+						<span>Anzahl Gelege</span>
+						<span>${this.summaries.length}</span>
 					</div>
 					<div>
-						<span>Am Legen</span><span>${s.STATE_EGGS}</span>
+						<span>Am Legen</span>
+						<span>${s.STATE_EGGS}</span>
 					</div>
 					<div>
-						<span>Am Brüten</span><span>${s.STATE_BREEDING}</span>
+						<span>Am Brüten</span>
+						<span>${s.STATE_BREEDING}</span>
 					</div>
 					<div>
-						<span>Am Füttern</span><span>${s.STATE_NESTLINGS}</span>
+						<span>Am Füttern</span>
+						<span>${s.STATE_NESTLINGS}</span>
 					</div>
 					<div>
-						<span>Bereits ausgeflogen</span><span>${s.STATE_SUCCESS}</span>
+						<span>Bereits ausgeflogen</span>
+						<span>${s.STATE_SUCCESS}</span>
 					</div>
 					<div>
-						<span>Gescheitert</span><span>${s.STATE_FAILURE}</span>
+						<span>Gescheitert</span>
+						<span>${s.STATE_FAILURE}</span>
 					</div>
 				</div>
 				<div class="total">
 					<div>
-						<span>Gelegte Eier</span><span>${s.eggs}</span>
+						<span>Gelegte Eier</span>
+						<span>${s.eggs}</span>
 					</div>
 					<div>
-						<span>Nestlinge beringt</span><span>${s.banded}</span>
+						<span>Nestlinge ausgeflogen</span>
+						<span>${s.survivors}</span>
 					</div>
 					<div>
-						<span>Nestlinge ausgeflogen</span><span>${s.survivors}</span>
+						<span>Nestlinge beringt</span>
+						<span>${s.banded}</span>
 					</div>
 				</div>
-				
 			</div>
-			<div class="version">Version __APP_VERSION__</div>
-			
+		`
+	}
+	renderTotalStats(){
+		const t = this.totalStats
+		if(!t) return ''
+		const nFailure = t.failure.clutchSize.count
+		const nSuccess = t.success.clutchSize.count
+		const nEggs = t.failure.clutchSize.sum + t.success.clutchSize.sum
+		const nSurvivors = t.success.nestlings.sum
+		const nBanded = t.failure.nestlingsBanded.sum + t.success.nestlingsBanded.sum
+		return html`
+			<div class="paragraph">
+				<div class="head">Insgesamt</div>
+				<div class="clutch">
+					<div>
+						<span>Anzahl Gelege</span>
+						<span>${nFailure + nSuccess}</span>
+					</div>
+					<div>
+						<span>Erfolgreich</span>
+						<span>${nSuccess}</span>
+					</div>
+					<div>
+						<span>Gescheitert</span>
+						<span>${nFailure}</span>
+					</div>
+				</div>
+				<div class="total">
+					<div>
+						<span>Gelegte Eier</span>
+						<span>${nEggs}</span>
+					</div>
+					<div>
+						<span>Nestlinge ausgeflogen</span>
+						<span>${nSurvivors}</span>
+					</div>
+					<div>
+						<span>Nestlinge beringt</span>
+						<span>${nBanded}</span>
+					</div>
+				</div>
+			</div>
+		</div>
 		`
 	}
 	constructor(){
 		super()
 		this.summaries = []
-		this.statistics = {}
+		this.currentYearStats = {}
 		this.fetchSummaries()
 		this.fetchStatistics()
 	}
 	async fetchSummaries(){
 		const currentYear = new Date().getFullYear()
 		this.summaries = await this.proxy.queryReduce('summaries', {
-			//startkey: [currentYear],
-			//endkey: [currentYear, {}],
+			startkey: [currentYear],
+			endkey: [currentYear, {}],
 			group: true,
 			group_level: 3
 		})
-		this.statistics = this.summaries.reduce((stat, summary) => {
+		this.currentYearStats = this.summaries.reduce((stat, summary) => {
 			stat[summary.state] = (stat[summary.state] || 0) + 1
+			if(typeof summary.clutchSize != 'number') console.error('Wrong type', summary.clutchSize)
+			if(summary.clutchSize == 0 || summary.clutchSize > 20 || summary.clutchSize == null) console.error('Faulty clutchSize', summary)
 			stat.eggs += summary.clutchSize
 			stat.banded += summary.nestlingsBanded || 0
 			if(summary.state == 'STATE_SUCCESS') {
@@ -122,17 +189,10 @@ export class PageStart extends Page {
 			group: true,
 			group_level: 1
 		})
-		const s = this.statistics = {
+		const s = this.totalStats = {
 			failure: parseStats(response[0]),
 			success: parseStats(response[1])
 		}
-		console.log('s',s)
-		this.nBrood = s.failure.clutchSize.count + s.success.clutchSize.count
-		this.nSuccessBrood = s.success.clutchSize.count
-		this.nEggs = s.success.clutchSize.sum + s.failure.clutchSize.sum
-		this.nSurvivors = s.success.nestlings.sum
-		this.nBanded = s.failure.nestlingsBanded.sum + s.success.nestlingsBanded.sum
-		
 		this.requestUpdate()
 	}
 	

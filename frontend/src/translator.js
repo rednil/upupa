@@ -3,6 +3,7 @@ const translations = {
 	'#/OVERVIEW': 'Übersicht',
 	'#/STATUS': 'Status',
 	'#/CALENDAR': 'Kalender',
+	'#/ANALYSIS': 'Auswertung',
 	'#/CONFIG': 'Konfiguration',
 	'#/INSPECTION': 'NK-Kontrolle',
 	'#/ABOUT': 'Über Upupua',

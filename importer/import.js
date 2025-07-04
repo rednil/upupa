@@ -306,6 +306,7 @@ async function importLine(line){
 			console.error(`Invalid date "${dateStr}"`)
 			process.exit()
 		}
+		const logDate = date.toLocaleDateString()
 		if(date.getFullYear() != parser.year){
 			console.error(`File vs column head year mismatch: ${parser.year} <=> ${dateStr}`)
 			process.exit()
@@ -448,6 +449,26 @@ async function importLine(line){
 		actualizeDate(inspection, 'breedingStart', note)
 		actualizeDate(inspection, 'layingStart', note)
 		actualizeDate(inspection, 'hatchDate', note)
+		if(state == 'STATE_NESTLINGS' && !inspection.hatchDate){
+			const nestlingsAge = valueParser('nestlingsAge', note)
+			if(nestlingsAge!=null){
+				inspection.hatchDate = incDate(date, -nestlingsAge)
+				console.error(logDate, boxName, 'Calculated hatchDate from nestlingsAge', inspection.hatchDate, note)
+			}
+			else{
+				const nestlingsBandDate = valueParser('nestlingsBandDate', note)
+				if(nestlingsBandDate){
+					inspection.hatchDate = incDate(nestlingsBandDate, -9)
+					console.error(logDate, boxName, 'Deduced hatchDate from nestlingsBandDate', inspection.hatchDate, note)
+				}
+			}
+			if(!inspection.hatchDate){
+				let guess = -3
+				if(note.match(/Nestlinge [Bb]eringt/)) guess = -7
+				inspection.hatchDate = incDate(date, guess)		
+				console.error(logDate, boxName, state, `hatchDate missing, guess date ${guess}`, note)
+			}
+		}
 		if(
 			inspection.eggs &&
 			!inspection.layingStart
@@ -467,15 +488,15 @@ async function importLine(line){
 			inspection.bandingWindowEnd = incDate(inspection.hatchDate, bandingEndAge)
 		}
 		if(isFinished(inspection) && isFinished(lastInspection)){
-			console.error(date.toLocaleDateString(), `Double entry for state ${state}: ${boxName}`)
+			console.error(logDate, `Double entry for state ${state}: ${boxName}`)
 		}
 		if(state == 'STATE_EGGS' && !inspection.eggs) {
-			console.error(date.toLocaleDateString(), `STATE_EGG without eggs: ${boxName}`, note)
+			console.error(logDate, `STATE_EGG without eggs: ${boxName}`, note)
 		}
 		if(state == 'STATE_NESTLINGS' && !inspection.nestlings) {
-			console.error(date.toLocaleDateString(), `STATE_NESTLINGS without nestlings: ${boxName}`, note)
+			console.error(logDate, `STATE_NESTLINGS without nestlings: ${boxName}`, note)
 		}
-		if(state == 'STATE_ABANDONED') console.error(date.toLocaleDateString(), `STATE_ABANDONED: ${boxName}`)
+		if(state == 'STATE_ABANDONED') console.error(logDate, `STATE_ABANDONED: ${boxName}`)
 		lastInspection = inspection
 	}
 	docs.push(...inspections)

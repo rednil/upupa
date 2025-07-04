@@ -79,8 +79,8 @@ const parser = {
 		options: [
 			{
 				allow: [
-					/Bb[^\d]*(\d+).(\d+)/,
-					/W brütet am (\d+).(\d+)/
+					/Bb[^\d]*(\d+)\.(\d+)/,
+					/W brütet am (\d+)\.(\d+)/
 				],
 				value: dateFormatter
 			}
@@ -90,8 +90,8 @@ const parser = {
 		options: [
 			{
 				allow: [
-					/Lb[^\d]*(\d+).(\d+)/,
-					/Eiablage[^\d]*(\d+).(\d+)/
+					/Lb[^\d]*(\d+)\.(\d+)/,
+					/Eiablage[^\d]*(\d+)\.(\d+)/
 				],
 				value: dateFormatter
 			}
@@ -100,16 +100,58 @@ const parser = {
 	hatchDate: {
 		options: [
 			{
-				allow: /H[^\d]*(\d+).(\d+)/,
+				allow: /H[^\d]*(\d+)\.(\d+)/,
 				value: dateFormatter
+			}
+		]
+	},
+	nestlingsAge: {
+		options: [
+			{
+				allow: [
+					/Nestlinge \d-(\d) [Tt]ag/,
+					/Nestlinge ca \d-(\d) [Tt]ag/,
+					/Nestlinge [Tt]ag \d-(\d)/,
+					/Nestlinge (\d)\s*[Tt]ag/,
+					/Nestlinge ca (\d+)\s*[Tt]ag/,
+					/Nestlinge [Tt]ag\s*(\d)/,
+					/Nestlinge ca Tag[e]*\s*(\d)/,
+					/ca (\d) [Tt]ag[e]* alt/,
+					/Nestlinge geschlüpft (\d) tag/,
+					/Nestlinge KM (\d) Tag/,
+					/Nestlinge !!(\d) Tag alt/,
+					/Nestlinge 1 Ei Ca \d-(\d) Tag/,
+					/Nestlinge 2 Eier Tag \d-(\d)/,
+					/Nestlinge 1 Ei Tag (\d)/,
+				],
+				value: match => Number(match[1]),
+			},
+			{
+				allow: [
+					/Nestling[e]* hO/,
+					/hatchingobs/,
+					/Nestlinge ca 12h alt/,
+					/Hatching O/,
+					/Hatching obs/,
+					/1 Nestling geschlüpft/,
+					/2 Nestlinge geschlüpft/,
+					/Nestlinge geschlüpft 1 Ei/
+				],
+				value: 0
 			}
 		]
 	},
 	nestlingsBandDate: {
 		options: [
 			{
-				allow: /Nestlinge.*ring.[^\d]+(\d+).(\d+)/,
-				value: dateFormatter
+				allow: [
+					/Nestlinge.*ring.[\s\(]+(\d+)\.(\d+)/,
+					/beringt (\d+)\.(\d+)/,
+					/B\.(\d+)\.(\d+)/,
+					/Nestlinge\s*(\d+)\.(\d+)/,
+					/Nestlinge [KB]M (\d+)\.(\d+)/
+				],
+				value: dateFormatter,
 			}
 		]
 	},

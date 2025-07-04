@@ -10,7 +10,7 @@ import './forms/button-logout'
 import './pages/inspection.js'
 import './pages/config.js'
 import './components/error-display.js'
-import './pages/about'
+import './pages/analysis.js'
 import './pages/start'
 /* 
 Routing can be done via hashed or non-hashed URL paths
@@ -111,7 +111,7 @@ export class AppShell extends LitElement {
 				text-decoration: none;
 				color: black;
 			}
-			.route-login .year {
+			.route-login .year, .route-start .year {
 				display: none;
 			}
 		
@@ -121,7 +121,7 @@ export class AppShell extends LitElement {
   constructor() {
     super()
 		this.proxy = new Proxy(this)
-		this.selectedYear = 2020 // new Date().getFullYear()
+		this.selectedYear = new Date().getFullYear()
 		this.firstYear = new Date().getFullYear()
     this.routes = [
 			{
@@ -153,6 +153,13 @@ export class AppShell extends LitElement {
 				menu: true,
 				render: () => html`
 					<page-calendar id="page"></page-calendar>
+				`
+			},
+			{
+				path: '#/analysis',
+				menu: true,
+				render: () => html`
+					<page-analysis id="page"></page-analysis>
 				`
 			},
 			{
