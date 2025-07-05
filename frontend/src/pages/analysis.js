@@ -16,7 +16,9 @@ export class PageAnalysis extends Page {
 			
 				margin: auto;
 			}
-     
+			.title {
+				text-align: center;
+			}
 			
     `
   }
@@ -64,25 +66,12 @@ export class PageAnalysis extends Page {
 	}
 	render() {
 		return html`
-			<div>Überlebenswahrscheinlichkeit eines Eis, artunabhängig</div>
-			<div id="myplot"></div>
-			
+			<div>
+				<div class="title">Überlebenswahrscheinlichkeit eines Eis, artunabhängig</div>
+				<div id="myplot"></div>
+			</div>
 		`
 	}
-	firstUpdated(){
-		/*
-		const plot = Plot.rectY(
-			{length: 1000},
-			Plot.binX(
-				{y: "count"},
-				{x: Math.random}
-			)
-		).plot();
-		*/
-		
-		
-	}
-	
 }
 function parseValue([clutchSize, nestlings, nestlingsBanded]){
 	return {clutchSize, nestlings, nestlingsBanded}

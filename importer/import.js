@@ -498,6 +498,9 @@ async function importLine(line){
 		}
 		if(state == 'STATE_ABANDONED') console.error(logDate, `STATE_ABANDONED: ${boxName}`)
 		lastInspection = inspection
+		if(isFinished(inspection && !inspection.species_id)){
+			console.error(logDate, 'Finished without identification', boxName)
+		}
 	}
 	docs.push(...inspections)
 }
