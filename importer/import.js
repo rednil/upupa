@@ -154,12 +154,14 @@ function valueParser(type, str, boxName, date){
 		const allow = [option.allow || []].flat()
 		const disAllow = [option.disAllow || []].flat()
 		const getValue = (typeof option.value == 'function') ? option.value : () => option.value
-		if(
-			boxName &&
-			date &&
-			option.boxDates &&
-			option.boxDates.find(boxDate => boxDate.box == boxName && boxDate.date == new Date(date).toISOString().split('T')[0])
-		) return getValue()
+		if(boxName &&	date){
+			if(option.boxDates?.find(boxDate => boxDate.box == boxName && boxDate.date == new Date(date).toISOString().split('T')[0])){
+				return getValue()
+			}
+			if(option.notBoxDates?.find(boxDate => boxDate.box == boxName && boxDate.date == new Date(date).toISOString().split('T')[0])){
+				continue
+			}
+		}
 		if(disAllow.find(regExp => str.match(regExp))) continue
 		if((typeof option.value == 'string') && str.match(option.value)) return option.value
 		for(var j in allow){
@@ -179,7 +181,7 @@ function getBoxId(box, calledWithConfig=false){
 	}
 	const cache = boxIdCache[box.name]
 	if(!cache){
-		if(!calledWithConfig) console.error(parser.year, `Box ${box.name} inspected, but not configured`)
+		if(!calledWithConfig) console.log(parser.year, `Box ${box.name} inspected, but not configured`)
 		boxIdCache[box.name] = [newBox]
 		docs.push(newBox)
 		return newBox._id
@@ -193,6 +195,7 @@ function getBoxId(box, calledWithConfig=false){
 		existing.validUntil=new Date('2022-12-30')
 		return existing._id
 	}
+	/*
 	if(calledWithConfig && existing.architecture_id && (box.architecture_id != existing.architecture_id)){
 		console.error(
 			parser.year,
@@ -203,6 +206,7 @@ function getBoxId(box, calledWithConfig=false){
 			getNameById('architecture',box.architecture_id),
 		)
 	}
+
 	if(
 		!calledWithConfig ||
 		(
@@ -210,28 +214,21 @@ function getBoxId(box, calledWithConfig=false){
 			(existing.lon == box.lon) &&
 			(existing.architecture_id == box.architecture_id)
 		)
-	){
+	){ */
 		if(box.note && (box.note != existing.note)){
 			existing.note = (existing.note ? (existing.note + ', ') : '') + box.note
 		} 
 		return existing._id
-	}
-	/*
-	if(parser.year == 2021){
-		existing.lat = box.lat
-		existing.lon = box.lon
-		if(box.architecture_id) existing.architecture_id = box.architecture_id
-		return existing._id
-	}
-	*/
-	
-	
+	//}
+	/*	
 	existing.validUntil = `${parser.year-1}-12-31`
 	newBox.validFrom = `${parser.year}-01-01`
 	console.log(parser.year, `Box ${box.name} has new location, created new entry`, existing, newBox)
 	cache.push(newBox)
 	docs.push(newBox)
 	return newBox._id
+	*/
+	
 }
 function getNameById(type, id){
 	let name = ''
@@ -300,7 +297,11 @@ async function importLine(line){
 	var _hiddenLastInspection = {} // for accessing the lastInspection after it got cleared
 	for(var x in entries){
 		const [dateStr, note] = entries[x]
-		if(note == 'NK' || note.match(/,\s*NK\s*,/)) continue
+		if(
+			note == 'NK' ||
+			note.match(/,\s*NK\s*,/) ||
+			note.match(/KM NK/)
+		) continue
 		const date = new Date(dateStr.replace(/(.*)\.(.*)\.(.*)/, '$3-$2-$1'))
 		if(date == 'Invalid Date'){
 			console.error(`Invalid date "${dateStr}"`)
@@ -345,7 +346,7 @@ async function importLine(line){
 		}
 		if(x == entries.length-1 && state == 'STATE_NESTLINGS') state = 'STATE_SUCCESS'
 		if(boxName == 'SF02' && note =='2 Eier ?') state = 'STATE_EMPTY'
-		state = state || lastInspection.state
+		state = state || lastInspection.state || 'STATE_EMPTY'	
 		const inspection = {
 			...lastInspection,
 			_id: `inspection-${uuid()}`,
@@ -387,7 +388,7 @@ async function importLine(line){
 		
 		if(inspection.occupancy){
 			inspection.eggs = valueParser('eggs', note)
-			inspection.nestlings = valueParser('nestlings', note)
+			inspection.nestlings = valueParser('nestlings', note, boxName, date)
 			if(
 				((state == 'STATE_EGGS') || (state == 'STATE_BREEDING')) &&
 				!inspection.eggs &&
@@ -395,8 +396,11 @@ async function importLine(line){
 			){
 				inspection.eggs = lastInspection.eggs
 			}
-			if(state == 'STATE_SUCCESS' && note.match(/(\d) Nestling[e]* tot/)){
-				inspection.nestlings = lastInspection.nestlings - inspection.nestlings
+			if(state == 'STATE_SUCCESS'){
+				const deadMatch = note.match(/(\d) Nestling[e]* [Tt]ot/)
+				if(deadMatch){
+					inspection.nestlings = lastInspection.nestlings - deadMatch[1]
+				}
 			}
 			if(
 				((state == 'STATE_NESTLINGS') || (state == 'STATE_SUCCESS')) &&
@@ -453,20 +457,20 @@ async function importLine(line){
 			const nestlingsAge = valueParser('nestlingsAge', note)
 			if(nestlingsAge!=null){
 				inspection.hatchDate = incDate(date, -nestlingsAge)
-				console.error(logDate, boxName, 'Calculated hatchDate from nestlingsAge', inspection.hatchDate, note)
+				console.log(logDate, boxName, 'Calculated hatchDate from nestlingsAge', inspection.hatchDate, note)
 			}
 			else{
 				const nestlingsBandDate = valueParser('nestlingsBandDate', note)
 				if(nestlingsBandDate){
 					inspection.hatchDate = incDate(nestlingsBandDate, -9)
-					console.error(logDate, boxName, 'Deduced hatchDate from nestlingsBandDate', inspection.hatchDate, note)
+					console.log(logDate, boxName, 'Deduced hatchDate from nestlingsBandDate', inspection.hatchDate, note)
 				}
 			}
 			if(!inspection.hatchDate){
 				let guess = -3
 				if(note.match(/Nestlinge [Bb]eringt/)) guess = -7
 				inspection.hatchDate = incDate(date, guess)		
-				console.error(logDate, boxName, state, `hatchDate missing, guess date ${guess}`, note)
+				console.log(logDate, boxName, state, `hatchDate missing, guess date ${guess}`, note)
 			}
 		}
 		if(
@@ -498,8 +502,16 @@ async function importLine(line){
 		}
 		if(state == 'STATE_ABANDONED') console.error(logDate, `STATE_ABANDONED: ${boxName}`)
 		lastInspection = inspection
-		if(isFinished(inspection && !inspection.species_id)){
-			console.error(logDate, 'Finished without identification', boxName)
+		if(isFinished(inspection)){
+			if(!inspection.species_id){
+				console.error(logDate, 'Finished without identification', boxName)
+			}
+			if(!inspection.clutchSize){
+				console.error(logDate, 'Finished without clutchSize', boxName)
+			}
+		}
+		if(!inspection.state){
+			console.error(logDate, 'Inspection without state', boxName, note)
 		}
 	}
 	docs.push(...inspections)
@@ -547,14 +559,17 @@ function bandingParser(target, note, boxName){
 			note.match(/Nestlinge [Bb]ering/) ||
 			note.match(/beringt 3.5/) ||
 			note.match(/Nestlinge \+ Altvogel beringt/) ||
+			note.match(/B\.(\d+)\.(\d+)/) ||
+			note.match(/B:(\d+)\.(\d+)/) ||
 			(date == '2022-05-07' && boxName == 'WH2') ||
 			(date == '2024-05-06' && boxName == 'OV1') ||
 			(date == '2022-05-13' && boxName == 'K11') ||
 			(date == '2024-05-06' && boxName == 'K02') 
 		)
 	) {
+		if((date == '2024-05-06' && boxName == 'K02')) target.nestlingsBanded = 8
 		if(target.nestlings) target.nestlingsBanded = target.nestlings
-		else console.error(target.date.toLocaleDateString(), '"NK beringt" but no nestlings', boxName, note)
+		if(!target.nestlingsBanded) console.error(target.date.toLocaleDateString(), '"NK beringt" but no nestlings', boxName, note)
 	}
 	if(
 		note.match(/ring/) &&

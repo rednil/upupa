@@ -6,7 +6,8 @@ import PouchDB from 'pouchdb'
 
 import inspections from './views/inspections.js'
 import summaries from './views/summaries.js'
-import statistics from './views/statistics.js'
+import stats_by_state_year_species from './views/stats_by_state_year_species.js'
+import stats_by_species_year_state from './views/stats_by_species_year_state.js'
 import boxes from './views/boxes.js'
 
 const {
@@ -49,7 +50,8 @@ export async function ensureDesignDocument(db) {
 		"views": {
 			inspections,
 			summaries,
-			statistics,
+			stats_by_species_year_state,
+			stats_by_state_year_species,
 			boxes
 		}
   };

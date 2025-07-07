@@ -5,6 +5,8 @@ import '../components/box-list'
 import {translate} from '../translator'
 import { Page } from './base'
 
+const INFO = 'OVERVIEW.INFO'
+const MODE = 'OVERVIEW.MODE'
 const infoOptions = [
 	'BOXES',
 	'ARCHITECTURES',
@@ -77,8 +79,8 @@ export class PageOverview extends Page {
 	constructor(){
 		super()
 		this.boxes = []
-		this.info = 'BOXES'
-		this.mode = 'MAP'
+		this.info = localStorage.getItem(INFO) || 'BOXES'
+		this.mode = localStorage.getItem(MODE) || 'MAP'
 	}
 	willUpdate(changedProps){
 		if(changedProps.has('info') || changedProps.has('boxes')) this.addInfo()
@@ -109,10 +111,13 @@ export class PageOverview extends Page {
     `
   }
 	changeModeCb(evt){
-		window.location.hash = `#/overview?mode=${evt.target.value}`
+		localStorage.setItem(MODE, this.mode = evt.target.value)
+		//history.replaceState({}, null, `#/overview?mode=${this.mode}&info=${this.info}`)
+		
 	}
 	infoChangeCb(evt){
-		window.location.hash = `#/overview?mode=${this.mode}&info=${evt.target.value}`
+		localStorage.setItem(INFO, this.info = evt.target.value)
+		//history.replaceState({}, null, `#/overview?mode=${this.mode}&info=${this.info}`)
 	}
 	
 	async fetchData(){

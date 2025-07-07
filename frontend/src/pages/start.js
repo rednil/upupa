@@ -185,7 +185,7 @@ export class PageStart extends Page {
 	}
 	
 	async fetchStatistics(){
-		const response = await this.proxy.queryReduce('statistics', {
+		const response = await this.proxy.queryReduce('stats_by_state_year_species', {
 			group: true,
 			group_level: 1
 		})

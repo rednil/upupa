@@ -61,17 +61,24 @@ const parser = {
 		options: [
 			{ 
 				allow: [
+					/(\d+)\s*Nestlinge ausgeflogen/,
+					/(\d+)\s..\sNestlinge\sberingt/,
+					/(\d).\sNestling\sgeschlüpft/,
 					/(\d+)\s*Nestling/,
 					/\((\d+)\?\)\s*Nestling/,
-					/(\d+)\s..\sNestlinge\sberingt/,
 					/Nestlinge\s*\((\d+)\?\)/,
-					/(\d).\sNestling\sgeschlüpft/
 				],
 				disAllow: [
 					/Nestling noch beringt/
 				],
 				value: match => Number(match[1]),
 				default: 0
+			},
+			{
+				boxDates: [
+					{ box: 'H22', date: '2025-06-16' }
+				],
+				value: 3
 			}
 		]
 	},
@@ -161,7 +168,7 @@ const parser = {
 				allow: [
 					/(\d+)[^\d]*Nestling.*ringt/,
 					/(\d+)N [bB]ering/,
-					/(\d+) Kleiber beringt/
+					/(\d+) Kleiber beringt/,
 				],
 				value: match => Number(match[1])
 			}
@@ -202,7 +209,8 @@ const parser = {
 			{ value: 'Feldsperling', 	allow: ['FS']							},
 			{ value: 'Tannenmeise', 	allow: ['TM']							},
 			{ value: 'Wendehals', 		allow: []									},
-			{ value: 'Weidenmeise',		allow: ['WM']							}
+			{ value: 'Weidenmeise',		allow: ['WM']							},
+			{ value: 'Buntspecht' }
 		]
 	},
 	state: {
@@ -220,7 +228,13 @@ const parser = {
 					{box: 'B12', date: '2024-05-06'},
 					{box: 'S02', date: '2024-06-10'},
 					{box: 'S10', date: '2024-05-20'},
-					{box: 'SF305', date: '2024-04-29'}
+					{box: 'SF305', date: '2024-04-29'},
+					{box: 'H04', date: '2020-06-02'}
+				],
+				notBoxDates: [
+					{box: 'ST1', date: '2024-06-03'},
+					{box: 'ST2', date: '2024-06-03'},
+					{box: 'W06', date: '2022-05-28'}
 				]
 			},
 			{ 
@@ -259,7 +273,21 @@ const parser = {
 					{ box: 'S09', date: '2024-05-27' }
 				]
 			},
-			{ value: 'STATE_NESTLINGS', allow: ['Nestling', 'H obs.', /NK [bB]ering/] },
+			{ 
+				value: 'STATE_NESTLINGS',
+				allow: ['Nestling', 'H obs.', /NK [bB]ering/],
+				disAllow: 'NK Sauber',
+				boxDates: [
+					{ box: 'H04', date: '2020-05-20' },
+					{ box: 'H22', date: '2025-06-16' },
+
+				],
+				notBoxDates: [
+					{box: 'ST1', date: '2024-06-03'},
+					{box: 'ST2', date: '2024-06-03'},
+					{box: 'W06', date: '2022-05-28'},
+				]
+			},
 			{ value: 'STATE_BREEDING', allow: ['[bB]rütet'] },
 			{ 
 				value: 'STATE_EGGS',
@@ -279,15 +307,23 @@ const parser = {
 				'Moos',
 				'fast fertigees Nest',
 				'NA',
-				'Nesteintrag'
+				'Nesteintrag',
+				'Borke',
+				'ev Kleiber'
 			] },
 			{ value: 'STATE_NEST_READY', allow: [
 				'legebereit',
-				'fertiges Nest',
+				'[Ff]ertiges [Nn][Ee][Ss][Tt]',
 				'fertig vorbereiteter Brutraum'
 			] },
-			{ value: 'STATE_EMPTY', allow: ['leer'] },
-		]
+			{ 
+				value: 'STATE_EMPTY',
+				allow: [
+					'leer',
+					/Kot entfernt/
+				]
+			},
+		],
 	},
 	reasonForLoss: {
 		options: [
@@ -311,7 +347,8 @@ const parser = {
 			{ value: 'Siebenschläfer' },
 			{ value: 'Eichhörnchen' },
 			{ value: 'Hornisse' },
-			{ value: 'Wespe' }
+			{ value: 'Wespe' },
+			{ value: 'Waldmaus', allow: [/Waldmäuse/]}
 		]
 	},
 	scope: {
