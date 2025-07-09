@@ -52,7 +52,9 @@ const translations = {
 	"NEST_OCCUPATION.PERPETRATOR": "Okkupator",
 	"STATUS": "Status",
 	"SPECIES": "Vogelart",
-	
+	"SUCCESS": "Erfolg",
+	"UNKNOWN_FAILURE": "Mißerfolg (Ursache unbekannt)",
+	"UNKNOWN_PREDATION": "Prädation (Prädator unbekannt)",
 	"USERS.USERNAME": "Benutzername",
 	"USERS.PASSWORD": "Passwort",
 	"USERS.ROLE.USER": "USER",

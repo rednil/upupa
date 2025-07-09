@@ -8,6 +8,7 @@ import inspections from './views/inspections.js'
 import summaries from './views/summaries.js'
 import stats_by_state_year_species from './views/stats_by_state_year_species.js'
 import stats_by_species_year_state from './views/stats_by_species_year_state.js'
+import outcome from './views/outcome.js'
 import boxes from './views/boxes.js'
 
 const {
@@ -52,7 +53,8 @@ export async function ensureDesignDocument(db) {
 			summaries,
 			stats_by_species_year_state,
 			stats_by_state_year_species,
-			boxes
+			boxes,
+			outcome
 		}
   };
 

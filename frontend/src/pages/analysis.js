@@ -1,5 +1,6 @@
 import { html, css } from 'lit'
 import { Page } from './base'
+import { translate } from '../translator'
 
 function parseResponse(response, reverse=false){
 	return response.rows.reduce((obj, {key, value}) => {
@@ -28,7 +29,7 @@ export class PageAnalysis extends Page {
 			.title {
 				text-align: center;
 			}
-			svg {
+			figure > svg {
 				width: 100%;
 			}
 			figure {
@@ -44,6 +45,34 @@ export class PageAnalysis extends Page {
 		super.connectedCallback()
 		this.fetchStatistics()
 	}
+	getOutcomePlot(rows, failureOnly = false, relative = false){
+		const allReasons = rows.reduce((allReasons, {key, value}) => {
+			return Object.assign(allReasons, value)
+		}, {})
+		if(failureOnly) delete allReasons.SUCCESS
+		const firstYear = rows[0].key[0]
+		const lastYear = rows[rows.length-1].key[0]
+		const table = []
+		for(let year = firstYear; year <=lastYear; year ++){
+			Object.keys(allReasons).forEach(reason => {
+				const row = rows.find(row => row.key[0] == year)
+				const predator = this.perpetrators.find(perpetrator => perpetrator._id == reason)?.name
+				table.push({
+					year: new Date(`${year}-01-01`),
+					reason: predator ? translate('PREDATION') + ' ' + predator : translate(reason),
+					count: row?.value[reason] || 0
+				})
+			})
+		}
+		return Plot.plot({
+			color: {legend: true},
+			y: relative ? { percent: true } : {},
+			marks: [
+				Plot.areaY(table, Plot.stackY(relative ? {offset: "normalize"} : {}, {x: "year", y: "count", fill: "reason"})),
+			]
+		})
+		
+	}
 	getClutchSizePlot(summaries){
 		const table = summaries.map(({key, value}) => {
 			const [clutchSize] = value
@@ -53,20 +82,6 @@ export class PageAnalysis extends Page {
 				clutchSize
 			}
 		})
-		/*
-		const table = Object.entries(stats).reduce((table, [species_id, {clutchSize}]) => {
-			const {sum, count, min, max, sumsqr} = clutchSize
-			if(count<7) return table
-			table.push({
-				species: this.getSpeciesName(species_id),
-				mean: sum/count,
-				min,
-				max,
-				std: Math.sqrt((count*sumsqr-sum*sum) / (count * (count-1)))
-			})
-			return table
-		}, [])
-		*/
 
 		return Plot.plot({
 			marginLeft: 100,
@@ -164,17 +179,22 @@ export class PageAnalysis extends Page {
 		return this.species.find(spec => spec._id == species_id).name
 	}
 	async fetchStatistics(){
-		var [species, statsBySpeciesYearStateResponse, allSummariesResponse] = await Promise.all([
+		var [species, perpetrators, statsBySpeciesYearStateResponse, allSummariesResponse, outcome] = await Promise.all([
 			this.proxy.getByType('species'),
+			this.proxy.getByType('perpetrator'),
 			this.proxy.db.query('upupa/stats_by_species_year_state', {
 				group: true,
 				group_level: 3
 			}),
 			this.proxy.db.query('upupa/stats_by_species_year_state', {
 				reduce: false
+			}),
+			this.proxy.db.query('upupa/outcome', {
+				group: true
 			})
 		])
 		this.species = species
+		this.perpetrators = perpetrators
 		//console.log('statsBySpeciesYearStateResponse', statsBySpeciesYearStateResponse)
 		const statsBySpeciesYearState = parseResponse(statsBySpeciesYearStateResponse)
 		//const statsBySpecies = parseResponse(statsBySpeciesResponse)
@@ -184,55 +204,22 @@ export class PageAnalysis extends Page {
 		this.clutchSurvivalPlot = this.getSurvivalPlot(statsBySpeciesYearState, 'count')
 		this.speciesPlot = this.getSpeciesPlot(statsBySpeciesYearState)
 		this.clutchSizePlot = this.getClutchSizePlot(allSummariesResponse.rows)
+		this.outcomePlot = this.getOutcomePlot(outcome.rows)
+		this.reasonForLossPlot = this.getOutcomePlot(outcome.rows, true, true)
 
-		
-		/*
-		this.table = Object.keys(stats.STATE_SUCCESS).reduce((table, year) => {
-			const survivors = stats.STATE_SUCCESS[year].nestlings.sum
-			const failClutchSize = stats.STATE_FAILURE[year].clutchSize.sum
-			const successClutchSize = stats.STATE_SUCCESS[year].clutchSize.sum
-			const totalClutchSize = failClutchSize + successClutchSize
-			const rate = survivors/totalClutchSize
-			table.push({
-				year: new Date(`${year}-01-01`),
-				rate
-			})
-			return table
-		}, [])
-		*/
-		/*
-		const colorScale = Plot.scale({
-			color: {
-				domain: this.table.map(d => d.species).sort(), // Ensure consistent order
-					// ... other color scale options if needed
-			}
-		})
-			*/
-		
-	
-		
-		/*
-		const plot = Plot.plot({
-			color: {legend: true},
-			marks: [
-				Plot.barY(this.table, {
-					x: "species_id",
-					y: "rate",
-					fill: "species_id",
-					fx: "year",
-					//sort: {x: null, color: null, fx: {value: "-y", reduce: "sum"}}
-				}),
-				//Plot.ruleY([0])
-			]
-		})
-			*/
-		//const div = this.shadowRoot.querySelector("#myplot");
-		//div.append(plot);
 		this.requestUpdate()
 	}
 
 	render() {
 		return html`
+			<div>
+				<div class="title">Erfolg und Mißerfolg in absoluten Zahlen</div>
+				${this.outcomePlot}
+			</div>
+			<div>
+				<div class="title">Gründe für Mißerfolg, normalisiert</div>
+				${this.reasonForLossPlot}
+			</div>
 			<div>
 				<div class="title">Gelegegröße</div>
 				${this.clutchSizePlot}
