@@ -78,6 +78,9 @@ export class PageInspection extends Page {
 			.previousInspection {
 				flex-direction: column;
 			}
+			#delete-box-name {
+				display: inline;
+			}
 		`
 	}
 	
@@ -88,7 +91,7 @@ export class PageInspection extends Page {
 		this.createInspection()
 		this.mode = 'MODE_CREATE'
 		this.summary = {}
-		
+		this.maxOccupancy = 0
 		//this.date = formatDateForInput(new Date())
 		this.proxy = new Proxy(this)
 	}
@@ -104,6 +107,7 @@ export class PageInspection extends Page {
 					this.inspection_id ? this.renderDate('date') : '',
 					this.renderScope(),
 					i.state ? this.renderState() : '',
+					this.renderNumber('occupancy'),
 					this.renderSpecies(),
 					this.renderNumber('eggs'),
 					this.renderNumber('nestlings'),
@@ -124,6 +128,25 @@ export class PageInspection extends Page {
 					this.renderPreviousInspection()
 				]}
 			</div>
+			<app-dialog
+				id="delete-dialog"
+				primary="Abbrechen"
+				secondary="Löschen"
+				@secondary=${this.delete}
+				discard="primary"
+				title="Löschen"
+			>
+				<div>
+					<span>Die Kontrolle des Nistkastens</span>
+					<select-item
+						readonly
+						id="delete-box-name"
+						type="box"
+						.value=${this.box_id}
+					></select-item>
+					<span>vom ${new Date(this.inspection.date).toLocaleDateString()} löschen?</span>
+				</div>
+      </app-dialog>
 		`
 	}
 	renderHead(){
@@ -190,13 +213,14 @@ export class PageInspection extends Page {
 			date,
 			note,
 			scope,
+			occupancy,
 			species_id,
 			clutchSize,
 			layingStart,
 			breedingStart,
 			nestlingsBanded
 		} = i
-		const fixed = {_id, _rev, box_id, date, note, scope, type}
+		const fixed = {_id, _rev, box_id, date, note, scope, type, occupancy}
 		switch(state){
 			case 'STATE_EMPTY':
 			case 'STATE_NEST_BUILDING':
@@ -207,7 +231,8 @@ export class PageInspection extends Page {
 				this.inspection = {
 					...fixed,
 					species_id,
-					eggs: clutchSize || 1
+					eggs: clutchSize || 1,
+					occupancy: occupancy || (this.maxOccupancy + 1)
 				}
 				this.postProcess('eggs')
 				break
@@ -218,9 +243,11 @@ export class PageInspection extends Page {
 					eggs: clutchSize || 1,
 					clutchSize: clutchSize || 1,
 					layingStart,
-					breedingStart: incDate(i.layingStart, i.clutchSize || 1)
+					breedingStart: incDate(i.layingStart, i.clutchSize || 1),
+					occupancy: occupancy || (this.maxOccupancy + 1)
 				}
 				break
+			case 'STATE_SUCCESS':
 			case 'STATE_NESTLINGS':
 				this.inspection = {
 					...fixed,
@@ -230,7 +257,8 @@ export class PageInspection extends Page {
 					nestlingsBanded: nestlingsBanded || 0,
 					eggs: 0,
 					nestlings: clutchSize || 1,
-					hatchDate: i.date
+					hatchDate: i.date,
+					occupancy: occupancy || (this.maxOccupancy + 1)
 				}
 				this.postProcess('nestlings')
 				this.postProcess('hatchDate')
@@ -483,6 +511,9 @@ export class PageInspection extends Page {
 		return html`
 			<div class="buttons">
 				<button id="cancel" @click=${this.cancel}>Abbrechen</button>
+				${this.inspection_id ? html`
+					<button id="delete" @click=${this.confirmDeletion}>Löschen</button>
+				` : ''}
 				<button id="save" @click=${this.save}>Speichern</button>
 			</div>
 		`
@@ -490,6 +521,14 @@ export class PageInspection extends Page {
 	cancel(){
 		history.back()
 		//this.inspection = {...this.initialInspection}
+	}
+	confirmDeletion(){
+		this.shadowRoot.querySelector('#delete-dialog').open = true
+	}
+	async delete(){
+		this.shadowRoot.querySelector('#delete-dialog').open = false
+		const response = await this.proxy.remove(this.inspection)
+		if(response?.ok) history.back()
 	}
 	async save(){
 		const response = await this.proxy.put(this.inspection)
@@ -507,7 +546,7 @@ export class PageInspection extends Page {
 	
 	updated(changedProps){
 		if(changedProps.has('year')){
-			this.createInspection(`${this.year}-12-30`)
+			this.createInspection(`${this.year}-12-31`)
 		}
 		if(
 			(changedProps.has('inspection_id') && this.inspection._id != this.inspection_id) ||
@@ -543,6 +582,7 @@ export class PageInspection extends Page {
 	async fetchInspection(){
 		delete this.previousInspection
 		delete this.summary
+		this.maxOccupancy = 0
 		//if(this.inspection_id && (this.inspection_id == this.inspection._id)) return
 		const existingInspection = this.inspection_id ? 
 			await this.proxy.db.get(this.inspection_id) :
@@ -573,25 +613,32 @@ export class PageInspection extends Page {
 	async fetchPreviousInspection(){
 		const date = new Date(this.inspection.date)
 		const dayBeforeArr = dateToArr(date.setDate(date.getDate()-1))
-		
-		this.previousInspection = (await this.proxy.queryReduce('inspections', {
+		const previousInspections = (await this.proxy.queryReduce('inspections', {
 			endkey: [dayBeforeArr[0], this.box_id, 0],
 			startkey: [dayBeforeArr[0], this.box_id, dayBeforeArr[1], dayBeforeArr[2]],
 			descending: true,
 			inclusive_start: false,
-			limit:1
-		}))[0]
-		console.log('previousInspection', this.previousInspection)
+			//limit:1
+		}))
+		if(previousInspections.length){
+			this.previousInspection = previousInspections[0]
+			this.maxOccupancy = Math.max(...previousInspections.map(i => i.occupancy || 0))
+		}
+		console.log('previousInspection', this.previousInspection, this.maxOccupancy)
 		this.updateInspection()
 	}
 
 	updateInspection(){
-		const date = this.inspection.date
+		
 		if(this.inspection_id) return
+		let date = new Date(this.inspection.date)
+		if(this.year != new Date().getFullYear() && this.previousInspection){
+			date = incDate(this.previousInspection.date, 7)
+		}
 		if(this.previousInspection && !isFinished(this.previousInspection)){
 			this.initInspection({
 				...this.previousInspection,
-				date,
+				date: date.toISOString(),
 				note: undefined
 			})
 			delete this.inspection._id

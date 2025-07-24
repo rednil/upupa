@@ -479,14 +479,17 @@ async function importLine(line){
 		){
 			inspection.layingStart = incDate(inspection.date, -inspection.eggs)
 		}
-		if(
-			state == 'STATE_BREEDING' && 
-			!inspection.breedingStart &&
-			inspection.layingStart
-		){
-			inspection.breedingStart = incDate(inspection.layingStart, inspection.clutchSize)
+		if(state == 'STATE_BREEDING' && !inspection.breedingStart){
+			if(lastInspection.clutchSize && inspection.eggs){
+				const eggsLayedAfterLastInspection = inspection.eggs - lastInspection.clutchSize
+				inspection.breedingStart = incDate(lastInspection.date, eggsLayedAfterLastInspection)
+				console.log(logDate, boxName, 'breedingStart calculated from eggsLayedAfterLastInspection', eggsLayedAfterLastInspection)
+			}
+			else if(inspection.layingStart){
+				inspection.breedingStart = incDate(inspection.layingStart, inspection.clutchSize)
+				console.log(logDate, boxName, 'breedingStart calculated from layingStart')
+			}
 		}
-		
 		if(inspection.hatchDate){
 			inspection.bandingWindowStart = incDate(inspection.hatchDate, bandingStartAge)
 			inspection.bandingWindowEnd = incDate(inspection.hatchDate, bandingEndAge)

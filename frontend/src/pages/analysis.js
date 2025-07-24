@@ -100,6 +100,34 @@ export class PageAnalysis extends Page {
 		})
 
 	}
+	getIncubationPlot(summaries){
+		const table = summaries
+		.map(({key, value}) => {
+			const [clutchSize, nestlings, nestlingsBanded, incubation] = value
+			const [species_id] = key
+			return {
+				species: this.getSpeciesName(species_id),
+				incubation
+			}
+		})
+		.filter(({incubation}) => (incubation > 0))
+		return Plot.plot({
+			marginLeft: 100,
+			x: {
+				grid: true,
+				inset: 6
+			},
+			
+			marks: [
+				Plot.boxX(table, {
+					x: "incubation",
+					y: "species",
+					sort: {y: "x", reduce: "mean"}
+				})
+			]
+		})
+
+	}
 	getSpeciesPlot(stats){
 		const table = Object.entries(stats).reduce((table, [species_id, perSpecies]) => {
 			for(let year = 2020; year <= 2025; year++){
@@ -204,6 +232,7 @@ export class PageAnalysis extends Page {
 		this.clutchSurvivalPlot = this.getSurvivalPlot(statsBySpeciesYearState, 'count')
 		this.speciesPlot = this.getSpeciesPlot(statsBySpeciesYearState)
 		this.clutchSizePlot = this.getClutchSizePlot(allSummariesResponse.rows)
+		this.incubationPlot = this.getIncubationPlot(allSummariesResponse.rows)
 		this.outcomePlot = this.getOutcomePlot(outcome.rows)
 		this.reasonForLossPlot = this.getOutcomePlot(outcome.rows, true, true)
 
@@ -212,6 +241,10 @@ export class PageAnalysis extends Page {
 
 	render() {
 		return html`
+			<div>
+				<div class="title">Brutdauer</div>
+				${this.incubationPlot}
+			</div>
 			<div>
 				<div class="title">Erfolg und Mißerfolg in absoluten Zahlen</div>
 				${this.outcomePlot}
@@ -223,28 +256,24 @@ export class PageAnalysis extends Page {
 			<div>
 				<div class="title">Gelegegröße</div>
 				${this.clutchSizePlot}
-				
 			</div>
 			<div>
 				<div class="title">Überlebensrate von Ei bis Ausflug</div>
 				${this.eggSurvivalPlot}
-				
 			</div>
 			<div>
 				<div class="title">Erfolgsrate eines Geleges</div>
 				${this.clutchSurvivalPlot}
-				
 			</div>
 			<div>
 				<div class="title">Artenzusammensetzung</div>
 				${this.speciesPlot}
-				
 			</div>
 			
 		`
 	}
 }
-function parseValue([clutchSize, nestlings, nestlingsBanded]){
-	return {clutchSize, nestlings, nestlingsBanded}
+function parseValue([clutchSize, nestlings, nestlingsBanded, incubation]){
+	return {clutchSize, nestlings, nestlingsBanded, incubation}
 }
 customElements.define('page-analysis', PageAnalysis)

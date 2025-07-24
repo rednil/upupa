@@ -107,7 +107,10 @@ const parser = {
 	hatchDate: {
 		options: [
 			{
-				allow: /H[^\d]*(\d+)\.(\d+)/,
+				allow: [
+					/H[^\d]*(\d+)\.(\d+)/,
+					/Hatching OBS (\d+)\.(\d+)/,
+				],
 				value: dateFormatter
 			}
 		]
@@ -178,6 +181,7 @@ const parser = {
 		options: [
 			{
 				allow: [
+					'Wb',
 					'W [bB]eringt',
 					'beide Altvögel beringt',
 					/[KB]M[ \(]*[Bb]eringt/,
@@ -240,6 +244,7 @@ const parser = {
 			{ 
 				value: 'STATE_OCCUPIED',
 				allow: [
+					'Nestokkupation',
 					'Nest-Okkupation',
 					'Siebenschläfer',
 					'Nestprädation',
@@ -251,6 +256,7 @@ const parser = {
 			{ 
 				value: 'STATE_ABANDONED',
 				allow: [
+					'Nestaufgabe',
 					'Nest-Okkupation',
 					'Prädation',
 					'Nestprädation',

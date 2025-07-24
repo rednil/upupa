@@ -8,6 +8,12 @@ export const map = doc =>  {
 		)
 	) {
 		const date = new Date(doc.date)
+		let incubation = 0
+		if(doc.breedingStart && doc.hatchDate){
+			const hatchDate = new Date(doc.hatchDate).getTime()
+			const breedingStart = new Date(doc.breedingStart).getTime()
+			incubation = (hatchDate - breedingStart) / 86400000
+		}
 		emit(
 		[
 			doc.species_id,
@@ -18,7 +24,8 @@ export const map = doc =>  {
 		[
 			doc.clutchSize||0, 
 			doc.nestlings||0,
-			doc.nestlingsBanded||0
+			doc.nestlingsBanded||0,
+			incubation
 		])  
 	}
 }

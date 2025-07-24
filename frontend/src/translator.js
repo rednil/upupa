@@ -34,6 +34,7 @@ const translations = {
 	"INSPECTION.NESTLINGSAGE": "Alter der Nestlinge (Tage)",
 	"NAME": "Name",
 	"PREDATOR": "Prädator",
+	"OCCUPANCY": "Belegung",
 	"OCCUPATOR": "Eindringling",
 	"STATE_EMPTY": "Leer",
 	"STATE_NEST_BUILDING": "Nestbau",
@@ -77,5 +78,5 @@ export function translate(str){
 		translation = translations[arr.join('.')]
 		arr.shift()
 	}
-	return translation || str
+	return translation || str.toUpperCase()
 }
