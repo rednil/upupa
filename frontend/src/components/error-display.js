@@ -10,8 +10,10 @@ export class ErrorDisplay extends LitElement {
 	updated(changedProps){
 		if(changedProps.has('error')){
 			switch(this.error.type){
-				case 'fetch-status': return this.handleFetchError()
-				default: this.msg = this.error.detail
+				case 'fetch-status': 
+					return this.handleFetchError()
+				default: 
+					this.msg = this.error.detail
 			}
 		}
 

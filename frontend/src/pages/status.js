@@ -58,7 +58,9 @@ export class PageStatus extends LitElement {
 			 a {
 				margin: auto 0;
 			}
-			
+			.highlighted {
+				background-color: rgba(255,0,0,0.1);
+			}
     `
   }
 	constructor(){
@@ -104,13 +106,15 @@ export class PageStatus extends LitElement {
 						<summary-display .summary=${summary} ></summary-display>
 					`)}
 					${this.inspections.map(inspection => html`
-						<inspection-display .inspection=${inspection} ></inspection-display>
+						<inspection-display .inspection=${inspection} class=${this.getInspectionClass(inspection)}></inspection-display>
 					`)}
 				</div>
 			</div>
     `
   }
-	
+	getInspectionClass(inspection){
+		return (this.summaries.find(summary => summary._id == inspection._id)) ? 'highlighted' : '' 
+	}
 	updated(changedProps){
 		if(changedProps.has('year') || changedProps.has('box_id')) {
 			this._fetchData()
@@ -128,7 +132,6 @@ export class PageStatus extends LitElement {
 	}
 	async _fetchData(){
 		const {year, box_id} = this
-		console.log('year', typeof year, year, box_id)
 		var [inspections=[], summaries=[]] = await Promise.all([
 			this.proxy.queryReduce('inspections', {
 				endkey: [year, box_id],

@@ -87,17 +87,41 @@ export class Proxy {
 		return result
 	}
 	async put(item){
-		if(item.type == 'user') return this.putUser(item)
-		if(this.validate(item)) return this.db.put(item)
+		console.log('put', item)
+		let response
+		try{
+			if(item.type == 'user') {
+				response = await this.putUser(item)
+			}
+			else{
+				this.finalize(item)
+				response = await this.db.put(item)
+			}
+		}
+		catch(e){
+			console.log('put error', e)
+			response = e
+			this.reportError('db', e.message)
+		}
+		
+		//this.checkForErrors(response)
+		return response
 	}
-	validate(item){
+	finalize(item){
+		const now = new Date()
 		if(!item.type) return this.reportError('VALIDATION_ERROR', 'MISSING_TYPE')
-		if(!item._id) item._id = `${item.type}-${this.uuid()}`
+		if(item._id) {
+			item.changedAt = now
+		}
+		else {
+			item._id = `${item.type}-${this.uuid()}`
+			item.createdAt = now
+		}
 		item.user_id = userCtx.name
 		return true
 	}
 	async bulkDocs(items){
-		for(let i=0; i<items.length; i++) if(!this.validate(items[i])) return
+		for(let i=0; i<items.length; i++) if(!this.finalize(items[i])) return
 		return this.db.bulkDocs(items)
 	}
 
@@ -122,9 +146,10 @@ export class Proxy {
 		}))
 		return false // for validation
 	}
-	checkError(response){
-		if(response?.status > 400){
-			this.reportError('fetch-status', response)
+	checkForErrors(response = {}){
+		if(response.error){
+			console.log('checkForErrors ERROR', response)
+			this.reportError('db-response', response)
 			return true
 		}
 		return false

@@ -642,6 +642,7 @@ export class PageInspection extends Page {
 				note: undefined
 			})
 			delete this.inspection._id
+			delete this.inspection._rev
 			this.inspection.date = new Date(date).toISOString()
 		}
 		else{
