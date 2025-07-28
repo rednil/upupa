@@ -10,6 +10,7 @@ import stats_by_state_year_species from './views/stats_by_state_year_species.js'
 import stats_by_species_year_state from './views/stats_by_species_year_state.js'
 import outcome from './views/outcome.js'
 import boxes from './views/boxes.js'
+import perpetrators from './views/perpetrators.js'
 
 const {
 	DATABASE_PROTOCOL,
@@ -54,7 +55,8 @@ export async function ensureDesignDocument(db) {
 			stats_by_species_year_state,
 			stats_by_state_year_species,
 			boxes,
-			outcome
+			outcome,
+			perpetrators
 		}
   };
 

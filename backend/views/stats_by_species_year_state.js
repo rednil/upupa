@@ -8,12 +8,25 @@ export const map = doc =>  {
 		)
 	) {
 		const date = new Date(doc.date)
-		let incubation = 0
-		if(doc.breedingStart && doc.hatchDate){
-			const hatchDate = new Date(doc.hatchDate).getTime()
-			const breedingStart = new Date(doc.breedingStart).getTime()
-			incubation = (hatchDate - breedingStart) / 86400000
+		let layingStart = 0, breedingStart = 0, hatchDate = 0
+		
+		if(doc.layingStart) {
+			const date = new Date(doc.layingStart)
+			layingStart = Math.ceil((date - new Date(date.getFullYear(), 0, 1)) / 86400000)
 		}
+		if(doc.breedingStart){
+			const date = new Date(doc.breedingStart)
+			breedingStart = Math.ceil((date - new Date(date.getFullYear(), 0, 1)) / 86400000)
+		}
+		if(doc.hatchDate){
+			const date = new Date(doc.hatchDate)
+			hatchDate = Math.ceil((date - new Date(date.getFullYear(), 0, 1)) / 86400000)
+		}
+		/*
+		if(doc.breedingStart && doc.hatchDate){
+			incubation = hatchDate - breedingStart
+		}
+		*/
 		emit(
 		[
 			doc.species_id,
@@ -25,7 +38,9 @@ export const map = doc =>  {
 			doc.clutchSize||0, 
 			doc.nestlings||0,
 			doc.nestlingsBanded||0,
-			incubation
+			layingStart,
+			breedingStart,
+			hatchDate
 		])  
 	}
 }

@@ -1,6 +1,9 @@
 import { html, css } from 'lit'
 import { Page } from './base'
 import { translate } from '../translator'
+import '../charts/species-dates.js'
+import '../charts/perpetrators.js'
+import { parseValue } from '../charts/base.js'
 
 function parseResponse(response, reverse=false){
 	return response.rows.reduce((obj, {key, value}) => {
@@ -23,7 +26,7 @@ export class PageAnalysis extends Page {
 				overflow-y: auto;
       }
 			
-			:host > div {
+			:host > * {
 				margin: 1em auto;
 			}
 			.title {
@@ -40,7 +43,10 @@ export class PageAnalysis extends Page {
 			}
     `
   }
-	
+	constructor(){
+		super()
+		this.allSummaries = []
+	}
 	connectedCallback(){
 		super.connectedCallback()
 		this.fetchStatistics()
@@ -85,6 +91,7 @@ export class PageAnalysis extends Page {
 
 		return Plot.plot({
 			marginLeft: 100,
+			marginRight: 40,
 			x: {
 				grid: true,
 				inset: 6
@@ -95,7 +102,17 @@ export class PageAnalysis extends Page {
 					x: "clutchSize",
 					y: "species",
 					sort: {y: "x", reduce: "mean"}
-				})
+				}),
+				Plot.text(table, Plot.groupY(
+					{x: "max"}, // Reducer: calculate the max 'x' value for each group
+					{
+						x: "clutchSize",
+						y: "species",
+						text: d => `n=${d.length}`, // Use the group's length for the text label
+						dx: 10,           // Offset text to the right
+						textAnchor: "start" // Align text to the l eft
+					}
+				))
 			]
 		})
 
@@ -103,16 +120,17 @@ export class PageAnalysis extends Page {
 	getIncubationPlot(summaries){
 		const table = summaries
 		.map(({key, value}) => {
-			const [clutchSize, nestlings, nestlingsBanded, incubation] = value
+			const {hatchDate, breedingStart} = parseValue(value)
 			const [species_id] = key
 			return {
 				species: this.getSpeciesName(species_id),
-				incubation
+				incubation: hatchDate && breedingStart ? hatchDate - breedingStart : 0
 			}
 		})
 		.filter(({incubation}) => (incubation > 0))
 		return Plot.plot({
 			marginLeft: 100,
+			marginRight: 40,
 			x: {
 				grid: true,
 				inset: 6
@@ -123,10 +141,59 @@ export class PageAnalysis extends Page {
 					x: "incubation",
 					y: "species",
 					sort: {y: "x", reduce: "mean"}
-				})
+				}),
+				Plot.text(table, Plot.groupY(
+					{x: "max"}, // Reducer: calculate the max 'x' value for each group
+					{
+						x: "incubation",
+						y: "species",
+						text: d => `n=${d.length}`, // Use the group's length for the text label
+						dx: 10,           // Offset text to the right
+						textAnchor: "start" // Align text to the l eft
+					}
+				))
 			]
 		})
 
+	}
+	getDatePlot(summaries, dateType = 'layingStart'){
+		const table = summaries
+		.filter(({key}) => key[3] == 1 ) // occupancy = 1
+		.map(({key, value}) => {
+			const statProps = parseValue(value)
+			const [species_id] = key
+			return {
+				species: this.getSpeciesName(species_id),
+				day: statProps[dateType]
+			}
+		})
+		.filter(({day}) => (day > 0))
+		return Plot.plot({
+			marginLeft: 100,
+			marginRight: 40,
+			x: {
+				grid: true,
+				inset: 6
+			},
+			
+			marks: [
+				Plot.boxX(table, {
+					x: "day",
+					y: "species",
+					sort: {y: "x", reduce: "mean"}
+				}),
+				Plot.text(table, Plot.groupY(
+					{x: "max"}, // Reducer: calculate the max 'x' value for each group
+					{
+						x: "day",
+						y: "species",
+						text: d => `n=${d.length}`, // Use the group's length for the text label
+						dx: 10,           // Offset text to the right
+						textAnchor: "start" // Align text to the l eft
+					}
+				))
+			]
+		})
 	}
 	getSpeciesPlot(stats){
 		const table = Object.entries(stats).reduce((table, [species_id, perSpecies]) => {
@@ -223,6 +290,7 @@ export class PageAnalysis extends Page {
 		])
 		this.species = species
 		this.perpetrators = perpetrators
+		this.allSummaries = allSummariesResponse.rows
 		//console.log('statsBySpeciesYearStateResponse', statsBySpeciesYearStateResponse)
 		const statsBySpeciesYearState = parseResponse(statsBySpeciesYearStateResponse)
 		//const statsBySpecies = parseResponse(statsBySpeciesResponse)
@@ -233,6 +301,9 @@ export class PageAnalysis extends Page {
 		this.speciesPlot = this.getSpeciesPlot(statsBySpeciesYearState)
 		this.clutchSizePlot = this.getClutchSizePlot(allSummariesResponse.rows)
 		this.incubationPlot = this.getIncubationPlot(allSummariesResponse.rows)
+		this.layingStartPlot = this.getDatePlot(allSummariesResponse.rows, 'layingStart')
+		this.breedingStartPlot = this.getDatePlot(allSummariesResponse.rows, 'breedingStart')
+		this.hatchDatePlot = this.getDatePlot(allSummariesResponse.rows, 'hatchDate')
 		this.outcomePlot = this.getOutcomePlot(outcome.rows)
 		this.reasonForLossPlot = this.getOutcomePlot(outcome.rows, true, true)
 
@@ -241,6 +312,20 @@ export class PageAnalysis extends Page {
 
 	render() {
 		return html`
+			<chart-perpetrators></chart-perpetrators>
+			<species-dates .data=${this.allSummaries}></species-dates>
+			<div>
+				<div class="title">Legebeginn</div>
+				${this.layingStartPlot}
+			</div>
+			<div>
+				<div class="title">Brutbeginn</div>
+				${this.breedingStartPlot}
+			</div>
+			<div>
+				<div class="title">Schlüpfdatum</div>
+				${this.hatchDatePlot}
+			</div>
 			<div>
 				<div class="title">Brutdauer</div>
 				${this.incubationPlot}
@@ -273,7 +358,5 @@ export class PageAnalysis extends Page {
 		`
 	}
 }
-function parseValue([clutchSize, nestlings, nestlingsBanded, incubation]){
-	return {clutchSize, nestlings, nestlingsBanded, incubation}
-}
+
 customElements.define('page-analysis', PageAnalysis)
