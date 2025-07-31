@@ -5,6 +5,7 @@ import '../forms/link-map.js'
 import '../forms/link-boxconfig.js'
 import '../components/inspection-display.js'
 import '../components/summary-display.js'
+import { setUrlParams } from '../router.js'
 
 
 export class PageStatus extends LitElement {
@@ -116,6 +117,7 @@ export class PageStatus extends LitElement {
 		return (this.summaries.find(summary => summary._id == inspection._id)) ? 'highlighted' : '' 
 	}
 	updated(changedProps){
+		console.log('status page updated', this.year, this.box_id, changedProps)
 		if(changedProps.has('year') || changedProps.has('box_id')) {
 			this._fetchData()
 		}
@@ -124,8 +126,7 @@ export class PageStatus extends LitElement {
 	
 	_boxSelectCb(evt){
 		this.box_id = evt.target.value
-		history.replaceState({},null,`#/status?box_id=${this.box_id}`)
-		//this._fetchData(this.box_id)
+		setUrlParams({box_id: this.box_id})
 	}
 	async _fetchBoxes(){
 		this.boxes = await this.proxy.getByType('box')

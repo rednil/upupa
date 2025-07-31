@@ -112,12 +112,10 @@ export class PageOverview extends Page {
   }
 	changeModeCb(evt){
 		localStorage.setItem(MODE, this.mode = evt.target.value)
-		//history.replaceState({}, null, `#/overview?mode=${this.mode}&info=${this.info}`)
 		
 	}
 	infoChangeCb(evt){
 		localStorage.setItem(INFO, this.info = evt.target.value)
-		//history.replaceState({}, null, `#/overview?mode=${this.mode}&info=${this.info}`)
 	}
 	
 	async fetchData(){

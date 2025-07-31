@@ -7,6 +7,7 @@ import '../components/user-edit.js'
 import '../app-dialog.js'
 import { Proxy } from '../proxy.js'
 import { translate } from '../translator.js'
+import { setUrlParams } from '../router.js'
 
 export class PageConfig extends LitElement {
 	static get properties() {
@@ -138,7 +139,7 @@ export class PageConfig extends LitElement {
 	}
 	changeCollectionCb(evt){
 		this.type = evt.target.value
-		history.replaceState({},null,`#/config?type=${this.type}`)
+		setUrlParams({type: this.type})
 	}
 	changeItemCb(evt){
 		this.item = evt.target.item
@@ -184,7 +185,10 @@ export class PageConfig extends LitElement {
 		this.tainted = false
 	}
 	updateHistory(){
-		history.replaceState({},null,`#/config?type=${this.type}&_id=${this._id}`)
+		setUrlParams({
+			type: this.type,
+			_id: this._id
+		})
 	}
 	async submit(){
 		if(!this.copy.name) return this.shadowRoot.querySelector('#missing-prop').open = true

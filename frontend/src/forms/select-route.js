@@ -1,12 +1,13 @@
 import { LitElement, html, css } from 'lit'
 import { translate } from '../translator'
+import { routes } from '../router'
+
 export class SelectRoute extends LitElement {
 
   static get properties() {
     return {
-      routes: { Type: Array },
-			selected: { Type: String },
-			self: { Type: Object }
+			selected: { type: String },
+			self: { type: Object }
     }
   }
 
@@ -24,10 +25,6 @@ export class SelectRoute extends LitElement {
 			
     `
   }
-	constructor(){
-		super()
-		this.routes = []
-	}
 	
 	nav(evt){
 		window.location.hash = this.selected = evt.target.value
@@ -36,7 +33,7 @@ export class SelectRoute extends LitElement {
   render() {
     return html`
       <select @change=${this.nav}>
-				${this.routes.filter(({menu}) => menu).map(({path}) => html`
+				${routes.filter(({menu}) => menu).map(({path}) => html`
 					<option value="${path}">${translate(path)}</option>
 				`)}
 			</select>

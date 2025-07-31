@@ -82,6 +82,9 @@ export class ChartPerpetrators extends LitElement {
 			marginLeft: 50,
 			marginRight: 50,
 			facet: { data: table, y: 'year'},
+			fy: {
+				tickFormat: "d" // Format the facet 'y' labels as decimal integers
+			},
 			marks: [
 				Plot.barY(table, {
 					x: "week",

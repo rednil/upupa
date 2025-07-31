@@ -8,6 +8,7 @@ import '../forms/select-state.js'
 import '../components/inspection-display.js'
 import { incDate } from './calendar.js'
 import { Page } from './base.js'
+import { setUrlParams } from '../router.js'
 
 const bandingStartAge = 7
 const bandingEndAge = 12
@@ -665,11 +666,15 @@ export class PageInspection extends Page {
 			case 'MODE_CREATE':
 				this.inspection.date = formatDateForInput(new Date())
 				this.inspection_id = null
-				history.replaceState({},null,`#/inspection?box_id=${this.box_id}`)
+				setUrlParams({
+					box_id: this.box_id
+				})
 				break
 			case 'MODE_EDIT':
 				this.inspection_id = this.previousInspection._id
-				history.replaceState({},null,`#/inspection?inspection_id=${this.previousInspection._id}`)
+				setUrlParams({
+					inspection_id: this.previousInspection._id
+				})
 				break
 		}
 		this.mode = value
@@ -684,7 +689,9 @@ export class PageInspection extends Page {
 			box_id: this.box_id
 		}
 		*/
-		history.replaceState({},null,`#/inspection?box_id=${this.box_id}`)
+		setUrlParams({
+			box_id: this.box_id
+		})
 	}
 	
 	

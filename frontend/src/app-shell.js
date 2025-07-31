@@ -5,6 +5,7 @@ import './pages/login.js'
 import './pages/status'
 import './pages/calendar'
 import './forms/select-route'
+import './forms/select-year'
 import './pages/overview'
 import './forms/button-logout'
 import './pages/inspection.js'
@@ -12,34 +13,9 @@ import './pages/config.js'
 import './components/error-display.js'
 import './pages/analysis.js'
 import './pages/start'
-/* 
-Routing can be done via hashed or non-hashed URL paths
-See https://blog.bitsrc.io/using-hashed-vs-nonhashed-url-paths-in-single-page-apps-a66234cefc96
-When using hashed URLs, 
-  * we can use standard <a href=""> links
-  * get notified by the onpopstate event
-  * do NOT need server side changes in order to serve index.html for every path
-When using non-hashed URLs,
-  * standard <a href=""> cause a reload of the whole single page application
-  * pushState navigation doesn't trigger the onpopstate event (=> we need other means of navigation, e.g. a CustomEvent)
-  * the server needs to be changed to serve index.html for every path
-*/
+import { getRoute, getUrlParams, setUrlParams } from './router.js'
 
-// minimalistic router until the lit router works
-// see https://github.com/lit/lit/tree/main/packages/labs/router
 
-function getUrlParams(){
-	const params = {}
-	const { hash } = window.location
-	if(hash.indexOf('?') < 0) return params
-	const paramStr = window.location.hash.split('?')[1]
-	const paramArr = paramStr.split('&')
-	paramArr.forEach(param => {
-		const [key, value] = param.split('=')
-		params[decodeURIComponent(key)] = decodeURIComponent(value)
-	})
-	return params
-}
 
 export class AppShell extends LitElement {
   static get properties() {
@@ -47,7 +23,6 @@ export class AppShell extends LitElement {
       error: { type: Object },
 			route: { type: Object },
 			params: { type: Object },
-			firstYear: { type: Number }
     }
   }
 
@@ -68,7 +43,7 @@ export class AppShell extends LitElement {
       .logged-out .user, .logged-out select-route {
         display: none;
       }
-			.user {
+			.user, select-year {
 				display: flex;
 			}
 			.user > * {
@@ -90,16 +65,7 @@ export class AppShell extends LitElement {
 				background-color: red;
 				text-align: center;
 			}
-			.year.past {
-				background-color: red;
-				color: white;
-				margin: auto;
-				padding: 0.1em;
-			}
-			.year.past option {
-				background-color: white;
-				color: initial;
-			}
+			
 			select{
 				border: 0;
 			}
@@ -110,9 +76,9 @@ export class AppShell extends LitElement {
 				text-decoration: none;
 				color: black;
 			}
-			.route-login .year,
-			.route-start .year,
-			.route-analysis .year {
+			.route-login select-year,
+			.route-start select-year,
+			.route-analysis select-year {
 				display: none;
 			}
 		
@@ -124,65 +90,7 @@ export class AppShell extends LitElement {
 		this.proxy = new Proxy(this)
 		this.selectedYear = new Date().getFullYear()
 		this.firstYear = new Date().getFullYear()
-    this.routes = [
-			{
-				path: '#/start',
-				menu: true,
-				default: true,
-				
-				render: () => html`
-					<page-start id="page"></page-start>
-				`
-			},
-			{
-				path: '#/overview',
-				menu: true,
-				render: () => {
-					return html`
-					<page-overview id="page"></page-overview>
-				`}
-			},
-			{
-				path: '#/status',
-				menu: true,
-				render: () => html`
-					<page-status id="page"></page-status>
-				`
-			},
-			{
-				path: '#/calendar',
-				menu: true,
-				render: () => html`
-					<page-calendar id="page"></page-calendar>
-				`
-			},
-			{
-				path: '#/analysis',
-				menu: true,
-				render: () => html`
-					<page-analysis id="page"></page-analysis>
-				`
-			},
-			{
-				path: '#/inspection',
-				render: () => html`
-					<page-inspection id="page"></page-inspection>
-				`
-			},
-			{
-				path: '#/config',
-				menu: true,
-				render: () => html`
-					<page-config id="page"></page-config>
-				`
-			},
-      { 
-				path: '#/login',
-				render: () => html`
-					<page-login id="page"></page-login>
-				` 
-			}
-    ]
+    
 		this.params = {}
     window.onpopstate = this.navigate.bind(this)
     this.addEventListener('error', evt => {
@@ -190,43 +98,29 @@ export class AppShell extends LitElement {
 			this.error = evt.detail
 		})
 		this.error = ''
-    this.verifySessionStatus()
   }
 	navigate(){
-		this.route = this.routes.find(route => window.location.hash.search(route.path) == 0)
-		if(!this.route) {
-			if(window.Location.hash) {
-				console.error(`Unknown route: ${window.location.hash}`)
-			}
-			return this.navigateDefault()
-		}
+		this.route = getRoute()
 		this.params = getUrlParams()
 	}
   connectedCallback(){
 		super.connectedCallback()
-		this.fetchFirstInspection()
-		if(window.location.hash) this.navigate()
-		else this.navigateDefault()
+		this._init()
 	}
-	async fetchFirstInspection(){
-		const firstInspection = await this.proxy.queryReduce('inspections', {
-			reduce: false,
-			limit: 1
-		})
-		if(firstInspection?.length){
-			this.firstYear =  new Date(firstInspection[0].date).getFullYear()
-		}
-	}
-	navigateDefault(){
-		window.location.hash = this.routes[0].path
-	}
-  updated(){
-		Object.assign(this.shadowRoot.querySelector('#page'), this.params, { year: this.selectedYear })
-  }
 
-  async verifySessionStatus(){
+	async _init(){
+		// verify session status
 		await this.proxy.requestUserInfo()
-    this.requestUpdate()
+		// navigate triggers an update via params
+		this.navigate()
+		if(this.params.year) this.selectedYear = Number(this.params.year)
+	}
+	
+  updated(){
+		console.log('app-shell update')
+		setUrlParams({year: this.selectedYear})
+		this.params.year = this.selectedYear
+		Object.assign(this.shadowRoot.querySelector('#page'), this.params)
   }
 
 	shouldUpdate(){
@@ -236,8 +130,8 @@ export class AppShell extends LitElement {
 		const userCtx = this.proxy.userCtx
     return html`
 			<div class="top ${userCtx?'logged-in':'logged-out'} route-${this.route.path.slice(2)}">
-				<select-route .self=${this.userCtx} .routes=${this.routes} selected=${this.route.path}></select-route>
-				${this.renderYearSelector()}
+				<select-route .self=${this.userCtx} selected=${this.route.path}></select-route>
+				<select-year value=${this.selectedYear} @change=${this.selectYearCb}></select-year>
 				<div class="user">
 					<a href="#/config?collection=users&item_id=${userCtx?._id}">${userCtx?.name}</a>
 					<button-logout @click=${() => this.proxy.logout()}></button-logout>
@@ -247,21 +141,7 @@ export class AppShell extends LitElement {
       <error-display class="bottom error" .error=${this.error}></error-display>
     `
   }
-  renderYearSelector(){
-		const currentYear = new Date().getFullYear()
-		const range = []
-		for (let i = this.firstYear; i<=currentYear; i++) range.push(i)
-		return html`
-			<select class="year ${this.selectedYear==currentYear ? 'current' : 'past'}" value=${this.selectedYear} @change=${this.selectYearCb}>
-				${range.map(year => html`
-					<option 
-						.selected=${year == this.selectedYear}
-						value=${year}
-					>${year}</option>	
-				`)}
-			</select>
-		`
-	}
+  
   selectYearCb(evt){
 		this.selectedYear = Number(evt.target.value)
 		this.requestUpdate()
