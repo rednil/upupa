@@ -117,7 +117,6 @@ export class PageStatus extends LitElement {
 		return (this.summaries.find(summary => summary._id == inspection._id)) ? 'highlighted' : '' 
 	}
 	updated(changedProps){
-		console.log('status page updated', this.year, this.box_id, changedProps)
 		if(changedProps.has('year') || changedProps.has('box_id')) {
 			this._fetchData()
 		}

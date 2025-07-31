@@ -11,6 +11,13 @@ PouchDB.plugin(PouchDBSecurityHelper)
 const bandingStartAge = 7
 const bandingEndAge = 12
 
+const incubation = {
+	'Sumpfmeise': 14, //12-15,
+	'Blaumeise': 14, // 13-15,
+	'Kohlmeise': 14, //13-14,
+	'Wasseramsel': 17, //15-18,
+	'Kleiber': 17, //15-19
+}
 
 /*
 const designDocs = await db.allDocs({
@@ -54,12 +61,16 @@ for(var year = startYear; year<=endYear; year++){
 	parser.year = year
 	const workbook = getWorkbook(year)
 	//console.log(Object.keys(workbook.Sheets))
+	const ringTableName = `Ringing_ringsorted_${year-2000}`
+	const ringTable = workbook.Sheets[`Ringing_ringsorted_${year-2000}`] ||
+	workbook.Sheets[`Ringing_sorted_${year-2000}`] ||
+	workbook.Sheets[`Ringing`] 
+	const ringData = parseRingData(XLSX.utils.sheet_to_json(ringTable))
 	await importBoxes(XLSX.utils.sheet_to_json(workbook.Sheets.Box_Status))
-	await importInspections(XLSX.utils.sheet_to_json(workbook.Sheets['Breeding']))
+	await importInspections(XLSX.utils.sheet_to_json(workbook.Sheets['Breeding']), ringData)
 }
 docs.map(doc => console.log(removeIDs(doc)))
 await db.bulkDocs(docs)
-
 
 function getWorkbook(){
 	// Get the directory name using import.meta.url
@@ -76,6 +87,33 @@ function incDate(date, days){
 	const newDate = new Date(date)
 	newDate.setDate(newDate.getDate() + days)
 	return newDate
+}
+
+function parseRingData(json){
+	const ringData = {}
+	for(var i=0; i<json.length; i++){
+		const line = json[i]
+		let boxName = line['Box/Nestnr.']
+		if(!boxName || typeof boxName != 'string') continue
+		boxName = fixBoxName(boxName)
+		const species = line['Species']
+		const date = new Date(line['Date'])
+		const isoDate = date.toISOString()
+		//console.log(line['Date'] ,date)
+		if(!ringData[boxName]) ringData[boxName] = {}
+		if(!ringData[boxName][isoDate]) ringData[boxName][isoDate] = {
+			species,
+			count: 1
+		}
+		else {
+			if(species != ringData[boxName][isoDate].species){
+				console.error('Ringing Table: Same box, same day, different species', line)
+			}
+			else ringData[boxName][isoDate].count ++
+		}
+	}
+	console.log(ringData)
+	return ringData
 }
 
 async function importBoxes(json){
@@ -256,11 +294,11 @@ function getId(type, obj){
 
  
 
-async function importInspections(json){
+async function importInspections(json, ringData){
 	
 	for(var y=0; y<json.length; y++){
 		const line = json[y]
-		await importLine(line,)
+		await importLine(line, ringData)
 	}
 }
 function uuid(prefix, length=10) {
@@ -273,7 +311,7 @@ function uuid(prefix, length=10) {
   return result
 }
 
-async function importLine(line){
+async function importLine(line, ringData){
 	const entries = Object.entries(line)
 	entries.forEach((entry, idx) => {
 		const [dateStr, note] = entry
@@ -457,19 +495,22 @@ async function importLine(line){
 			const nestlingsAge = valueParser('nestlingsAge', note)
 			if(nestlingsAge!=null){
 				inspection.hatchDate = incDate(date, -nestlingsAge)
+				inspection.note += ` [hatchDate = date - nestlingsAge]`
 				console.log(logDate, boxName, 'Calculated hatchDate from nestlingsAge', inspection.hatchDate, note)
 			}
 			else{
 				const nestlingsBandDate = valueParser('nestlingsBandDate', note)
 				if(nestlingsBandDate){
 					inspection.hatchDate = incDate(nestlingsBandDate, -9)
+					inspection.note += ` [hatchDate = nestlingsBandDate - 9]`
 					console.log(logDate, boxName, 'Deduced hatchDate from nestlingsBandDate', inspection.hatchDate, note)
 				}
 			}
 			if(!inspection.hatchDate){
 				let guess = -3
 				if(note.match(/Nestlinge [Bb]eringt/)) guess = -7
-				inspection.hatchDate = incDate(date, guess)		
+				inspection.hatchDate = incDate(date, guess)
+				inspection.note += ` [wild hatchDate guess: date - 7]`
 				console.log(logDate, boxName, state, `hatchDate missing, guess date ${guess}`, note)
 			}
 		}
@@ -483,16 +524,32 @@ async function importLine(line){
 			if(lastInspection.clutchSize && inspection.eggs){
 				const eggsLayedAfterLastInspection = inspection.eggs - lastInspection.clutchSize
 				inspection.breedingStart = incDate(lastInspection.date, eggsLayedAfterLastInspection)
-				console.log(logDate, boxName, 'breedingStart calculated from eggsLayedAfterLastInspection', eggsLayedAfterLastInspection)
+				const addendum = ` [breedingStart = lastDate + egg diff]`
+				inspection.note += addendum
+				console.log(logDate, boxName, addendum)
 			}
 			else if(inspection.layingStart){
+				const addendum = ` [breedingStart = layingStart + clutchSize]`
+				inspection.note += addendum
 				inspection.breedingStart = incDate(inspection.layingStart, inspection.clutchSize)
-				console.log(logDate, boxName, 'breedingStart calculated from layingStart')
+				console.log(logDate, boxName, addendum)
 			}
 		}
 		if(inspection.hatchDate){
 			inspection.bandingWindowStart = incDate(inspection.hatchDate, bandingStartAge)
 			inspection.bandingWindowEnd = incDate(inspection.hatchDate, bandingEndAge)
+			if(note.match(/[Oo][Bb][Ss]/)){
+				const speciesName = getNameById('species', inspection.species_id)
+				const incub = incubation[speciesName]
+				if(incub){
+					const breedingStart = incDate(inspection.hatchDate, -incub)
+					if(breedingStart != new Date(inspection.breedingStart)){
+						inspection.breedingStart = breedingStart
+						inspection.note += ` [breedingStart = hatchdate - incubation (=${incub})]`
+						console.log('BreedingStart Correction', inspection.breedingStart, breedingStart)
+					}
+				}
+			}
 		}
 		if(isFinished(inspection) && isFinished(lastInspection)){
 			console.error(logDate, `Double entry for state ${state}: ${boxName}`)
@@ -504,7 +561,7 @@ async function importLine(line){
 			console.error(logDate, `STATE_NESTLINGS without nestlings: ${boxName}`, note)
 		}
 		if(state == 'STATE_ABANDONED') console.error(logDate, `STATE_ABANDONED: ${boxName}`)
-		lastInspection = inspection
+		
 		if(isFinished(inspection)){
 			if(!inspection.species_id){
 				console.error(logDate, 'Finished without identification', boxName)
@@ -513,9 +570,30 @@ async function importLine(line){
 				console.error(logDate, 'Finished without clutchSize', boxName)
 			}
 		}
+
+		if((state == 'STATE_NESTLINGS' || isFinished(inspection)) && ringData[boxName]){
+			const speciesName = getNameById('species', inspection.species_id)
+			const matches = Object.entries(ringData[boxName]).filter(([ringDateStr, data]) => {
+				const ringDate = new Date(ringDateStr)
+				return ringDate > new Date(lastInspection.date) && ringDate <= date
+			})
+			const count = matches.reduce((sum, [,{count}]) => sum + count, 0)
+			const descriptor = matches.map(([ringDateStr, {count}]) => 
+				`${new Date(ringDateStr).toLocaleDateString(undefined, {day: "numeric", month: "numeric"})}: ${count}`
+			).join(', ')
+			const addendum = ` [ringing table - ${descriptor}]`
+			if(count > 1 && (!inspection.nestlingsBanded)){
+				console.log('Adding to note:', addendum)
+				if(inspection.nestlings) {
+					inspection.nestlingsBanded = inspection.nestlings
+				}
+				inspection.note += addendum
+			}
+		}
 		if(!inspection.state){
 			console.error(logDate, 'Inspection without state', boxName, note)
 		}
+		lastInspection = inspection
 	}
 	docs.push(...inspections)
 }

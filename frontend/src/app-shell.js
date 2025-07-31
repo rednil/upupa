@@ -117,7 +117,6 @@ export class AppShell extends LitElement {
 	}
 	
   updated(){
-		console.log('app-shell update')
 		setUrlParams({year: this.selectedYear})
 		this.params.year = this.selectedYear
 		Object.assign(this.shadowRoot.querySelector('#page'), this.params)
