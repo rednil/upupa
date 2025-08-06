@@ -189,6 +189,7 @@ export class PageStart extends Page {
 			group: true,
 			group_level: 1
 		})
+		console.log('fetchStatistics response', response)
 		const s = this.totalStats = {
 			failure: parseStats(response[0]),
 			success: parseStats(response[1])

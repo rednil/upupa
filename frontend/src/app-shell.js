@@ -6,6 +6,7 @@ import './pages/status'
 import './pages/calendar'
 import './forms/select-route'
 import './forms/select-year'
+import './forms/select-item'
 import './pages/overview'
 import './forms/button-logout'
 import './pages/inspection.js'
@@ -13,6 +14,7 @@ import './pages/config.js'
 import './components/error-display.js'
 import './pages/analysis.js'
 import './pages/start'
+import './app-database'
 import { getRoute, getUrlParams, setUrlParams } from './router.js'
 
 
@@ -40,10 +42,8 @@ export class AppShell extends LitElement {
 				min-height: 0;
 				
 			}
-      .logged-out .user, .logged-out select-route {
-        display: none;
-      }
-			.user, select-year {
+      
+			.user, select-year, select-project {
 				display: flex;
 			}
 			.user > * {
@@ -69,6 +69,7 @@ export class AppShell extends LitElement {
 			select{
 				border: 0;
 			}
+	
 			select-route{
 				display: flex;
 			}
@@ -90,7 +91,8 @@ export class AppShell extends LitElement {
 		this.proxy = new Proxy(this)
 		this.selectedYear = new Date().getFullYear()
 		this.firstYear = new Date().getFullYear()
-    
+		
+    this.dbReady = false
 		this.params = {}
     window.onpopstate = this.navigate.bind(this)
     this.addEventListener('error', evt => {
@@ -110,7 +112,8 @@ export class AppShell extends LitElement {
 
 	async _init(){
 		// verify session status
-		await this.proxy.requestUserInfo()
+		await this.proxy.ensureProject()
+		//await this.proxy.requestUserInfo()
 		// navigate triggers an update via params
 		this.navigate()
 		if(this.params.year) this.selectedYear = Number(this.params.year)
@@ -119,7 +122,8 @@ export class AppShell extends LitElement {
   updated(){
 		setUrlParams({year: this.selectedYear})
 		this.params.year = this.selectedYear
-		Object.assign(this.shadowRoot.querySelector('#page'), this.params)
+		const page = this.shadowRoot.querySelector('#page')
+		if(page) Object.assign(page, this.params)
   }
 
 	shouldUpdate(){
@@ -129,20 +133,31 @@ export class AppShell extends LitElement {
 		const userCtx = this.proxy.userCtx
     return html`
 			<div class="top ${userCtx?'logged-in':'logged-out'} route-${this.route.path.slice(2)}">
-				<select-route .self=${this.userCtx} selected=${this.route.path}></select-route>
-				<select-year value=${this.selectedYear} @change=${this.selectYearCb}></select-year>
-				<div class="user">
-					<a href="#/config?collection=users&item_id=${userCtx?._id}">${userCtx?.name}</a>
-					<button-logout @click=${() => this.proxy.logout()}></button-logout>
-				</div>
+				<select-route selected=${this.route.path}></select-route>
+				${this.dbReady ? html`
+					<select-year value=${this.selectedYear} @change=${this.selectYearCb}></select-year>
+				`: ''}
+				<select-item class="borderless" autoselect @change=${this.selectProjectCb} type="project"></select-item>
 			</div>
-			<main>${this.route.render(this.params)}</main>
+			${this.dbReady ? html`
+				<main>${this.route.render(this.params)}</main>
+			`: ''}
+			<app-database></app-database>
       <error-display class="bottom error" .error=${this.error}></error-display>
     `
   }
   
   selectYearCb(evt){
 		this.selectedYear = Number(evt.target.value)
+		this.requestUpdate()
+	}
+	async selectProjectCb(evt){
+		this.dbReady = false
+		this.project_id = evt.target.value
+		console.log('selectProjectCb', this.project_id)
+		await this.proxy.selectProject(this.project_id)
+		this.dbReady = true
+		console.log('dbReady')
 		this.requestUpdate()
 	}
 }

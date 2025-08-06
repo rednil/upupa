@@ -62,6 +62,11 @@ export async function ensureDesignDocument(db) {
 
   try {
     const existingDoc = await db.get(designDocId);
+		const copy = { ...existingDoc }
+		delete copy._rev
+		console.log('existingDesignDoc', existingDoc)
+		console.log('newDesignDoc', newDesignDoc)
+		console.log('existing == new', JSON.stringify(copy) == JSON.stringify(newDesignDoc))
     // If the design document exists, update it with the new content
     // and preserve the _rev
     await db.put({

@@ -7,7 +7,6 @@ export class SelectRoute extends LitElement {
   static get properties() {
     return {
 			selected: { type: String },
-			self: { type: Object }
     }
   }
 

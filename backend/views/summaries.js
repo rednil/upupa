@@ -4,8 +4,12 @@ export const map = doc =>  {
 		emit([date.getFullYear(), doc.box_id, doc.occupancy, date.getMonth()+1, date.getDate()], doc);  
 	}
 }
-export const reduce = "_last"
-
+export const reduce = '_last'
+/*
+(keys, values) => {
+	return values[values.length - 1]
+}
+*/
 export const view = {
 	map: map.toString(),
 	reduce: reduce.toString()

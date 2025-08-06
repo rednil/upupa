@@ -4,6 +4,7 @@ import '../forms/select-box.js'
 import '../components/box-edit.js'
 import '../components/generic-edit.js'
 import '../components/user-edit.js'
+import '../components/project-edit.js'
 import '../app-dialog.js'
 import { Proxy } from '../proxy.js'
 import { translate } from '../translator.js'
@@ -107,6 +108,7 @@ export class PageConfig extends LitElement {
 	renderTypeSelector(){
 		return html`
 			<select .value=${this.type} @change=${this.changeCollectionCb}>
+				<option value="project">Projekt</option>
 				<option value="box">Nistkasten</option>
 				<option value="architecture">${translate('ARCHITECTURE')}</option>
 				<option value="species">Vogelart</option>
@@ -148,6 +150,8 @@ export class PageConfig extends LitElement {
 	}
 	renderConfig(){
 		switch(this.type){
+			case 'project':
+				return html`<project-edit .item=${this.copy} @change=${this.updateTainted}></project-edit>`
 			case 'box':
 				return html`<box-edit .item=${this.copy} @change=${this.updateTainted}></box-edit>`
 			case 'user':
@@ -197,7 +201,7 @@ export class PageConfig extends LitElement {
 			this.item.validUntil = this.copy.validFrom
 			items.push(this.item)
 		}
-		const response = await this.proxy.bulkDocs(items)
+		const response = await this.proxy.bulkDocs(this.type, items)
 		if(response[0].ok){
 			this._id=response[0].id
 			this.updateHistory()

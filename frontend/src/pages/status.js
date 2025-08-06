@@ -142,12 +142,13 @@ export class PageStatus extends LitElement {
 			this.proxy.queryReduce('summaries', {
 				group: true,
 				group_level: 3,
-				endkey: [year, box_id],
-				startkey: [year, box_id, {}],
-				descending: true
+				startkey: [year, box_id],
+				endkey: [year, box_id, {}],
+				//descending: true // not working in pouchdb _last
 			})
 		])
-		Object.assign(this, {inspections, summaries})
+		this.inspections = inspections
+		this.summaries = summaries.reverse()
 		this.requestUpdate()
 	}
 }

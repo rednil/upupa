@@ -25,7 +25,9 @@ export class SelectItem extends LitElement {
 			:host(.bold), :host(.bold) select {
 				font-weight: bold;
 			}
-			
+			:host(.borderless) select {
+				border: 0;
+			}
 		`
 	}
 	constructor(){
@@ -88,6 +90,7 @@ export class SelectItem extends LitElement {
 	}
 	async fetchOptions(){
 		this.options = await this.proxy.getByType(this.type)
+		console.log('options', this.options)
 	}
 	_optionsChanged(){
 		const oldItem = this.item
@@ -101,7 +104,7 @@ export class SelectItem extends LitElement {
 			this.dispatchEvent(new Event('change'))
 		}
 		// required if parent hands in _id but requires item 
-		if(oldItem != this.getSelectedItem()) this.dispatchEvent(new Event('change'))
+		else if(oldItem != this.getSelectedItem()) this.dispatchEvent(new Event('change'))
 	}
 	
 	
