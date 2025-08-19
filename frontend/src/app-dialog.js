@@ -7,7 +7,7 @@ export class AppDialog extends LitElement {
 			primary: {type: String},
 			secondary: {type: String},
 			discard: {type: String},
-			title: {type: String}
+			head: {type: String}
 		}
 	}
 
@@ -53,7 +53,7 @@ export class AppDialog extends LitElement {
 				border-radius: 5px;
 				box-shadow: rgba(0, 0, 0, 0.1) 0px 6px 24px 0px;
 			}
-			.title {
+			.head {
 				background-color: lightgrey;
 				padding: 0.5em;
 				text-align: center;
@@ -80,7 +80,7 @@ export class AppDialog extends LitElement {
 			<div class="centerer">
 				
 				<div class="window">
-					<div class="title">${this.title}</div>
+					<div class="head">${this.head}</div>
 					<div class="content">
 						<slot></slot>
 						<div class="buttons">

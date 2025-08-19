@@ -69,7 +69,7 @@ export class PageConfig extends LitElement {
 				secondary="Löschen"
 				@secondary=${this.delete}
 				discard="primary"
-				title="Löschen"
+				head="Löschen"
 			>
 				<div>${this.item.name || this.item.username}</div>
       </app-dialog>
@@ -77,7 +77,7 @@ export class PageConfig extends LitElement {
 				id="missing-prop"
 				primary="OK"
 				discard="primary"
-				title="Fehlende Information"
+				head="Fehlende Information"
 			>
 				<div>Der Eintrag braucht einen Namen!</div>
       </app-dialog>

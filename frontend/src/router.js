@@ -104,9 +104,10 @@ export const routes = [
 				`
 			},
 			{ 
-				path: '#/login',
+				path: '#/database',
+				menu: true,
 				render: () => html`
-					<page-login id="page"></page-login>
+					<page-database id="page"></page-database>
 				` 
 			}
 		]

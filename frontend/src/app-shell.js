@@ -1,7 +1,7 @@
 import { LitElement, html, css } from 'lit'
 
 import { Proxy } from './proxy.js' 
-import './pages/login.js'
+import './pages/database'
 import './pages/status'
 import './pages/calendar'
 import './forms/select-route'
@@ -14,7 +14,7 @@ import './pages/config.js'
 import './components/error-display.js'
 import './pages/analysis.js'
 import './pages/start'
-import './app-database'
+import './forms/select-project.js'
 import { getRoute, getUrlParams, setUrlParams } from './router.js'
 
 
@@ -24,7 +24,7 @@ export class AppShell extends LitElement {
     return {
       error: { type: Object },
 			route: { type: Object },
-			params: { type: Object },
+			params: { type: Object }
     }
   }
 
@@ -92,7 +92,7 @@ export class AppShell extends LitElement {
 		this.selectedYear = new Date().getFullYear()
 		this.firstYear = new Date().getFullYear()
 		
-    this.dbReady = false
+    this.dbReadyOrError = false
 		this.params = {}
     window.onpopstate = this.navigate.bind(this)
     this.addEventListener('error', evt => {
@@ -112,7 +112,7 @@ export class AppShell extends LitElement {
 
 	async _init(){
 		// verify session status
-		await this.proxy.ensureProject()
+		
 		//await this.proxy.requestUserInfo()
 		// navigate triggers an update via params
 		this.navigate()
@@ -126,23 +126,20 @@ export class AppShell extends LitElement {
 		if(page) Object.assign(page, this.params)
   }
 
-	shouldUpdate(){
-		return this.route
-	}
+	
   render() {
 		const userCtx = this.proxy.userCtx
     return html`
 			<div class="top ${userCtx?'logged-in':'logged-out'} route-${this.route.path.slice(2)}">
 				<select-route selected=${this.route.path}></select-route>
-				${this.dbReady ? html`
+				${this.dbReadyOrError ? html`
 					<select-year value=${this.selectedYear} @change=${this.selectYearCb}></select-year>
 				`: ''}
-				<select-item class="borderless" autoselect @change=${this.selectProjectCb} type="project"></select-item>
+				<select-project @change=${this.projectChangeCb}></select-project>
 			</div>
-			${this.dbReady ? html`
+			${this.dbReadyOrError ? html`
 				<main>${this.route.render(this.params)}</main>
 			`: ''}
-			<app-database></app-database>
       <error-display class="bottom error" .error=${this.error}></error-display>
     `
   }
@@ -151,15 +148,21 @@ export class AppShell extends LitElement {
 		this.selectedYear = Number(evt.target.value)
 		this.requestUpdate()
 	}
+	projectChangeCb(evt){
+		this.dbReadyOrError = evt.target.state == 'ready' || evt.target.state == 'error' 
+		this.requestUpdate()
+	}
+	/*
 	async selectProjectCb(evt){
-		this.dbReady = false
+		this.dbReadyOrError = false
 		this.project_id = evt.target.value
 		console.log('selectProjectCb', this.project_id)
 		await this.proxy.selectProject(this.project_id)
-		this.dbReady = true
-		console.log('dbReady')
+		this.dbReadyOrError = true
+		console.log('dbReadyOrError')
 		this.requestUpdate()
 	}
+		*/
 }
 
 customElements.define('app-shell', AppShell)

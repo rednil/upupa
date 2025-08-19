@@ -135,7 +135,7 @@ export class PageInspection extends Page {
 				secondary="Löschen"
 				@secondary=${this.delete}
 				discard="primary"
-				title="Löschen"
+				head="Löschen"
 			>
 				<div>
 					<span>Die Kontrolle des Nistkastens</span>

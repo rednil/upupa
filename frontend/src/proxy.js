@@ -25,18 +25,66 @@ localDB.changes({since: 'now', live: true})
 	console.log('live change feed error', err)
 })
 */
-const PROJECT = 'SETTINGS.PROJECT'
 
-let projectDB = new PouchDB('projects',{adapter: 'indexeddb'})
-let localDB, remoteDB
+let localDB, remoteDB, projectDB, userDB
 
-let userDB = new PouchDB(window.location.origin + '/api/couch/_users', {
+userDB = new PouchDB(window.location.origin + '/api/couch/_users', {
 	skip_setup: true
 })
+const PROJECT = 'SETTINGS.PROJECT'
+try{
+	projectDB = new PouchDB('projects',{adapter: 'indexeddb'})
+} catch(error){
+	projectDB = error
+}
+
 let userCtx = null
 const userPrefix = 'org.couchdb.user'
 const typeCache = {}
 
+export function getDB(type){
+	switch(type){
+		case 'user': return userDB
+		case 'project': return projectDB
+		default: return localDB
+	}
+}
+export function getDatabases(){
+	return {
+		remote: remoteDB,
+		local: localDB,
+		project: projectDB,
+		user: userDB
+	}
+}
+
+export function setDB(localDbName, remoteDbName){
+	localDB = new PouchDB(localDbName,{adapter: 'indexeddb'})
+	if(remoteDbName){
+		const remoteURL = `${window.location.origin}/api/couch/${remoteDbName}`
+		remoteDB = new PouchDB(remoteURL, {
+			skip_setup: true
+		})
+		return localDB.sync(remoteDB, {
+			live: true,
+			retry: true
+		})
+		
+	}
+}
+export function uuid(length = 10){
+	const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+	let result = ''
+	const charactersLength = characters.length
+	for (let i = 0; i < length; i++) {
+		result += characters.charAt(Math.floor(Math.random() * charactersLength))
+	}
+	return result
+}
+export async function login(username, password){
+	const loginResponse = await remoteDB.login(username, password)
+	console.log('loginResponse', loginResponse)
+}
 export class Proxy {
 	constructor(component){
 		this.component = component
@@ -49,50 +97,8 @@ export class Proxy {
 	get userCtx(){
 		return userCtx
 	}
-	async ensureProject(){
-		//let project_id = localStorage.getItem(PROJECT)
-		const db = this.getDb('project')
-		let response = await db.allDocs({include_docs: true})
-		if(!response.total_rows){
-			const writeResponse = await db.put({
-				_id: `project-${this.uuid()}`,
-				name: 'Upupa',
-				type: 'project',
-				remoteDB: 'upupa'
-			})
-			console.log('proxy: No projects configured, created "upupa" from scratch')
-			//console.log('writeResponse', writeResponse)
-			//response = await db.allDocs({include_docs: true})
-		}
-		/*
-		const projects = response.rows
-		if(!project_id || !projects.find(project => project._id == project_id)){
-			project_id = projects[0]._id
-		}
-		await this.selectProject(project_id)
-		*/
-	}
-	async selectProject(project_id){
-		const db = this.getDb('project')
-		const project = await db.get(project_id)
-		console.log('proxy: selectProject', project)
-		this.localDbName = project.remoteDB || project._id
-		localDB = new PouchDB(this.localDbName,{adapter: 'indexeddb'})
-		if(project.remoteDB){
-			this.remoteDbName = `${window.location.origin}/api/couch/${project.remoteDB}`
-			remoteDB = new PouchDB(this.remoteDbName, {
-				skip_setup: true
-			})
-			localDB.sync(remoteDB, {live: true})
-			.on('complete', function () {
-				console.log('proxy: replication done')
-			})
-			.on('error', function (err) {
-				console.log('proxy: replication error', err)
-
-			})
-		}
-	}
+	
+	
 	async requestUserInfo(){
     try{
 			const session = await remoteDB.getSession()
@@ -149,13 +155,7 @@ export class Proxy {
 		return options.include_docs ? rows.map(view => view.doc) : rows
 	}
 	uuid(length = 10){
-		const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-		let result = ''
-		const charactersLength = characters.length
-		for (let i = 0; i < length; i++) {
-			result += characters.charAt(Math.floor(Math.random() * charactersLength))
-		}
-		return result
+		return uuid(length)
 	}
 	async put(item){
 		console.log('put', item)
@@ -179,11 +179,7 @@ export class Proxy {
 		return response
 	}
 	getDb(type){
-		switch(type){
-			case 'user': return userDB
-			case 'project': return this.projectDB
-			default: return this.db
-		}
+		return getDB(type)
 	}
 	finalize(item){
 		const now = new Date()
