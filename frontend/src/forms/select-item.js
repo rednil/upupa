@@ -46,7 +46,7 @@ export class SelectItem extends LitElement {
 		return html`
 			${this.buttons ? html`<button @click=${() => this.skip(-1)}><</button>`:''}
 			<select ?disabled=${this.disabled} .value=${this.value} id="select" @change=${this._changeCb}>
-				${this.autoselect ? '' : html`<option>${this.emptyLabel}</option>`}
+				${this.autoselect ? '' : html`<option value="">${this.emptyLabel}</option>`}
 				
 				${this.options.map(option => html`
 					<option ?selected=${option._id==this.value} value="${option._id}">${this.getLabel(option)}</option>
@@ -79,6 +79,7 @@ export class SelectItem extends LitElement {
 	}
 	_changeCb(evt){
 		this.value = evt.target.value
+		if(this.value == '') this.value = undefined
 		this.dispatchEvent(new Event('change'))
 	}
 	updated(changedProps){

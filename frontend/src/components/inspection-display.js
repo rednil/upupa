@@ -81,12 +81,12 @@ export class InspectionDisplay extends LitElement {
 		.filter(([key, value]) => !(
 			//key.endsWith('_id') ||
 			//key=='_id' ||
-			key=='species_id' ||
-			key=='box_id' ||
-			key=='note' ||
-			key=='date' ||
+			//key=='species_id' ||
+			//key=='box_id' ||
+			key=='note' 
+			//key=='date' ||
 			//key=='_rev' ||
-			key=='type'
+			//key=='type'
 		))
 		.map(([key, value]) => html`
 			<div>

@@ -1,5 +1,4 @@
-import { LitElement, html,css } from 'lit'
-import {live} from 'lit/directives/live.js'
+import { html,css } from 'lit'
 import { translate } from '../translator'
 import { Proxy } from '../proxy'
 import '../forms/select-item.js'
@@ -9,6 +8,7 @@ import '../components/inspection-display.js'
 import { incDate } from './calendar.js'
 import { Page } from './base.js'
 import { setUrlParams } from '../router.js'
+import { INSPECTION_STATES } from '../forms/select-state.js'
 
 const bandingStartAge = 7
 const bandingEndAge = 12
@@ -123,7 +123,7 @@ export class PageInspection extends Page {
 					this.renderDate('bandingWindowStart'),
 					this.renderDate('bandingWindowEnd'),
 					i.occupancy || (i.maleBanded != null) ? this.renderParentBanding('maleBanded', 'Beringung Männchen') : '',
-					i.occupancy || (i.maleBanded != null) ? this.renderParentBanding('femaleBanded', 'Beringung Weibchen'): '',
+					i.occupancy || (i.femaleBanded != null) ? this.renderParentBanding('femaleBanded', 'Beringung Weibchen'): '',
 					this.renderNote(),
 					this.renderButtons(),
 					this.renderPreviousInspection()
@@ -351,7 +351,7 @@ export class PageInspection extends Page {
 	}
 	renderSpecies(){
 		const { state, species_id } = this.inspection
-		if(!species_id && (
+		if(!species_id && !this.initialInspection.species_id && (
 			(state == 'STATE_EMPTY') || 
 			(state == 'STATE_OCCUPIED')
 		)) return '' 
@@ -438,11 +438,10 @@ export class PageInspection extends Page {
 		`
 	}
 	renderDate(key, label = translate(key)){
+		if(!this.dateVisible(key)) return ''
+		let date = null
 		const value = this.inspection[key]
-
-		if(value == null) return ''
-		const date = formatDateForInput(value)
-		
+		if(value) date = formatDateForInput(value)
 		return html`
 			<div class="date ${key}">
 				<label for=${key}>${label}</label>
@@ -453,6 +452,26 @@ export class PageInspection extends Page {
 				</span>
 			</div>
 		`
+	}
+	// needed for correcting faulty entries
+	dateVisible(key){
+		if(this.inspection[key]) return true
+		const stateIdx = INSPECTION_STATES.indexOf(this.inspection.state)
+		const gteNestlings = stateIdx > INSPECTION_STATES.indexOf('STATE_NESTLINGS')
+		switch(key){
+			case 'layingStart':
+				return stateIdx > INSPECTION_STATES.indexOf('STATE_EGGS')
+			case 'breedingStart':
+				return this.inspection.layingStart && stateIdx > INSPECTION_STATES.indexOf('STATE_BREEDING')
+			case 'hatchDate':
+				return this.inspection.breedingStart && gteNestlings
+			case 'bandingWindowStart':
+				return this.inspection.hatchDate && gteNestlings
+			case 'bandingWindowEnd':
+				return this.inspection.bandingWindowStart && gteNestlings
+			default:
+				return false
+		}
 	}
 	incDate(key){
 		this.inspection[key] = incDate(this.inspection[key], 1)
