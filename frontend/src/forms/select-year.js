@@ -24,6 +24,7 @@ export class SelectYear extends LitElement {
 			}
 			select{
 				border: 0;
+				outline: none;
 			}
     `
   }

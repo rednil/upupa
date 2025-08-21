@@ -1,21 +1,8 @@
+import { pm } from "./projectManager"
+
+let localDB, remoteDB, userDB
 
 /*
-let remoteDB = new PouchDB(window.location.origin + '/api/couch/db', {
-		skip_setup: true
-})
-		let localDB = new PouchDB('local')
-localDB.info().then(function (info) {
-  console.log('db', info);
-})
-
-localDB.sync(remoteDB, {live: true}).on('complete', function () {
-  console.log('replication done')
-}).on('error', function (err) {
-  console.log('replication error', err)
-}).on('change', function(change) {
-	console.log('replication change', change)
-})
-
 
 localDB.changes({since: 'now', live: true})
 .on('change', change => {
@@ -26,52 +13,14 @@ localDB.changes({since: 'now', live: true})
 })
 */
 
-let localDB, remoteDB, projectDB, userDB
-
-userDB = new PouchDB(window.location.origin + '/api/couch/_users', {
-	skip_setup: true
-})
 const PROJECT = 'SETTINGS.PROJECT'
-try{
-	projectDB = new PouchDB('projects',{adapter: 'indexeddb'})
-} catch(error){
-	projectDB = error
-}
-
-let userCtx = null
 const userPrefix = 'org.couchdb.user'
 const typeCache = {}
 
-export function getDB(type){
-	switch(type){
-		case 'user': return userDB
-		case 'project': return projectDB
-		default: return localDB
-	}
-}
-export function getDatabases(){
-	return {
-		remote: remoteDB,
-		local: localDB,
-		project: projectDB,
-		user: userDB
-	}
-}
-
-export function setDB(localDbName, remoteDbName){
-	localDB = new PouchDB(localDbName,{adapter: 'indexeddb'})
-	if(remoteDbName){
-		const remoteURL = `${window.location.origin}/api/couch/${remoteDbName}`
-		remoteDB = new PouchDB(remoteURL, {
-			skip_setup: true
-		})
-		return localDB.sync(remoteDB, {
-			live: true,
-			retry: true
-		})
-		
-	}
-}
+pm.getSelectedProject().then(project => {
+	({localDB, remoteDB, userDB} = project)
+	console.log('huhu', localDB)
+})
 export function uuid(length = 10){
 	const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
 	let result = ''
@@ -88,31 +37,15 @@ export async function login(username, password){
 export class Proxy {
 	constructor(component){
 		this.component = component
-		this.dbUrl = window.location.origin + '/api/couch/db'
-		this.projectDB = projectDB
+		//this.dbUrl = window.location.origin + '/api/couch/db'
+		//this.projectDB = projectDB
+		
 	}
 	get db(){
 		return localDB
 	}
-	get userCtx(){
-		return userCtx
-	}
+		
 	
-	
-	async requestUserInfo(){
-    try{
-			const session = await remoteDB.getSession()
-			if(session.userCtx.name == null){
-				return this._finishLogout()
-			}
-			userCtx = session.userCtx
-			if(window.location.hash == '#/login') window.location.hash = ''
-		}catch(e){
-			this._finishLogout()
-			console.log('requestUserInfo error', e)
-      this.reportError('exception', e)
-		}
-  }
 	async query(view, options = {}) {
 		return this._handleResponse(await this.db.query(`upupa/${view}`, options), options)
 	}
@@ -123,7 +56,7 @@ export class Proxy {
 	}
 	async getByType(type){
 		if(type=='user') return await this.getUsers()
-		if(type=='project') return this._handleResponse(await this.projectDB.allDocs({include_docs: true}), {include_docs: true})
+		if(type=='project') return this._handleResponse(await pm._db.allDocs({include_docs: true}), {include_docs: true})
 		return typeCache[type] = typeCache[type] || 
 		this.idStartsWith(`${type}-`, {
 			include_docs: true
@@ -228,24 +161,6 @@ export class Proxy {
 		}
 		return false
 	}
-	async login(username, password){
-		try{
-			userCtx = await this.db.login(username, password)
-			window.location.hash = ""
-		}catch(e){
-			this.reportError('exception', e)
-		}
-	}
-	async logout(){
-    const response = await remoteDB.logout()
-    if(response.ok) {
-      console.log('logout response', response)
-    }
-    this.reportError('response-not-ok', response)
-  }
-  _finishLogout(){
-    userCtx = null
-    window.location.hash = "#/login"
-  }
+	
 }
 

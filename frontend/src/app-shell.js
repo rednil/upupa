@@ -1,6 +1,7 @@
 import { LitElement, html, css } from 'lit'
-
-import { Proxy } from './proxy.js' 
+import { pm } from './projectManager.js'
+import { STATE_READY, STATE_ERROR } from './components/project-status.js'
+import './components/sync-progress.js'
 import './pages/database'
 import './pages/status'
 import './pages/calendar'
@@ -14,10 +15,7 @@ import './pages/config.js'
 import './components/error-display.js'
 import './pages/analysis.js'
 import './pages/start'
-import './forms/select-project.js'
 import { getRoute, getUrlParams, setUrlParams } from './router.js'
-
-
 
 export class AppShell extends LitElement {
   static get properties() {
@@ -43,7 +41,7 @@ export class AppShell extends LitElement {
 				
 			}
       
-			.user, select-year, select-project {
+			.user, .top > * {
 				display: flex;
 			}
 			.user > * {
@@ -66,8 +64,12 @@ export class AppShell extends LitElement {
 				text-align: center;
 			}
 			
-			select{
-				border: 0;
+			#sync-progress {
+				display: flex;
+				flex: 1;
+			}
+			#sync-progress > div {
+				margin: auto
 			}
 	
 			select-route{
@@ -82,16 +84,16 @@ export class AppShell extends LitElement {
 			.route-analysis select-year {
 				display: none;
 			}
-		
+			.project-status {
+				margin: auto;
+			}
     `
   }
 
   constructor() {
     super()
-		this.proxy = new Proxy(this)
 		this.selectedYear = new Date().getFullYear()
 		this.firstYear = new Date().getFullYear()
-		
     this.dbReadyOrError = false
 		this.params = {}
     window.onpopstate = this.navigate.bind(this)
@@ -113,12 +115,16 @@ export class AppShell extends LitElement {
 	async _init(){
 		// verify session status
 		
-		//await this.proxy.requestUserInfo()
 		// navigate triggers an update via params
 		this.navigate()
 		if(this.params.year) this.selectedYear = Number(this.params.year)
+		this.project = await pm.getSelectedProject()
+		this.requestUpdate()
+		
 	}
-	
+	shouldUpdate(){
+		return this.project
+	}
   updated(){
 		setUrlParams({year: this.selectedYear})
 		this.params.year = this.selectedYear
@@ -128,41 +134,71 @@ export class AppShell extends LitElement {
 
 	
   render() {
-		const userCtx = this.proxy.userCtx
-    return html`
+		return [
+			this.renderTopBar(),
+			this.renderMain(),
+			this.renderBottomBar()
+		]
+  }
+	
+	renderTopBar(){
+		const userCtx = this.project.session.userCtx
+		return html`
 			<div class="top ${userCtx?'logged-in':'logged-out'} route-${this.route.path.slice(2)}">
 				<select-route selected=${this.route.path}></select-route>
-				${this.dbReadyOrError ? html`
-					<select-year value=${this.selectedYear} @change=${this.selectYearCb}></select-year>
-				`: ''}
-				<select-project @change=${this.projectChangeCb}></select-project>
+				${this.renderYearSelector()}
+				<div>
+					<project-status @change=${this.statusChangeCb}></project-status>
+					<select-item class="borderless" autoselect @change=${this.projectChangeCb} type="project"></select-item>
+			
+				</div>
 			</div>
-			${this.dbReadyOrError ? html`
-				<main>${this.route.render(this.params)}</main>
-			`: ''}
-      <error-display class="bottom error" .error=${this.error}></error-display>
     `
-  }
-  
+	}
+	renderYearSelector(){
+		return this.dbReadyOrError
+		? html`<select-year value=${this.selectedYear} @change=${this.selectYearCb}></select-year>`
+		: ''
+	}
+	renderMain(){
+		return this.dbReadyOrError
+		? html`<main>${this.route.render(this.params)}</main>`
+		: this.renderSyncProgress()
+	}
+	renderSyncProgress(){
+		return html`
+			<div id="sync-progress">
+				<div>
+					<div>Synchronisiere Datenbank ...</div>
+					<br>
+					<sync-progress .syncHandler=${this.project.syncHandler}></sync-progress>
+				</div>
+			</div>
+		`
+	}
+	renderBottomBar(){
+		return html`
+			<error-display class="bottom error" .error=${this.error}></error-display>
+		`
+	}
+  statusChangeCb(evt){
+		console.log('statusChangeCb', evt.target.state)
+		const {state} = evt.target
+		if(state == STATE_ERROR || state == STATE_READY){
+			if(!this.dbReadyOrError) {
+				this.dbReadyOrError = true
+				this.requestUpdate()
+			}
+		} 
+	}
   selectYearCb(evt){
 		this.selectedYear = Number(evt.target.value)
 		this.requestUpdate()
 	}
 	projectChangeCb(evt){
-		this.dbReadyOrError = evt.target.state == 'ready' || evt.target.state == 'error' 
-		this.requestUpdate()
+		console.log('projectChangeCb not implemented')
 	}
-	/*
-	async selectProjectCb(evt){
-		this.dbReadyOrError = false
-		this.project_id = evt.target.value
-		console.log('selectProjectCb', this.project_id)
-		await this.proxy.selectProject(this.project_id)
-		this.dbReadyOrError = true
-		console.log('dbReadyOrError')
-		this.requestUpdate()
-	}
-		*/
+	
 }
 
 customElements.define('app-shell', AppShell)

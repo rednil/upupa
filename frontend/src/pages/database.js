@@ -1,10 +1,7 @@
 import { html, css } from 'lit'
 import { Page } from './base'
-import { getDatabases } from '../proxy'
+import { pm } from '../projectManager'
 import '../components/view-db'
-
-
-
 
 export class PageDatabase extends Page {
   
@@ -38,20 +35,30 @@ export class PageDatabase extends Page {
   }
   constructor(){
     super()
-    this.databases = getDatabases()
-    console.log('databases', this.databases)
+    this.init()
   }
+  
+  async init(){
+    this.project = await pm.getSelectedProject()
+    this.requestUpdate()
+  }
+
   
 
   render() {
     return html`
       <div>
-        ${Object.entries(this.databases).map(([key, value]) => html`
-          <view-db .db=${value} label=${key} .deletable=${key!='remote'} @delete=${this.deleteCb}></view-db>
-        `)}
-        
-        
+        <view-db .db=${pm._db} label="projectDB" deletable @delete=${this.deleteCb}></view-db>
+        ${this.renderProject()}
       </div>
+    `
+  }
+  renderProject(){
+    if(!this.project) return ''
+    return html`
+      ${['localDB', 'remoteDB', 'userDB'].map(db => html`
+        <view-db .db=${this.project[db]} label=${db} .deletable=${db!='remoteDB'} @delete=${this.deleteCb}></view-db>
+      `)}
     `
   }
   async deleteCb(evt){

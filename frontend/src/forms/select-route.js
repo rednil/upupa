@@ -21,7 +21,11 @@ export class SelectRoute extends LitElement {
 			select option {
 				direction: ltr;
 			}
-			
+		
+			select {
+				border: 0;
+				outline: none;
+			}
     `
   }
 	

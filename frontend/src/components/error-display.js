@@ -13,7 +13,8 @@ export class ErrorDisplay extends LitElement {
 				case 'fetch-status': 
 					return this.handleFetchError()
 				default: 
-					this.msg = this.error.detail
+					this.msg = this.error.detail?.message || this.error.detail
+					if(typeof this.msg == 'object') this.msg = JSON.stringify(this.msg)
 			}
 		}
 

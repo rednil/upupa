@@ -27,6 +27,7 @@ export class SelectItem extends LitElement {
 			}
 			:host(.borderless) select {
 				border: 0;
+				outline: none;
 			}
 		`
 	}
