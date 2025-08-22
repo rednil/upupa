@@ -267,6 +267,7 @@ export class PageInspection extends Page {
 			case 'STATE_FAILURE':
 				delete i.nestlings
 				delete i.eggs
+				i.reasonForLoss = 'UNKNOWN'
 				break
 		}
 		this.inspection.state = state
@@ -425,7 +426,7 @@ export class PageInspection extends Page {
 
 	renderReasonForLoss(){
 		const value = this.inspection.reasonForLoss
-		if(value == null) return ''
+		if(this.inspection.state != 'STATE_FAILURE' && value == null) return ''
 		return html`
 			<div class="reasonForLoss">
 				<label for="reasonForLoss">Grund für Verlust</label>
