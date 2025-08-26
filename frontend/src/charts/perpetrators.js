@@ -1,5 +1,5 @@
 import { LitElement, html, css } from 'lit'
-import { Proxy } from '../proxy'
+import { mcp } from '../mcp'
 
 export class ChartPerpetrators extends LitElement {
 	static get properties() {
@@ -19,15 +19,14 @@ export class ChartPerpetrators extends LitElement {
 	}
 	constructor(){
 		super()
-		this.proxy = new Proxy(this)
 		this.data = []
 		this.perpetrators = []
 		this.fetchData()
 	}
 	async fetchData(){
 		const [perpetrators, data] = await Promise.all([
-			this.proxy.getByType('perpetrator'),
-			this.proxy.db.query('upupa/perpetrators', {
+			mcp.getByType('perpetrator'),
+			mcp.db().query('upupa/perpetrators', {
 				group: true,
 				group_level: 3
 			})

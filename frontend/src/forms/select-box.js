@@ -1,4 +1,5 @@
 import { SelectItem } from "./select-item"
+import { mcp } from "../mcp"
 
 export class SelectBox extends SelectItem {
 	static get properties() {
@@ -17,11 +18,12 @@ export class SelectBox extends SelectItem {
 	}
 	
 	async fetchOptions(){
-		this.options = await this.proxy.query('boxes', {
+		this.options = (await mcp.db().query('upupa/boxes', {
 			startkey: [this.year],
 			endkey: [this.year, {}],
 			include_docs: true
-		})
+		}))
+		.rows.map(view => view.doc)
 	}
 	getLabel(option){
 		let label = option.name

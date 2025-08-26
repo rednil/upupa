@@ -1,5 +1,5 @@
 import { LitElement, html, css } from 'lit'
-import { Proxy } from '../proxy.js'
+import { mcp } from '../mcp'
 
 export class SelectItem extends LitElement {
 	static get properties() {
@@ -36,7 +36,6 @@ export class SelectItem extends LitElement {
 		this.options = []
 		this.emptyLabel = '---'
 		this.key = 'name'
-		this.proxy = new Proxy(this)
 		this.buttons = false
 	}
 	
@@ -65,6 +64,7 @@ export class SelectItem extends LitElement {
 	get value(){
 		return this._value
 	}
+	
 	// overwritten in select-box
 	getLabel(option){
 		return option[this.key]
@@ -90,8 +90,7 @@ export class SelectItem extends LitElement {
 		if(changedProps.has('options') && this.options.length) this._optionsChanged()
 	}
 	async fetchOptions(){
-		this.options = await this.proxy.getByType(this.type)
-		console.log('options', this.options)
+		this.options = await mcp.getByType(this.type)
 	}
 	_optionsChanged(){
 		const oldItem = this.item
@@ -107,7 +106,6 @@ export class SelectItem extends LitElement {
 		// required if parent hands in _id but requires item 
 		else if(oldItem != this.getSelectedItem()) this.dispatchEvent(new Event('change'))
 	}
-	
 	
 	getSelectedItem(){
 		return this.options.find(option => option._id == this.value)

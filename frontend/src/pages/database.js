@@ -1,9 +1,8 @@
-import { html, css } from 'lit'
-import { Page } from './base'
-import { pm } from '../projectManager'
+import { html, css, LitElement } from 'lit'
+import { mcp } from '../mcp'
 import '../components/view-db'
 
-export class PageDatabase extends Page {
+export class PageDatabase extends LitElement {
   
   static get properties() {
     return {
@@ -33,31 +32,23 @@ export class PageDatabase extends Page {
 			
     `
   }
-  constructor(){
-    super()
-    this.init()
-  }
-  
-  async init(){
-    this.project = await pm.getSelectedProject()
-    this.requestUpdate()
-  }
+ 
 
   
 
   render() {
     return html`
       <div>
-        <view-db .db=${pm._db} label="projectDB" deletable @delete=${this.deleteCb}></view-db>
+        <view-db .db=${mcp.db('project')} label="projectDB" deletable @delete=${this.deleteCb}></view-db>
         ${this.renderProject()}
       </div>
     `
   }
   renderProject(){
-    if(!this.project) return ''
+    if(!mcp.project) return ''
     return html`
       ${['localDB', 'remoteDB', 'userDB'].map(db => html`
-        <view-db .db=${this.project[db]} label=${db} .deletable=${db!='remoteDB'} @delete=${this.deleteCb}></view-db>
+        <view-db .db=${mcp.project[db]} label=${db} .deletable=${db!='remoteDB'} @delete=${this.deleteCb}></view-db>
       `)}
     `
   }

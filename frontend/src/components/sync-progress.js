@@ -1,5 +1,4 @@
 import { LitElement, html, css } from 'lit'
-import { pm } from '../projectManager'
 
 export class SyncProgress extends LitElement {
 

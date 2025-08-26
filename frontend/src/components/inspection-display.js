@@ -1,6 +1,8 @@
 import { LitElement, html, css } from 'lit'
 import { translate } from '../translator.js'
 import '../forms/select-item.js'
+import './id-resolver.js'
+
 export class InspectionDisplay extends LitElement {
 	static get properties() {
 		return {
@@ -70,7 +72,7 @@ export class InspectionDisplay extends LitElement {
 			<div class="head" @click=${this.clickCb}>
 				<span class="date">${this.getLongDate(date)}</span>
 				${type=='OUTSIDE' ? html`<span></span><span>Nistkasten nicht geöffnet</span>` : html`
-					<select-item type="species" .value=${species_id} readonly></select-item>
+					<id-resolver type="species" value=${species_id}></id-resolver>
 					<span>${getStateLabel(this.inspection)}</span>
 				`}
 			</div>
@@ -79,14 +81,7 @@ export class InspectionDisplay extends LitElement {
 	renderDetails(){
 		return Object.entries(this.inspection)
 		.filter(([key, value]) => !(
-			//key.endsWith('_id') ||
-			//key=='_id' ||
-			//key=='species_id' ||
-			//key=='box_id' ||
 			key=='note' 
-			//key=='date' ||
-			//key=='_rev' ||
-			//key=='type'
 		))
 		.map(([key, value]) => html`
 			<div>

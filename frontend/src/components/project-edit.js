@@ -4,8 +4,7 @@ import { LitElement, html, css } from 'lit'
 // This tells Lit to dirty check against the live DOM value.
 import {live} from 'lit/directives/live.js'
 import { translate } from '../translator.js' 
-import { Proxy } from '../proxy.js'
-
+import { mcp } from '../mcp.js'
 export class ProjectEdit extends LitElement {
 	static get properties() {
 		return {
@@ -25,10 +24,7 @@ export class ProjectEdit extends LitElement {
 			}
 		`
 	}
-	constructor(){
-		super()
-		this.proxy = new Proxy(this)
-	}
+	
 	render() {
 		return [
 			this.renderInput('name'),
@@ -58,9 +54,9 @@ export class ProjectEdit extends LitElement {
 	renderButtons(){
 		return html`
 			<div>
-				<button @click=${()=>this.proxy.login()}>Login</button>
-				<button @click=${()=>this.proxy.logout()}>Logout</button>
-				<button @click=${()=>this.proxy.resync()}>Resync</button>
+				<button @click=${()=>mcp.project.login()}>Login</button>
+				<button @click=${()=>mcp.project.logout()}>Logout</button>
+				<button @click=${()=>mcp.project.resync()}>Resync</button>
 			</div>
 		`
 	}

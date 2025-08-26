@@ -1,9 +1,8 @@
-import { html, css } from 'lit'
-
+import { html, css, LitElement } from 'lit'
+import { mcp } from '../mcp'
 import '../components/box-map'
 import '../components/box-list'
 import {translate} from '../translator'
-import { Page } from './base'
 
 const INFO = 'OVERVIEW.INFO'
 const MODE = 'OVERVIEW.MODE'
@@ -21,7 +20,7 @@ function getShortDate(date){
 	return new Date(date).toLocaleDateString(undefined, {day: "numeric", month: "numeric"})
 }
 
-export class PageOverview extends Page {
+export class PageOverview extends LitElement {
   static get properties() {
     return {
       boxes: { type: Array },
@@ -120,19 +119,23 @@ export class PageOverview extends Page {
 	
 	async fetchData(){
 		var [boxes, architectures, species, lastInspections=[]] = await Promise.all([
-			this.proxy.query('boxes', {
+			mcp.db()
+			.query('upupa/boxes', {
 				startkey: [this.year],
 				endkey: [this.year, {}],
 				include_docs: true
-			}),
-			this.proxy.getByType('architecture'),
-			this.proxy.getByType('species'),
-			this.proxy.queryReduce('inspections', {
+			})
+			.then(({rows}) => rows.map(view => view.doc)),
+			mcp.getByType('architecture'),
+			mcp.getByType('species'),
+			mcp.db()
+			.query('upupa/inspections', {
 				group: true,
 				group_level: 2,
 				startkey: [this.year],
 				endkey: [this.year, {}],
-			}),
+			})
+			.then(({rows}) => rows.map(({key, value}) => value))
 		])
 		this.species = species.reduce((obj, {_id, name}) => Object.assign(obj, {[_id]: name}), {})
 		this.architectures = architectures.reduce((obj, {_id, name}) => Object.assign(obj, {[_id]: name}), {})

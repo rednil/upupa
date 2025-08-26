@@ -1,12 +1,12 @@
-import { html,css } from 'lit'
+import { html,css, LitElement } from 'lit'
 import { translate } from '../translator'
-import { Proxy } from '../proxy'
+import { mcp } from '../mcp.js'
 import '../forms/select-item.js'
 import '../forms/select-box.js'
 import '../forms/select-state.js'
 import '../components/inspection-display.js'
+import '../components/id-resolver.js'
 import { incDate } from './calendar.js'
-import { Page } from './base.js'
 import { setUrlParams } from '../router.js'
 import { INSPECTION_STATES } from '../forms/select-state.js'
 
@@ -18,7 +18,7 @@ const dateToArr = date => formatDateForInput(date).split('-').map(x => Number(x)
 
 const events = ['layingStart', 'breedingStart', 'hatchDate']
 
-export class PageInspection extends Page {
+export class PageInspection extends LitElement {
 	static get properties() {
 		return {
 			box_id: { type: String },
@@ -94,7 +94,6 @@ export class PageInspection extends Page {
 		this.summary = {}
 		this.maxOccupancy = 0
 		//this.date = formatDateForInput(new Date())
-		this.proxy = new Proxy(this)
 	}
 	render() {
 		const i = this.inspection
@@ -139,12 +138,7 @@ export class PageInspection extends Page {
 			>
 				<div>
 					<span>Die Kontrolle des Nistkastens</span>
-					<select-item
-						readonly
-						id="delete-box-name"
-						type="box"
-						.value=${this.box_id}
-					></select-item>
+					<id-resolver id="delete-box-name" type="box" .value=${this.box_id}></id-resolver>
 					<span>vom ${new Date(this.inspection.date).toLocaleDateString()} löschen?</span>
 				</div>
       </app-dialog>
@@ -156,12 +150,8 @@ export class PageInspection extends Page {
 			<div class="head outside">
 				<span class="box">
 					<label for="box_id">Nistkasten&nbsp;</label>
-					<select-item
-						readonly
-						id="box"
-						type="box"
-						.value=${this.box_id}
-					></select-item>
+					<id-resolver id="box" type="box" .value=${this.box_id}></id-resolver>
+
 				</span>
 				${this.inspection_id ? 
 					html`<span>${new Date(this.inspection.date).toLocaleDateString()}</span>` :
@@ -548,11 +538,11 @@ export class PageInspection extends Page {
 	}
 	async delete(){
 		this.shadowRoot.querySelector('#delete-dialog').open = false
-		const response = await this.proxy.remove(this.inspection)
+		const response = await mcp.db().remove(this.inspection)
 		if(response?.ok) history.back()
 	}
 	async save(){
-		const response = await this.proxy.put(this.inspection)
+		const response = await mcp.db().put(mcp.finalize(this.inspection))
 		if(response.ok) history.back()
 	}
 	renderPreviousInspection(){
@@ -606,15 +596,8 @@ export class PageInspection extends Page {
 		this.maxOccupancy = 0
 		//if(this.inspection_id && (this.inspection_id == this.inspection._id)) return
 		const existingInspection = this.inspection_id ? 
-			await this.proxy.db.get(this.inspection_id) :
-			(await this.proxy.queryReduce('inspections', {
-				reduce: false,
-				key: [
-					new Date(this.inspection.date).getFullYear(),
-					this.box_id,
-					...dateToArr(this.inspection.date).slice(1)
-				]
-			}))[0]
+			await mcp.db().get(this.inspection_id) : await this.getInspectionByDate()
+			
 		console.log('existingInspection',existingInspection)
 		if(existingInspection){
 			this.initInspection(existingInspection)
@@ -625,7 +608,18 @@ export class PageInspection extends Page {
 		}
 		await this.fetchPreviousInspection()
 	}
-
+	async getInspectionByDate(){
+		const response = await mcp.db()
+		.query('upupa/inspections', {
+			reduce: false,
+			key: [
+				new Date(this.inspection.date).getFullYear(),
+				this.box_id,
+				...dateToArr(this.inspection.date).slice(1)
+			]
+		})
+		return response.rows[0]?.value
+	}
 	initInspection(source){
 		this.initialInspection = source
 		this.inspection = {...source}
@@ -634,13 +628,17 @@ export class PageInspection extends Page {
 	async fetchPreviousInspection(){
 		const date = new Date(this.inspection.date)
 		const dayBeforeArr = dateToArr(date.setDate(date.getDate()-1))
-		const previousInspections = (await this.proxy.queryReduce('inspections', {
-			endkey: [dayBeforeArr[0], this.box_id, 0],
-			startkey: [dayBeforeArr[0], this.box_id, dayBeforeArr[1], dayBeforeArr[2]],
-			descending: true,
-			inclusive_start: false,
-			//limit:1
-		}))
+		const previousInspections = (
+			await mcp.db()
+			.query('upupa/inspections', {
+				endkey: [dayBeforeArr[0], this.box_id, 0],
+				startkey: [dayBeforeArr[0], this.box_id, dayBeforeArr[1], dayBeforeArr[2]],
+				descending: true,
+				inclusive_start: false,
+				//limit:1
+			})
+			.then(({rows}) => rows.map(({key, value}) => value))
+		)
 		if(previousInspections.length){
 			this.previousInspection = previousInspections[0]
 			this.maxOccupancy = Math.max(...previousInspections.map(i => i.occupancy || 0))

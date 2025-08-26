@@ -1,9 +1,9 @@
-import { html, css } from 'lit'
-import { Page } from './base'
+import { html, css, LitElement } from 'lit'
 import { translate } from '../translator'
 import '../charts/species-dates.js'
 import '../charts/perpetrators.js'
 import { parseValue } from '../charts/base.js'
+import { mcp } from '../mcp.js'
 
 function parseResponse(response, reverse=false){
 	return response.rows.reduce((obj, {key, value}) => {
@@ -15,7 +15,7 @@ function parseResponse(response, reverse=false){
 		return obj
 	}, {})
 }
-export class PageAnalysis extends Page {
+export class PageAnalysis extends LitElement {
 	static get styles() {
 		return css`
       :host {
@@ -275,16 +275,16 @@ export class PageAnalysis extends Page {
 	}
 	async fetchStatistics(){
 		var [species, perpetrators, statsBySpeciesYearStateResponse, allSummariesResponse, outcome] = await Promise.all([
-			this.proxy.getByType('species'),
-			this.proxy.getByType('perpetrator'),
-			this.proxy.db.query('upupa/stats_by_species_year_state', {
+			mcp.getByType('species'),
+			mcp.getByType('perpetrator'),
+			mcp.db().query('upupa/stats_by_species_year_state', {
 				group: true,
 				group_level: 3
 			}),
-			this.proxy.db.query('upupa/stats_by_species_year_state', {
+			mcp.db().query('upupa/stats_by_species_year_state', {
 				reduce: false
 			}),
-			this.proxy.db.query('upupa/outcome', {
+			mcp.db().query('upupa/outcome', {
 				group: true
 			})
 		])

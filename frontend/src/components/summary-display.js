@@ -1,6 +1,6 @@
 import { LitElement, html, css } from 'lit'
 import { translate } from '../translator.js'
-import { Proxy } from '../proxy.js'
+import './id-resolver.js'
 import { getStateLabel } from './inspection-display.js'
 
 function getDateValue(date){
@@ -56,16 +56,9 @@ export class SummaryDisplay extends LitElement {
 	}
 	constructor(){
 		super()
-		this.proxy = new Proxy(this)
-		this.species = []
-		this.perpetrators = []
 		this.summary = {}
-		this.fetchData()
 	}
-	async fetchData(){
-		this.species = await this.proxy.getByType('species')
-		this.perpetrators = await this.proxy.getByType('perpetrator')
-	}
+	
 	render() {
 		const summary = this.summary
 		return [
@@ -80,11 +73,12 @@ export class SummaryDisplay extends LitElement {
 		return html`
 			<div class="head">
 				<span>${summary.occupancy}. Belegung</span>
-				<span>${this.getName(this.species, summary.species_id)}</span>
+				<id-resolver type="species" value=${summary.species_id}></id-resolver>
 				<span>${getStateLabel(summary)}</span>
 			</div>
 		`
 	}
+	
 	renderDetail(){
 		const summary = this.summary
 		return html`
@@ -127,7 +121,7 @@ export class SummaryDisplay extends LitElement {
 		return !perpetrator_id ? '' : html`
 			<div>
 				<span>${translate(`${reasonForLoss}.PERPETRATOR`)}</span>
-				<span>${this.getName(this.perpetrators, perpetrator_id)}</span>
+				<id-resolver type="perpetrator" value=${summary.perpetrator_id}></id-resolver>
 			</div>
 		`
 	}

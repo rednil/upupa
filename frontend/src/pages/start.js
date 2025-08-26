@@ -1,7 +1,7 @@
-import { html, css } from 'lit'
-import { Page } from './base'
+import { html, css, LitElement } from 'lit'
+import { mcp } from '../mcp'
 
-export class PageStart extends Page {
+export class PageStart extends LitElement {
 	static get styles() {
 		return css`
 			:host, :host * {
@@ -159,12 +159,14 @@ export class PageStart extends Page {
 	}
 	async fetchSummaries(){
 		const currentYear = new Date().getFullYear()
-		this.summaries = await this.proxy.queryReduce('summaries', {
+		this.summaries = await mcp.db()
+		.query('upupa/summaries', {
 			startkey: [currentYear],
 			endkey: [currentYear, {}],
 			group: true,
 			group_level: 3
 		})
+		.then(({rows}) => rows.map(({key, value}) => value))
 		this.currentYearStats = this.summaries.reduce((stat, summary) => {
 			stat[summary.state] = (stat[summary.state] || 0) + 1
 			if(typeof summary.clutchSize != 'number') console.error('Wrong type', summary.clutchSize)
@@ -185,10 +187,12 @@ export class PageStart extends Page {
 	}
 	
 	async fetchStatistics(){
-		const response = await this.proxy.queryReduce('stats_by_state_year_species', {
+		const response = await mcp.db()
+		.query('upupa/stats_by_state_year_species', {
 			group: true,
 			group_level: 1
 		})
+		.then(({rows}) => rows.map(({key, value}) => value))
 		console.log('fetchStatistics response', response)
 		const s = this.totalStats = {
 			failure: parseStats(response[0]),

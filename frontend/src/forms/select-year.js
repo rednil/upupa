@@ -1,6 +1,5 @@
 import { LitElement, html, css } from 'lit'
-import { Proxy } from '../proxy'
-
+import { mcp } from '../mcp'
 export class SelectYear extends LitElement {
 
   static get properties() {
@@ -34,7 +33,6 @@ export class SelectYear extends LitElement {
 		this.range = []
 		this.currentYear = new Date().getFullYear()
 		this.value = this.currentYear
-		this.proxy = new Proxy(this)
 	}
 	
   render() {
@@ -58,10 +56,14 @@ export class SelectYear extends LitElement {
 	}
 	async fetchFirstInspection(){
 		this.firstYear = this.currentYear
-		const firstInspection = await this.proxy.queryReduce('inspections', {
-			reduce: false,
-			limit: 1
-		})
+		const firstInspection = (
+			await mcp.db()
+			.query('upupa/inspections', {
+				reduce: false,
+				limit: 1
+			})
+		)
+		.rows.map(({key, value}) => value)
 		if(firstInspection?.length){
 			this.firstYear =  new Date(firstInspection[0].date).getFullYear()
 		}

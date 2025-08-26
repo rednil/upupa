@@ -1,5 +1,5 @@
-import { html, css } from 'lit'
-import { Page } from './base'
+import { html, css, LitElement } from 'lit'
+import { mcp } from '../mcp'
 
 function formatDate(date){
 	return date.toLocaleString(window.navigator.language,{
@@ -12,7 +12,7 @@ function dateClass(date){
 	const day = date.getDay()
 	if(day == 6 || day == 0) return 'weekend'
 }
-export class PageCalendar extends Page {
+export class PageCalendar extends LitElement {
 	static get properties() {
 		return {
 			//calendar: { type: Array },
@@ -108,14 +108,16 @@ export class PageCalendar extends Page {
 		console.log('fetchData', this.year)
 		this.calendar = []
 		var [summaries, boxes] = await Promise.all([
-			this.proxy.queryReduce('summaries', {
+			mcp.db()
+			.query('upupa/summaries', {
 				group: true,
 				group_level: 2,
 				endkey: [this.year],
 				startkey: [this.year, {}],
 				descending: true
-			}),
-			this.proxy.getByType('box')
+			})
+			.then(({rows}) => rows.map(({key, value}) => value)),
+			mcp.getByType('box')
 		])
 		const events = summaries
 		.filter(summary => (

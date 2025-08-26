@@ -1,6 +1,6 @@
 import { LitElement, html, css } from 'lit'
 import '../forms/select-box.js'
-import { Proxy } from '../proxy.js'
+import { mcp } from '../mcp.js'
 import '../forms/link-map.js'
 import '../forms/link-boxconfig.js'
 import '../components/inspection-display.js'
@@ -66,7 +66,6 @@ export class PageStatus extends LitElement {
   }
 	constructor(){
 		super()
-		this.proxy = new Proxy(this)
 		this.boxes = []
 		this.inspections = []
 		this.summaries = []
@@ -128,28 +127,36 @@ export class PageStatus extends LitElement {
 		setUrlParams({box_id: this.box_id})
 	}
 	async _fetchBoxes(){
-		this.boxes = await this.proxy.getByType('box')
+		this.boxes = await mcp.getByType('box')
 	}
 	async _fetchData(){
-		const {year, box_id} = this
-		var [inspections=[], summaries=[]] = await Promise.all([
-			this.proxy.queryReduce('inspections', {
-				endkey: [year, box_id],
-				startkey: [year, box_id, {}],
-				reduce: false,
-				descending: true
-			}),
-			this.proxy.queryReduce('summaries', {
-				group: true,
-				group_level: 3,
-				startkey: [year, box_id],
-				endkey: [year, box_id, {}],
-				//descending: true // not working in pouchdb _last
-			})
-		])
-		this.inspections = inspections
-		this.summaries = summaries.reverse()
+		this.inspections = await this._fetchInspections()
+		this.summaries = await this._fetchSummaries()
 		this.requestUpdate()
+	}
+	async _fetchInspections(){
+		return mcp.db()
+		.query('upupa/inspections', {
+			endkey: [this.year, this.box_id],
+			startkey: [this.year, this.box_id, {}],
+			reduce: false,
+			descending: true
+		})
+		.then(({rows}) => rows.map(({key, value}) => value))
+	}
+	async _fetchSummaries(){
+		return mcp.db()
+		.query('upupa/summaries', {
+			group: true,
+			group_level: 3,
+			startkey: [this.year, this.box_id],
+			endkey: [this.year, this.box_id, {}],
+			//descending: true // not working in pouchdb _last
+		})
+		.then(({rows}) => rows
+			.map(({key, value}) => value)
+			.reverse()
+		)
 	}
 }
 

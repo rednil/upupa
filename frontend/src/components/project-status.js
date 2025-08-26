@@ -1,6 +1,6 @@
 import { LitElement, html, css } from 'lit'
 import { unsafeSVG } from 'lit/directives/unsafe-svg.js'
-import { pm } from '../projectManager'
+import { mcp } from '../mcp'
 import { translate } from '../translator'
 import { sync_disabled, sync_problem, sync, published_with_changes, cloud_off } from '../icons'
 
@@ -52,16 +52,12 @@ export class ProjectStatus extends LitElement {
 		}
 		this.state = STATE_INIT
 		this.loginError = ''
-		this.init()
-	}
-
-	async init(){
-		this.project = await pm.getSelectedProject()
 		this.subscribe()
 	}
+
 	subscribe(){
-		if(this.project.syncHandler){
-			this.project.syncHandler
+		if(mcp.project.syncHandler){
+			mcp.project.syncHandler
 			.on('complete', () => {
 				console.log('sync complete')
 				this.setState(STATE_READY)
@@ -153,7 +149,7 @@ export class ProjectStatus extends LitElement {
 		const username = this.shadowRoot.querySelector('#username').value
 		const password = this.shadowRoot.querySelector('#password').value
 		try{
-			await this.project.login(username, password)
+			await mcp.project.login(username, password)
 			this.subscribe()
 		}catch(error){
 			if(error.status == 401) {

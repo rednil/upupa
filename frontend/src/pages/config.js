@@ -1,4 +1,5 @@
 import { LitElement, html, css } from 'lit'
+import { mcp } from '../mcp.js'
 import '../forms/select-item.js'
 import '../forms/select-box.js'
 import '../components/box-edit.js'
@@ -6,7 +7,6 @@ import '../components/generic-edit.js'
 import '../components/user-edit.js'
 import '../components/project-edit.js'
 import '../app-dialog.js'
-import { Proxy } from '../proxy.js'
 import { translate } from '../translator.js'
 import { setUrlParams } from '../router.js'
 
@@ -48,7 +48,6 @@ export class PageConfig extends LitElement {
 	}
 	constructor(){
 		super()
-		this.proxy = new Proxy(this)
 		this.type = 'box'
 		this._item = {}
 		this.copy = {}
@@ -143,7 +142,7 @@ export class PageConfig extends LitElement {
 		this.type = evt.target.value
 		setUrlParams({type: this.type})
 	}
-	changeItemCb(evt){
+	async changeItemCb(evt){
 		this.item = evt.target.item
 		this._id = evt.target.value
 		this.updateHistory()
@@ -175,7 +174,7 @@ export class PageConfig extends LitElement {
 	}
 	async delete(){
 		this.shadowRoot.querySelector('#delete-dialog').open = false
-		const response = await this.proxy.remove(this.item)
+		const response = await mcp.db(item.type).remove(this.item)
 		if(response?.deletedCount){
 			this.shadowRoot.querySelector('select-item').fetchData()
 		}
@@ -201,12 +200,11 @@ export class PageConfig extends LitElement {
 			this.item.validUntil = this.copy.validFrom
 			items.push(this.item)
 		}
-		const response = await this.proxy.bulkDocs(this.type, items)
+		const response = await mcp.db(this.type).bulkDocs(items.map(item => mcp.finalize(item)))
 		if(response[0].ok){
 			this._id=response[0].id
 			this.updateHistory()
 		}
-		this.proxy.clearTypeCache(this.type)
 		this.shadowRoot.querySelector('select-item').fetchOptions()
 		this.item = {...this.copy}
 		this.updateTainted()

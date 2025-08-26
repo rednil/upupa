@@ -1,5 +1,5 @@
 import { LitElement, html, css } from 'lit'
-import { pm } from './projectManager.js'
+import { mcp } from './mcp.js'
 import { STATE_READY, STATE_ERROR } from './components/project-status.js'
 import './components/sync-progress.js'
 import './pages/database'
@@ -113,17 +113,15 @@ export class AppShell extends LitElement {
 	}
 
 	async _init(){
-		// verify session status
-		
+		await mcp.initComplete
 		// navigate triggers an update via params
 		this.navigate()
 		if(this.params.year) this.selectedYear = Number(this.params.year)
-		this.project = await pm.getSelectedProject()
-		this.requestUpdate()
+		//this.requestUpdate()
 		
 	}
 	shouldUpdate(){
-		return this.project
+		return this.route
 	}
   updated(){
 		setUrlParams({year: this.selectedYear})
@@ -142,7 +140,7 @@ export class AppShell extends LitElement {
   }
 	
 	renderTopBar(){
-		const userCtx = this.project.session.userCtx
+		const userCtx = mcp.project.session.userCtx
 		return html`
 			<div class="top ${userCtx?'logged-in':'logged-out'} route-${this.route.path.slice(2)}">
 				<select-route selected=${this.route.path}></select-route>
@@ -171,7 +169,7 @@ export class AppShell extends LitElement {
 				<div>
 					<div>Synchronisiere Datenbank ...</div>
 					<br>
-					<sync-progress .syncHandler=${this.project.syncHandler}></sync-progress>
+					<sync-progress .syncHandler=${mcp.project.syncHandler}></sync-progress>
 				</div>
 			</div>
 		`
