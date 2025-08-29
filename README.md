@@ -1,33 +1,34 @@
-# express-passport-mongo-lit
+# Upupa
 
-A fullstack starter for little projects requiring authentication and user management. Based on [express](https://expressjs.com), [passport](https://www.passportjs.org/), [mongodb](https://mongodb.com/) and [lit](https://lit.dev/), automatically packed into a [docker](https://www.docker.com/) container using a [github action](https://github.com/features/actions).  
+This project is a small management application designed for a conservationist working on a cave-nesting bird project. It provides a set of tools to help track, manage, and analyze data from artificial nest boxes. The software is built with an offline-first approach, ensuring that fieldwork can be done without an internet connection. 
 
-The frontend was generated using [npm init @open-wc](https://github.com/open-wc/create).
+The project is in a very early stage. Don't expect it to work with an empty database, don't even try to use it without contacting me. Currently in german, but first steps for internationalization are done.
 
-The backend was generated using [npx express-generator](https://github.com/expressjs/generator).
+## Features
 
-During the docker build, the frontend build is copied from frontend/dist to backend/public, from where express serves static files. The backend is then wrapped up into the official lts-slim node image from [dockerhub](https://hub.docker.com/_/node). If used in a docker container, the following environmental parameters are available:
+Overview: Visualize nest box locations and current status on an interactive map.
 
-* ADMIN_USERNAME (only changed **if no admin exists in the database yet**, defaults to "admin")
-* ADMIN_PASSWORD (only changed **if no admin exists in the database yet**, defaults to "admin")
-* SESSION_SECRET (Using a secret that cannot be guessed will reduce the ability to hijack a session, see [here](http://expressjs.com/en/resources/middleware/session.html))
+Status: View detailed current status and past inspections.
 
-For development, use the following commands in the top level folder
-```
-docker compose up -d
-```
-This will run a mongodb container your backend can interact with.
-```
-npm run cleaninstall
-```
-This will install all required packages in the backend and frontend folder.
-```
-npm run init
-```
-This will create a development database in the db folder with one admin (password "admin") and one user (password "user").
-```
-npm start
-```
-This will serve the frontend using [@web/dev-server](https://modern-web.dev/docs/dev-server/overview/) on port 8000 and the backend using [nodemon](https://nodemon.io/) on port 3000, both watching for file changes and restarting the backend or reloading the web page on every file change. The frontend dev-server is configured to forward all calls to /api/ to the backend port.
+Standardized Data Entry: Easily log inspections with a user-friendly interface.
 
-All this is configured on Linux, I am sure you need several changes in the package.json files for development on Windows.
+Calendar: Visualize when banding is due in which box.
+
+Analysis: Generate insightful charts and graphs from your collected data.
+
+## Technology Stack
+
+I have adopted a minimalist approach, aiming to use as few external libraries as possible to reduce dependencies and complexity.
+
+This application is composed of a backend and a frontend:
+
+Backend: A Node.js/Express server that interacts with a CouchDB database.
+
+Frontend: A offline-first progressive web app built with Lit web components and PouchDB. Charts are done with d3 and @observablehq/plot. No UI widget library, just standard html forms.
+
+## Deployment
+
+The project includes an automated deployment pipeline. A GitHub Action builds the frontend into a Progressive Web App (PWA) including a service worker and packages both the backend and frontend into a single Docker container, ready for deployment.
+
+
+
