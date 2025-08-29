@@ -22,7 +22,7 @@ I have adopted a minimalist approach, aiming to use as few external libraries as
 
 This application is composed of a backend and a frontend:
 
-Backend: A Node.js/Express server that interacts with a CouchDB database.
+Backend: A tiny Node.js/Express server that mainly serves the frontend and proxies all api requests to a CouchDB database. Even authentication and user management are done by CouchDB.
 
 Frontend: A offline-first progressive web app built with Lit web components and PouchDB. Charts are done with d3 and @observablehq/plot. No UI widget library, just standard html forms.
 
