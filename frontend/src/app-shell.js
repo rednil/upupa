@@ -1,6 +1,6 @@
 import { LitElement, html, css } from 'lit'
 import { mcp } from './mcp.js'
-import { STATE_READY, STATE_ERROR } from './components/project-status.js'
+import { STATE_READY, STATE_ERROR, STATE_UNAUTHENTICATED } from './components/project-status.js'
 import './components/sync-progress.js'
 import './pages/database'
 import './pages/status'
@@ -187,7 +187,11 @@ export class AppShell extends LitElement {
 				this.dbReadyOrError = true
 				this.requestUpdate()
 			}
-		} 
+		}
+		if(this.state == STATE_UNAUTHENTICATED && state != STATE_UNAUTHENTICATED) {
+			this.requestUpdate()
+		}
+		this.state = state
 	}
   selectYearCb(evt){
 		this.selectedYear = Number(evt.target.value)

@@ -121,13 +121,20 @@ export class PageAnalysis extends LitElement {
 		const table = summaries
 		.map(({key, value}) => {
 			const {hatchDate, breedingStart} = parseValue(value)
-			const [species_id] = key
+			const [species_id,year,,,box_id] = key
+			const species = this.getSpeciesName(species_id)
+			const incubation = hatchDate && breedingStart ? hatchDate - breedingStart : 0
+			if(incubation > 0 && (incubation < 10 || incubation > 20)) {
+				const boxName = this.boxes.find(box => box._id == box_id)?.name
+				console.warn('Verdächtige Brutdauer', incubation, year, boxName, species)
+			}
 			return {
-				species: this.getSpeciesName(species_id),
-				incubation: hatchDate && breedingStart ? hatchDate - breedingStart : 0
+				species,
+				incubation
 			}
 		})
 		.filter(({incubation}) => (incubation > 0))
+
 		return Plot.plot({
 			marginLeft: 100,
 			marginRight: 40,
@@ -274,8 +281,9 @@ export class PageAnalysis extends LitElement {
 		return this.species.find(spec => spec._id == species_id).name
 	}
 	async fetchStatistics(){
-		var [species, perpetrators, statsBySpeciesYearStateResponse, allSummariesResponse, outcome] = await Promise.all([
+		var [species, boxes, perpetrators, statsBySpeciesYearStateResponse, allSummariesResponse, outcome] = await Promise.all([
 			mcp.getByType('species'),
+			mcp.getByType('box'),
 			mcp.getByType('perpetrator'),
 			mcp.db().query('upupa/stats_by_species_year_state', {
 				group: true,
@@ -289,6 +297,7 @@ export class PageAnalysis extends LitElement {
 			})
 		])
 		this.species = species
+		this.boxes = boxes
 		this.perpetrators = perpetrators
 		this.allSummaries = allSummariesResponse.rows
 		//console.log('statsBySpeciesYearStateResponse', statsBySpeciesYearStateResponse)

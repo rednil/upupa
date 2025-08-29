@@ -44,7 +44,6 @@ export class Project {
   }
 	async login(username, password){
 		this.loginResponse = await this.remoteDB.login(username, password)
-		console.log('loginResponse 1', this.loginResponse)
 		await this.startSync()
 		return this.loginResponse
 	}

@@ -15,6 +15,7 @@ export class ChartPerpetrators extends LitElement {
         display: flex;
 				flex-direction: column;
         align-items: center;
+			}
 		`
 	}
 	constructor(){

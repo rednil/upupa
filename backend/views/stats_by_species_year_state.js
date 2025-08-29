@@ -32,7 +32,8 @@ export const map = doc =>  {
 			doc.species_id,
 			date.getFullYear(),
 			doc.state,
-			doc.occupancy
+			doc.occupancy,
+			doc.box_id
 		],
 		[
 			doc.clutchSize||0, 

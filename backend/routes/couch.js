@@ -1,5 +1,5 @@
 import { createProxyMiddleware } from 'http-proxy-middleware'
-import { DB_ADDRESS, DB_NAME } from '../db.js'
+import { DB_ADDRESS } from '../db.js'
 
 const couchDbProxyOptions = {
 	target: DB_ADDRESS, // some requests, like _session, target the host, not a particular DB

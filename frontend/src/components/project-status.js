@@ -5,11 +5,11 @@ import { translate } from '../translator'
 import { sync_disabled, sync_problem, sync, published_with_changes, cloud_off } from '../icons'
 
 export const 
-	STATE_INIT = 'INIT',
-	STATE_READY = 'READY',
-	STATE_ERROR = 'ERROR',
-	STATE_UNAUTHENTICATED = 'UNAUTHENTICATED',
-	STATE_SYNCING = 'SYNCING'
+	STATE_INIT = 'STATE_INIT',
+	STATE_READY = 'STATE_READY',
+	STATE_ERROR = 'STATE_ERROR',
+	STATE_UNAUTHENTICATED = 'STATE_UNAUTHENTICATED',
+	STATE_SYNCING = 'STATE_SYNCING'
 
 const stateIcon = {
 	[STATE_READY]: published_with_changes,
@@ -53,6 +53,12 @@ export class ProjectStatus extends LitElement {
 		this.state = STATE_INIT
 		this.loginError = ''
 		this.subscribe()
+		window.addEventListener('online', () => {
+			this.requestUpdate()
+		})
+		window.addEventListener('offline', () => {
+			this.requestUpdate()
+		})
 	}
 
 	subscribe(){
@@ -119,7 +125,7 @@ export class ProjectStatus extends LitElement {
 					${JSON.stringify(this.error)}
 				</div>
       </app-dialog>
-			${unsafeSVG(stateIcon[this.state])}
+			${unsafeSVG(navigator.onLine ? stateIcon[this.state] : cloud_off)}
     `
   }
 	

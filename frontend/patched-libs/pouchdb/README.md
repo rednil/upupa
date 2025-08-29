@@ -1,0 +1,1 @@
+this provides the "_last" builtin reducer (https://github.com/pouchdb/pouchdb/issues/9105) and allows the builtin "_stats" reducer to digest arrays of numbers (https://github.com/pouchdb/pouchdb/issues/9104)
