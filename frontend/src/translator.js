@@ -7,6 +7,7 @@ const translations = {
 	'#/CONFIG': 'Konfiguration',
 	'#/INSPECTION': 'NK-Kontrolle',
 	'#/ABOUT': 'Über Upupua',
+	'#/DATABASE': 'Datenbank',
 	"ARCHITECTURE": "Bauart",
 	"ARCHITECTURES": "Bauarten",
 	"BANDINGWINDOWSTART": "Beringung ab",

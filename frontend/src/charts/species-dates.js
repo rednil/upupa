@@ -1,7 +1,7 @@
 import { LitElement, html, css } from 'lit'
 import { translate } from '../translator'
 import { parseKey, parseValue } from './base'
-
+import '../forms/button-exportsvg'
 export class SpeciesDates extends LitElement {
 	static get properties() {
 		return {
@@ -18,7 +18,12 @@ export class SpeciesDates extends LitElement {
         display: flex;
 				flex-direction: column;
         align-items: center;
-				
+			}
+			.title {
+				width: 100%;
+				display: flex;
+				justify-content: space-between;
+			}
       
 		`
 	}
@@ -32,14 +37,16 @@ export class SpeciesDates extends LitElement {
 	
 	render() {
 		return html`
-			<div>Datumsänderung im Lauf der Jahre</div>
+			<div class="title">
+				<div>Datumsänderung im Lauf der Jahre</div><button-exportsvg name="species-dates.svg"></button-exportsvg>
+			</div>
 			<select-item autoselect type="species" @change=${this.changeCb}></select-item>
 			<select @change=${this.changeCb}>
 				<option value="layingStart">${translate('layingStart')}</option>
 				<option value="breedingStart">${translate('breedingStart')}</option>
 				<option value="hatchDate">${translate('hatchDate')}</option>
 			</select>
-			${this.plot}
+			<figure>${this.plot}</figure>
 		`
 	}
 	changeCb(){

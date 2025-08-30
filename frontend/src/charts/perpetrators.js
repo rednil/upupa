@@ -1,5 +1,6 @@
 import { LitElement, html, css } from 'lit'
 import { mcp } from '../mcp'
+import '../forms/button-exportsvg'
 
 export class ChartPerpetrators extends LitElement {
 	static get properties() {
@@ -56,9 +57,10 @@ export class ChartPerpetrators extends LitElement {
 	
 	render() {
 		return html`
-			<div>Zeitliche Prävalenz von Eindringlingen</div>
+			<div>Zeitliche Prävalenz von Eindringlingen</div><button-exportsvg name="perpetrators.svg"></button-exportsvg>
 			<select-item type="perpetrator" value=${this.perpetrator_id} @change=${this.changeCb}></select-item>
-			${this.plot}
+			<figure>${this.plot}</figure>
+			
 		`
 	}
 	changeCb(evt){

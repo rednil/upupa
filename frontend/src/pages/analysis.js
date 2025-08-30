@@ -4,6 +4,7 @@ import '../charts/species-dates.js'
 import '../charts/perpetrators.js'
 import { parseValue } from '../charts/base.js'
 import { mcp } from '../mcp.js'
+import '../forms/button-exportsvg.js'
 
 function parseResponse(response, reverse=false){
 	return response.rows.reduce((obj, {key, value}) => {
@@ -30,7 +31,8 @@ export class PageAnalysis extends LitElement {
 				margin: 1em auto;
 			}
 			.title {
-				text-align: center;
+				display: flex;
+				justify-content: space-between;
 			}
 			figure > svg {
 				width: 100%;
@@ -324,43 +326,73 @@ export class PageAnalysis extends LitElement {
 			<chart-perpetrators></chart-perpetrators>
 			<species-dates .data=${this.allSummaries}></species-dates>
 			<div>
-				<div class="title">Legebeginn</div>
+				<div class="title">
+					<div>Legebeginn</div>
+					<button-exportsvg name="Legebeginn.svg"></button-exportsvg>
+				</div>
 				${this.layingStartPlot}
 			</div>
 			<div>
-				<div class="title">Brutbeginn</div>
+				<div class="title">
+					<div>Brutbeginn</div>
+					<button-exportsvg name="Brutbeginn.svg"></button-exportsvg>
+				</div>
 				${this.breedingStartPlot}
 			</div>
 			<div>
-				<div class="title">Schlüpfdatum</div>
+				<div class="title">
+					<div>Schlüpfdatum</div>
+					<button-exportsvg name="Schlüpfdatum.svg"></button-exportsvg>
+				</div>
 				${this.hatchDatePlot}
 			</div>
 			<div>
-				<div class="title">Brutdauer</div>
+				<div class="title">
+					<div>Brutdauer</div>
+					<button-exportsvg name="Brutdauer.svg"></button-exportsvg>
+				</div>
 				${this.incubationPlot}
 			</div>
 			<div>
-				<div class="title">Erfolg und Mißerfolg in absoluten Zahlen</div>
+				<div class="title">
+					<div>Erfolg und Mißerfolg in absoluten Zahlen</div>
+					<button-exportsvg name="success-absolute.svg"></button-exportsvg>
+				</div>
 				${this.outcomePlot}
 			</div>
 			<div>
-				<div class="title">Gründe für Mißerfolg, normalisiert</div>
+				<div class="title">
+					<div>Gründe für Mißerfolg, normalisiert</div>
+					<button-exportsvg name="failure.svg"></button-exportsvg>
+				</div>
 				${this.reasonForLossPlot}
 			</div>
 			<div>
-				<div class="title">Gelegegröße</div>
+				<div class="title">
+					<div>Gelegegröße</div>
+					<button-exportsvg name="clutchsize.svg"></button-exportsvg>
+				</div>
 				${this.clutchSizePlot}
 			</div>
 			<div>
-				<div class="title">Überlebensrate von Ei bis Ausflug</div>
+				<div class="title">
+					<div>Überlebensrate von Ei bis Ausflug</div>
+					<button-exportsvg name="survival.svg"></button-exportsvg>
+				</div>
 				${this.eggSurvivalPlot}
 			</div>
 			<div>
-				<div class="title">Erfolgsrate eines Geleges</div>
+				<div class="title">
+					<div>Erfolgsrate eines Geleges</div>
+					<button-exportsvg name="success-relative.svg"></button-exportsvg>
+				</div>
 				${this.clutchSurvivalPlot}
 			</div>
 			<div>
-				<div class="title">Artenzusammensetzung</div>
+				<div class="title">
+					<div>Artenzusammensetzung</div>
+					<button-exportsvg name="species.svg"></button-exportsvg>
+				</div>
 				${this.speciesPlot}
 			</div>
 			
