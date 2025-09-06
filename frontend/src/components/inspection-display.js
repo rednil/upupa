@@ -67,10 +67,11 @@ export class InspectionDisplay extends LitElement {
 		return html`<a href="#/inspection?inspection_id=${this.inspection._id}" class="controls"><button>Edit</button></a>`
 	}
 	renderHead(){
-		const {date, species_id, type} = this.inspection
+		const {date, species_id, type, changedAt} = this.inspection
 		return html`
 			<div class="head" @click=${this.clickCb}>
-				<span class="date">${this.getLongDate(date)}</span>
+				<span class="date">${this.getLongDate(date)}${changedAt ? ' *' : ''}</span>
+				
 				${type=='OUTSIDE' ? html`<span></span><span>Nistkasten nicht geöffnet</span>` : html`
 					<id-resolver type="species" value=${species_id}></id-resolver>
 					<span>${getStateLabel(this.inspection)}</span>

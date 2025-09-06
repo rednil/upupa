@@ -121,7 +121,7 @@ export class SummaryDisplay extends LitElement {
 		return !perpetrator_id ? '' : html`
 			<div>
 				<span>${translate(`${reasonForLoss}.PERPETRATOR`)}</span>
-				<id-resolver type="perpetrator" value=${summary.perpetrator_id}></id-resolver>
+				<id-resolver type="perpetrator" value=${perpetrator_id}></id-resolver>
 			</div>
 		`
 	}

@@ -7,7 +7,7 @@ export class IdResolver extends LitElement {
 		return {
 			value: { type: String },
 			type: { type: String },
-			key: { type: String }
+			key: { type: String },
 		}
 	}
 	constructor(){
@@ -15,11 +15,14 @@ export class IdResolver extends LitElement {
 		this.key = 'name'
 		this.item = {}
 	}
-	updated(changed){
-		if(changed.has('value') || changed.has('type')) this.fetchItem()
+	
+	willUpdate(changed){
+		if(changed.has('value') || changed.has('type')) {
+			this.item = {}
+			if(this.value && this.type && this.key)	this.fetchItem()
+		}
 	}
 	async fetchItem(){
-		if(!(this.value && this.type && this.key)) return this.item = {}
 		this.item = await mcp.db(this.type).get(this.value)
 		this.requestUpdate()
 	}
