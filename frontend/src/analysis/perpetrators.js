@@ -2,7 +2,7 @@ import { LitElement, html, css } from 'lit'
 import { mcp } from '../mcp'
 import '../forms/button-exportsvg'
 
-export class ChartPerpetrators extends LitElement {
+export class AnalysisPerpetrators extends LitElement {
 	static get properties() {
 		return {
 			perpetrators: { type: Array },
@@ -99,4 +99,4 @@ export class ChartPerpetrators extends LitElement {
 	
 }
 
-customElements.define('chart-perpetrators', ChartPerpetrators)
+customElements.define('analysis-perpetrators', AnalysisPerpetrators)

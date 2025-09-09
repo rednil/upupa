@@ -28,6 +28,7 @@ export class SelectItem extends LitElement {
 			:host(.borderless) select {
 				border: 0;
 				outline: none;
+				background-color: transparent
 			}
 		`
 	}
@@ -45,13 +46,16 @@ export class SelectItem extends LitElement {
 				<span>${this.item && this.item[this.key]}</span>
 			`
 		}
+		console.log('select-item value', this.value)
+		const value = (this.value == undefined) ? this.emptyLabel : this.value 
 		return html`
 			${this.buttons ? html`<button @click=${() => this.skip(-1)}><</button>`:''}
-			<select ?disabled=${this.disabled} .value=${this.value} id="select" @change=${this._changeCb}>
-				${this.autoselect ? '' : html`<option value="">${this.emptyLabel}</option>`}
-				
+			<select ?disabled=${this.disabled} .value=${value} id="select" @change=${this._changeCb}>
+				${this.autoselect ? '' : html`
+					<option ?selected=${value==this.emptyLabel} >${this.emptyLabel}</option>`
+				}
 				${this.options.map(option => html`
-					<option ?selected=${option._id==this.value} value="${option._id}">${this.getLabel(option)}</option>
+					<option ?selected=${option._id==value} value="${option._id}">${this.getLabel(option)}</option>
 				`)}
 			</select>
 			${this.buttons ? html`<button @click=${() => this.skip(1)}>></button>`:''}
@@ -81,8 +85,9 @@ export class SelectItem extends LitElement {
 		return this.options.findIndex(({_id}) => _id == this.value)
 	}
 	_changeCb(evt){
+		console.log('select-item change', this.value, this.value == undefined, this.value =='')
 		this.value = evt.target.value
-		if(this.value == '') this.value = undefined
+		if(this.value == this.emptyLabel) this.value = undefined
 		this.dispatchEvent(new Event('change'))
 	}
 	updated(changedProps){

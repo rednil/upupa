@@ -32,15 +32,16 @@ const genericMapFunction = doc => {
 function getStatFunction(key, isDate){
 	let map = genericMapFunction.toString().replace('__KEY__', key)
 	if(isDate) map = map.replace('/* __WILL_BE_UNCOMMENTED__', '').replace('__WILL_BE_UNCOMMENTED__ */', '')
+	map = map.replace(/\/\*[\s\S]*?\*\//g, '')
 	return {
 		map,
 		reduce: '_stats'
 	}
 }
 
-export const clutch_size = getStatFunction('clutchSize')
+export const clutchSize = getStatFunction('clutchSize')
 export const nestlings = getStatFunction('nestlings')
-export const nestlings_banded = getStatFunction('nestlingsBanded')
+export const nestlingsBanded = getStatFunction('nestlingsBanded')
 export const layingStart = getStatFunction('layingStart', true)
 export const breedingStart = getStatFunction('breedingStart', true)
 export const hatchDate = getStatFunction('hatchDate', true)

@@ -193,7 +193,6 @@ export class PageStart extends LitElement {
 			group_level: 1
 		})
 		.then(({rows}) => rows.map(({key, value}) => value))
-		console.log('fetchStatistics response', response)
 		const s = this.totalStats = {
 			failure: parseStats(response[0]),
 			success: parseStats(response[1])

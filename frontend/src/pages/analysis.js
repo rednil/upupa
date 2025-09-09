@@ -1,10 +1,53 @@
 import { html, css, LitElement } from 'lit'
 import { translate } from '../translator'
-import '../charts/species-dates.js'
-import '../charts/perpetrators.js'
+import '../analysis/perpetrators.js'
+import '../analysis/date.js'
+import '../analysis/incubation.js'
+import '../analysis/clutchSize.js'
+import '../analysis/species.js'
+import '../analysis/success.js'
 import { parseValue } from '../charts/base.js'
 import { mcp } from '../mcp.js'
 import '../forms/button-exportsvg.js'
+import { setUrlParams } from '../router.js'
+const pages = [
+	{
+		id: 'perpetrators',
+		html: html`<analysis-perpetrators></analysis-perpetrators>`
+	},
+	{ 
+		id: 'layingstart',
+		html: html`<analysis-date type="layingStart"></analysis-date>`
+	},
+	{ 
+		id: 'breedingstart',
+		html: html`<analysis-date type="breedingStart"></analysis-date>`
+	},
+	{ 
+		id: 'hatchdate',
+		html: html`<analysis-date type="hatchDate"></analysis-date>`
+	},
+	{
+		id: 'incubation',
+		html: html`<analysis-incubation></analysis-incubation>`
+	},
+	{
+		id: 'clutchsize',
+		html: html`<analysis-clutchsize></analysis-clutchsize>`
+	},
+	{
+		id: 'species',
+		html: html`<analysis-species></analysis-species>`
+	},
+	{
+		id: 'success',
+		html: html`<analysis-success></analysis-success>`
+	},
+	{
+		id: 'failure',
+		html: html`<analysis-failure></analysis-failure>`
+	}
+]
 
 function parseResponse(response, reverse=false){
 	return response.rows.reduce((obj, {key, value}) => {
@@ -17,6 +60,12 @@ function parseResponse(response, reverse=false){
 	}, {})
 }
 export class PageAnalysis extends LitElement {
+	static get properties() {
+		return {
+			page: { type: String },
+			species_id: { type: String }
+		}
+	}
 	static get styles() {
 		return css`
       :host {
@@ -24,10 +73,13 @@ export class PageAnalysis extends LitElement {
         display: flex;
         align-items: center;
 				flex-direction: column;
+			}
+			.body{
 				overflow-y: auto;
+				width: 100%;
       }
 			
-			:host > * {
+			.body > * {
 				margin: 1em auto;
 			}
 			.title {
@@ -43,10 +95,38 @@ export class PageAnalysis extends LitElement {
 				margin-inline-start: 0.5em;
 				margin-inline-end: 0.5em;
 			}
+			.head {
+				display: flex;
+				justify-content: space-between;
+				width: 100%;
+				box-shadow: rgba(0, 0, 0, 0.1) 0px 6px 24px 0px;
+				//background-color: lightgrey;
+				height: 2em;
+				flex-shrink: 0;
+			}
+			.head > * {
+				height: 100%;
+				background-color: transparent;
+			}
+			.head > select {
+				border: 0;
+				outline: none;
+				direction: rtl;
+				text-align: left;
+			}
+			.head > div {
+				flex: 1;
+				box-shadow: 0;
+			}
+			:head > select > option {
+				direction: ltr;
+			}
+			
     `
   }
 	constructor(){
 		super()
+		this.pageIdx = 0
 		this.allSummaries = []
 	}
 	connectedCallback(){
@@ -81,129 +161,7 @@ export class PageAnalysis extends LitElement {
 		})
 		
 	}
-	getClutchSizePlot(summaries){
-		const table = summaries.map(({key, value}) => {
-			const [clutchSize] = value
-			const [species_id] = key
-			return {
-				species: this.getSpeciesName(species_id),
-				clutchSize
-			}
-		})
-
-		return Plot.plot({
-			marginLeft: 100,
-			marginRight: 40,
-			x: {
-				grid: true,
-				inset: 6
-			},
-			
-			marks: [
-				Plot.boxX(table, {
-					x: "clutchSize",
-					y: "species",
-					sort: {y: "x", reduce: "mean"}
-				}),
-				Plot.text(table, Plot.groupY(
-					{x: "max"}, // Reducer: calculate the max 'x' value for each group
-					{
-						x: "clutchSize",
-						y: "species",
-						text: d => `n=${d.length}`, // Use the group's length for the text label
-						dx: 10,           // Offset text to the right
-						textAnchor: "start" // Align text to the l eft
-					}
-				))
-			]
-		})
-
-	}
-	getIncubationPlot(summaries){
-		const table = summaries
-		.map(({key, value}) => {
-			const {hatchDate, breedingStart} = parseValue(value)
-			const [species_id,year,,,box_id] = key
-			const species = this.getSpeciesName(species_id)
-			const incubation = hatchDate && breedingStart ? hatchDate - breedingStart : 0
-			if(incubation > 0 && (incubation < 10 || incubation > 20)) {
-				const boxName = this.boxes.find(box => box._id == box_id)?.name
-				console.warn('Verdächtige Brutdauer', incubation, year, boxName, species)
-			}
-			return {
-				species,
-				incubation
-			}
-		})
-		.filter(({incubation}) => (incubation > 0))
-
-		return Plot.plot({
-			marginLeft: 100,
-			marginRight: 40,
-			x: {
-				grid: true,
-				inset: 6
-			},
-			
-			marks: [
-				Plot.boxX(table, {
-					x: "incubation",
-					y: "species",
-					sort: {y: "x", reduce: "mean"}
-				}),
-				Plot.text(table, Plot.groupY(
-					{x: "max"}, // Reducer: calculate the max 'x' value for each group
-					{
-						x: "incubation",
-						y: "species",
-						text: d => `n=${d.length}`, // Use the group's length for the text label
-						dx: 10,           // Offset text to the right
-						textAnchor: "start" // Align text to the l eft
-					}
-				))
-			]
-		})
-
-	}
-	getDatePlot(summaries, dateType = 'layingStart'){
-		const table = summaries
-		.filter(({key}) => key[3] == 1 ) // occupancy = 1
-		.map(({key, value}) => {
-			const statProps = parseValue(value)
-			const [species_id] = key
-			return {
-				species: this.getSpeciesName(species_id),
-				day: statProps[dateType]
-			}
-		})
-		.filter(({day}) => (day > 0))
-		return Plot.plot({
-			marginLeft: 100,
-			marginRight: 40,
-			x: {
-				grid: true,
-				inset: 6
-			},
-			
-			marks: [
-				Plot.boxX(table, {
-					x: "day",
-					y: "species",
-					sort: {y: "x", reduce: "mean"}
-				}),
-				Plot.text(table, Plot.groupY(
-					{x: "max"}, // Reducer: calculate the max 'x' value for each group
-					{
-						x: "day",
-						y: "species",
-						text: d => `n=${d.length}`, // Use the group's length for the text label
-						dx: 10,           // Offset text to the right
-						textAnchor: "start" // Align text to the l eft
-					}
-				))
-			]
-		})
-	}
+	
 	getSpeciesPlot(stats){
 		const table = Object.entries(stats).reduce((table, [species_id, perSpecies]) => {
 			for(let year = 2020; year <= 2025; year++){
@@ -287,11 +245,11 @@ export class PageAnalysis extends LitElement {
 			mcp.getByType('species'),
 			mcp.getByType('box'),
 			mcp.getByType('perpetrator'),
-			mcp.db().query('upupa/stats_by_species_year_state', {
+			mcp.db().query('upupa/stats_by_state_year_species', {
 				group: true,
 				group_level: 3
 			}),
-			mcp.db().query('upupa/stats_by_species_year_state', {
+			mcp.db().query('upupa/stats_by_state_year_species', {
 				reduce: false
 			}),
 			mcp.db().query('upupa/outcome', {
@@ -303,99 +261,95 @@ export class PageAnalysis extends LitElement {
 		this.perpetrators = perpetrators
 		this.allSummaries = allSummariesResponse.rows
 		//console.log('statsBySpeciesYearStateResponse', statsBySpeciesYearStateResponse)
-		const statsBySpeciesYearState = parseResponse(statsBySpeciesYearStateResponse)
+		const statsBySpeciesYearState = parseResponse(statsBySpeciesYearStateResponse, true)
 		//const statsBySpecies = parseResponse(statsBySpeciesResponse)
-		//console.log('allSummariesResponse', allSummariesResponse)
+		console.log('allSummariesResponse', allSummariesResponse)
 		//console.log('statsBySpeciesYearState', statsBySpeciesYearState)
 		this.eggSurvivalPlot = this.getSurvivalPlot(statsBySpeciesYearState, 'sum')
 		this.clutchSurvivalPlot = this.getSurvivalPlot(statsBySpeciesYearState, 'count')
 		this.speciesPlot = this.getSpeciesPlot(statsBySpeciesYearState)
-		this.clutchSizePlot = this.getClutchSizePlot(allSummariesResponse.rows)
-		this.incubationPlot = this.getIncubationPlot(allSummariesResponse.rows)
-		this.layingStartPlot = this.getDatePlot(allSummariesResponse.rows, 'layingStart')
-		this.breedingStartPlot = this.getDatePlot(allSummariesResponse.rows, 'breedingStart')
-		this.hatchDatePlot = this.getDatePlot(allSummariesResponse.rows, 'hatchDate')
+	
 		this.outcomePlot = this.getOutcomePlot(outcome.rows)
 		this.reasonForLossPlot = this.getOutcomePlot(outcome.rows, true, true)
 
 		this.requestUpdate()
 	}
 
+	selectChartCb(evt){
+		this.page = evt.target.value
+		setUrlParams({page: this.page})
+	}
+	selectSpeciesCb(evt){
+		this.species_id = evt.target.value
+	}
+	updated(){
+		const pageNode = this.shadowRoot.querySelector('.body > *')
+		console.log('pageNode', pageNode, this.species_id)
+		pageNode.species_id = this.species_id
+	}
 	render() {
+		console.log('analysis render', this.page)
 		return html`
-			<chart-perpetrators></chart-perpetrators>
-			<species-dates .data=${this.allSummaries}></species-dates>
-			<div>
-				<div class="title">
-					<div>Legebeginn</div>
-					<button-exportsvg name="Legebeginn.svg"></button-exportsvg>
-				</div>
-				${this.layingStartPlot}
+			<div class="head">
+				<select .value=${this.page} @change=${this.selectChartCb}>
+					${pages.map(({id}, idx) => html`
+						<option ?selected=${this.page==id} value=${id}>${translate(id)}</option>`)
+					}
+				</select>
+				<div></div>
+				<select-item
+					type="species"
+					class="borderless"
+					emptyLabel=${translate('ALL_SPECIES')}
+					@change=${this.selectSpeciesCb}>
+				</select-item>
+				
 			</div>
-			<div>
-				<div class="title">
-					<div>Brutbeginn</div>
-					<button-exportsvg name="Brutbeginn.svg"></button-exportsvg>
-				</div>
-				${this.breedingStartPlot}
-			</div>
-			<div>
-				<div class="title">
-					<div>Schlüpfdatum</div>
-					<button-exportsvg name="Schlüpfdatum.svg"></button-exportsvg>
-				</div>
-				${this.hatchDatePlot}
-			</div>
-			<div>
-				<div class="title">
-					<div>Brutdauer</div>
-					<button-exportsvg name="Brutdauer.svg"></button-exportsvg>
-				</div>
-				${this.incubationPlot}
-			</div>
-			<div>
-				<div class="title">
-					<div>Erfolg und Mißerfolg in absoluten Zahlen</div>
-					<button-exportsvg name="success-absolute.svg"></button-exportsvg>
-				</div>
-				${this.outcomePlot}
-			</div>
-			<div>
-				<div class="title">
-					<div>Gründe für Mißerfolg, normalisiert</div>
-					<button-exportsvg name="failure.svg"></button-exportsvg>
-				</div>
-				${this.reasonForLossPlot}
-			</div>
-			<div>
-				<div class="title">
-					<div>Gelegegröße</div>
-					<button-exportsvg name="clutchsize.svg"></button-exportsvg>
-				</div>
-				${this.clutchSizePlot}
-			</div>
-			<div>
-				<div class="title">
-					<div>Überlebensrate von Ei bis Ausflug</div>
-					<button-exportsvg name="survival.svg"></button-exportsvg>
-				</div>
-				${this.eggSurvivalPlot}
-			</div>
-			<div>
-				<div class="title">
-					<div>Erfolgsrate eines Geleges</div>
-					<button-exportsvg name="success-relative.svg"></button-exportsvg>
-				</div>
-				${this.clutchSurvivalPlot}
-			</div>
-			<div>
-				<div class="title">
-					<div>Artenzusammensetzung</div>
-					<button-exportsvg name="species.svg"></button-exportsvg>
-				</div>
-				${this.speciesPlot}
-			</div>
+			<div class="body">
+
+					
+				${(pages.find(({id}) => id==this.page) || pages[0]).html}
+				
+				
+				
 			
+				<div>
+					<div class="title">
+						<div>Erfolg und Mißerfolg in absoluten Zahlen</div>
+						<button-exportsvg name="success-absolute.svg"></button-exportsvg>
+					</div>
+					${this.outcomePlot}
+				</div>
+				<div>
+					<div class="title">
+						<div>Gründe für Mißerfolg, normalisiert</div>
+						<button-exportsvg name="failure.svg"></button-exportsvg>
+					</div>
+					${this.reasonForLossPlot}
+				</div>
+				
+				<div>
+					<div class="title">
+						<div>Überlebensrate von Ei bis Ausflug</div>
+						<button-exportsvg name="survival.svg"></button-exportsvg>
+					</div>
+					${this.eggSurvivalPlot}
+				</div>
+				<div>
+					<div class="title">
+						<div>Erfolgsrate eines Geleges</div>
+						<button-exportsvg name="success-relative.svg"></button-exportsvg>
+					</div>
+					${this.clutchSurvivalPlot}
+				</div>
+				<div>
+					<div class="title">
+						<div>Artenzusammensetzung</div>
+						<button-exportsvg name="species.svg"></button-exportsvg>
+					</div>
+					${this.speciesPlot}
+				</div>
+			</div>
 		`
 	}
 }
