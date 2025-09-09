@@ -12,13 +12,17 @@ export class ChartSurvivalRate extends ChartBase {
 		}
 	}
 	
-	
 	async fetchData(){
 		this.species = await mcp.getByType('species')
 		this.stats = await getStatsBySpeciesYearState()
 	}
 	
-
+	willUpdate(changed){
+		super.willUpdate(changed)
+		this.header = this.type == 'egg'
+		? 'Überlebensrate von Ei bis Ausflug'
+		: 'Erfolgsrate eines Geleges'
+	}
 	
 	
 	getPlot(){

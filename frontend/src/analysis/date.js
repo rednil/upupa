@@ -3,22 +3,13 @@ import '../charts/date-species'
 import '../charts/date-year'
 import '../forms/button-exportsvg'
 import { translate } from '../translator'
+import { AnalysisBase } from './base'
 
-export class AnalysisDate extends LitElement {
+export class AnalysisDate extends AnalysisBase {
 	static get properties() {
 		return {
 			type: { type: String },
-			species_id: { type: String }
 		}
-	}
-	static get styles() {
-		return css`
-      :host {
-        display: flex;
-				flex-direction: column;
-        align-items: center;
-			}
-		`
 	}
 	
 	render() {

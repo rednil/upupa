@@ -1,13 +1,9 @@
-import { LitElement, html, css } from 'lit'
+import { html } from 'lit'
 import '../charts/survival-rate'
-import { translate } from '../translator'
+import { AnalysisBase } from './base'
 
-export class AnalysisSuccess extends LitElement {
-	static get properties() {
-		return {
-			species_id: { type: String }
-		}
-	}
+export class AnalysisSuccess extends AnalysisBase {
+	
 	render() {
 		return html`
 			<chart-survival-rate species_id=${this.species_id} type="egg"></chart-survival-rate>

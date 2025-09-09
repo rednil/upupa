@@ -1,11 +1,6 @@
 import { LitElement, html, css } from "lit"
 
-export function parseValue([clutchSize, nestlings, nestlingsBanded, layingStart, breedingStart, hatchDate]){
-	return {clutchSize, nestlings, nestlingsBanded, layingStart, breedingStart, hatchDate}
-}
-export function parseKey([state, year, species_id, occupancy]) {
-	return { species_id, year, state, occupancy }
-}
+
 export const day2date = dayOfYear => {
 	let date = new Date()
 	date.setMonth(0)

@@ -1,13 +1,9 @@
 import { LitElement, html, css } from 'lit'
 import '../charts/clutchsize-species'
 import { translate } from '../translator'
+import { AnalysisBase } from './base'
 
-export class AnalysisClutchSize extends LitElement {
-	static get properties() {
-		return {
-			species_id: { type: String }
-		}
-	}
+export class AnalysisClutchSize extends AnalysisBase {
 	
 	render() {
 		return [

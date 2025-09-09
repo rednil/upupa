@@ -1,23 +1,9 @@
-import { LitElement, html, css } from 'lit'
+import { html } from 'lit'
 import '../charts/incubation-species'
-import { translate } from '../translator'
+import { AnalysisBase } from './base'
 
-export class AnalysisIncubation extends LitElement {
-	static get properties() {
-		return {
-			species_id: { type: String }
-		}
-	}
-	static get styles() {
-		return css`
-      :host {
-        display: flex;
-				flex-direction: column;
-        align-items: center;
-			}
-		`
-	}
-	
+export class AnalysisIncubation extends AnalysisBase {
+		
 	render() {
 		return [
 			this.renderChartIncubationSpecies(),

@@ -1,4 +1,3 @@
-import { LitElement, html, css } from 'lit'
 import { translate } from '../translator'
 import '../forms/button-exportsvg'
 import { getAllSummaries } from '../db'
@@ -16,9 +15,7 @@ export class ChartDateYear extends ChartBase {
 		this.requestUpdate()
 	}
 
-	
 	getPlot(){
-		console.log('date-year getPlot', this.summaries, this.type)
 		if(!(this.summaries && this.type)) return ''
 		const table = this.summaries
 		.filter(({key, value}) => {
@@ -35,7 +32,6 @@ export class ChartDateYear extends ChartBase {
 				date: day2date(dayOfTheYear)
 			}
 		})
-		console.log('daty-year table', table)
 		return Plot.plot({
 			marginLeft: 50,
 			marginRight: 50,

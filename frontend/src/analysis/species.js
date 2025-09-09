@@ -1,13 +1,9 @@
-import { LitElement, html, css } from 'lit'
+import { html } from 'lit'
 import '../charts/species-relative'
-import { translate } from '../translator'
+import { AnalysisBase } from './base'
 
-export class AnalysisSpecies extends LitElement {
-	static get properties() {
-		return {
-			species_id: { type: String }
-		}
-	}
+export class AnalysisSpecies extends AnalysisBase {
+	
 	render() {
 		return html`
 			<chart-species-relative species_id=${this.species_id}></chart-species-relative>
