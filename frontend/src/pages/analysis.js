@@ -103,7 +103,10 @@ export class PageAnalysis extends LitElement {
 			}
     `
   }
-	
+	constructor(){
+		super()
+		this.page = pages[0].id
+	}
 	selectChartCb(evt){
 		this.page = evt.target.value
 		setUrlParams({page: this.page})
@@ -136,7 +139,7 @@ export class PageAnalysis extends LitElement {
 				</select-item>
 			</div>
 			<div class="body">
-				${(pages.find(({id}) => id==this.page) || pages[0]).html}
+				${(pages.find(({id}) => id==this.page)).html}
 			</div>
 		`
 	}
