@@ -34,10 +34,9 @@ export class ChartOutcome extends ChartBase {
 	getPlot(){
 		if(!this.outcome) return ''
 		const {rows} = this.outcome
-		const allReasons = rows.reduce((allReasons, {key, value}) => {
+		let allReasons = rows.reduce((allReasons, {key, value}) => {
 			return Object.assign(allReasons, value)
 		}, {})
-		console.log('allReasons', allReasons)
 		if(!this.success) delete allReasons.SUCCESS
 		if(!this.failure) allReasons = { SUCCESS: allReasons.SUCCESS }
 		const firstYear = rows[0].key[0]
