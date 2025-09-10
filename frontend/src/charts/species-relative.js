@@ -22,6 +22,7 @@ export class ChartSpeciesRelative extends ChartBase {
 	
 	
 	getPlot(){
+		if(!(this.stats && this.species)) return ''
 		const table = Object.entries(this.stats).reduce((table, [species_id, perSpecies]) => {
 			for(let year = 2020; year <= 2025; year++){
 			//Object.entries(perSpecies).forEach(([year, {STATE_FAILURE, STATE_SUCCESS}]) => {

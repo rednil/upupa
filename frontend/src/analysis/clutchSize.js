@@ -1,25 +1,14 @@
 import { LitElement, html, css } from 'lit'
-import '../charts/clutchsize-species'
-import { translate } from '../translator'
+import '../charts/prop-species'
+import '../charts/prop-year'
 import { AnalysisBase } from './base'
 
 export class AnalysisClutchSize extends AnalysisBase {
 	
 	render() {
-		return [
-			this.renderChartClutchSizeSpecies(),
-			this.renderChartClutchSizeYear()
-		]
-	}
-	renderChartClutchSizeSpecies(){
-		if(this.species_id) return ''
 		return html`
-			<chart-clutchsize-species type=${this.type}></chart-clutchsize-species>
-		`
-	}
-	renderChartClutchSizeYear(){
-		return html`
-			<chart-clutchsize-year type=${this.type} species_id=${this.species_id}></chart-clutchsize-year>
+			<chart-prop-species type="clutchSize" species_id=${this.species_id}></chart-prop-species>
+			<chart-prop-year type="clutchSize" species_id=${this.species_id}></chart-prop-year>
 		`
 	}
 }

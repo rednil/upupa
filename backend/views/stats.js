@@ -1,4 +1,5 @@
-const genericMapFunction = doc => {
+
+export const map = doc =>  {
 	if (
 		doc.type == 'inspection' &&
 		(
@@ -6,42 +7,43 @@ const genericMapFunction = doc => {
 			doc.state == 'STATE_FAILURE'
 		)
 	) {
-		const year = new Date(doc.date).getFullYear()
-		let value = doc.__KEY__ || 0
-
-		/* __WILL_BE_UNCOMMENTED__
-		if(value){
-			const date = new Date(value)
-			value = Math.ceil((date - new Date(date.getFullYear(), 0, 1)) / 86400000)
+		const date = new Date(doc.date)
+		let layingStart = 0, breedingStart = 0, hatchDate = 0
+		
+		if(doc.layingStart) {
+			const date = new Date(doc.layingStart)
+			layingStart = Math.ceil((date - new Date(date.getFullYear(), 0, 1)) / 86400000)
 		}
-		__WILL_BE_UNCOMMENTED__ */
-
+		if(doc.breedingStart){
+			const date = new Date(doc.breedingStart)
+			breedingStart = Math.ceil((date - new Date(date.getFullYear(), 0, 1)) / 86400000)
+		}
+		if(doc.hatchDate){
+			const date = new Date(doc.hatchDate)
+			hatchDate = Math.ceil((date - new Date(date.getFullYear(), 0, 1)) / 86400000)
+		}
 		emit(
-			[
-				doc.state,
-				year,
-				doc.species_id,
-				doc.occupancy,
-				doc.box_id
-			],
-			value
-		)  
+		[
+			doc.state,
+			date.getFullYear(),
+			doc.species_id,
+			doc.occupancy,
+			doc.box_id
+		],
+		[
+			doc.clutchSize||0, 
+			doc.nestlings||0,
+			doc.nestlingsBanded||0,
+			layingStart,
+			breedingStart,
+			hatchDate
+		])  
 	}
 }
 
-function getStatFunction(key, isDate){
-	let map = genericMapFunction.toString().replace('__KEY__', key)
-	if(isDate) map = map.replace('/* __WILL_BE_UNCOMMENTED__', '').replace('__WILL_BE_UNCOMMENTED__ */', '')
-	map = map.replace(/\/\*[\s\S]*?\*\//g, '')
-	return {
-		map,
-		reduce: '_stats'
-	}
+export const view = {
+	map: map.toString(),
+	reduce: "_stats"
 }
 
-export const clutchSize = getStatFunction('clutchSize')
-export const nestlings = getStatFunction('nestlings')
-export const nestlingsBanded = getStatFunction('nestlingsBanded')
-export const layingStart = getStatFunction('layingStart', true)
-export const breedingStart = getStatFunction('breedingStart', true)
-export const hatchDate = getStatFunction('hatchDate', true)
+export default view

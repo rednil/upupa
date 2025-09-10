@@ -1,4 +1,3 @@
-import { mcp } from '../mcp'
 import { getStatsBySpeciesYearState } from '../db'
 import { translate } from '../translator'
 import { ChartBase } from './base'
@@ -8,12 +7,12 @@ import { ChartBase } from './base'
 export class ChartSurvivalRate extends ChartBase {
 	static get properties() {
 		return {
-			type: { type: String } // egg or clutch
+			type: { type: String }, // egg or clutch
+			species_id: { type: String }
 		}
 	}
 	
 	async fetchData(){
-		this.species = await mcp.getByType('species')
 		this.stats = await getStatsBySpeciesYearState()
 	}
 	
@@ -30,6 +29,7 @@ export class ChartSurvivalRate extends ChartBase {
 		const overall = {}
 		const prop = this.type == 'egg' ? 'sum' : 'count'
 		Object.entries(this.stats).forEach(([species_id, perSpecies]) => {
+			if(this.species_id && species_id != this.species_id) return
 			Object.entries(perSpecies).forEach(([year, perYear]) => {
 				const survivors = perYear.STATE_SUCCESS?.nestlings[prop] || 0
 				const fail = perYear.STATE_FAILURE?.clutchSize[prop] || 0
@@ -37,7 +37,7 @@ export class ChartSurvivalRate extends ChartBase {
 				const total = fail + success
 				const rate = survivors/total
 				table.push({
-					species: this.species.find(({_id}) => _id == species_id).name,
+					species: this.getSpeciesName(species_id),
 					year: new Date(`${year}-01-01`),
 					rate
 				})

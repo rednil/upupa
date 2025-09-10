@@ -11,7 +11,8 @@ export const map = doc =>  {
 
 		emit(
 			[
-				year
+				year,
+				doc.species_id
 			],
 			{
 				state: doc.state,

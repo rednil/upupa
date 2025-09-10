@@ -14,8 +14,10 @@ export class ChartOutcome extends ChartBase {
 	async fetchData(){
 		this.perpetrators = await mcp.getByType('perpetrator')
 		this.outcome = await mcp.db().query('upupa/outcome', {
-			group: true
+			group: true,
+			group_level: 1
 		})
+		console.log('outcome', this.outcome)
 	}
 	
 	willUpdate(changed){

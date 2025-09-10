@@ -1,8 +1,9 @@
 import { translate } from '../translator'
 import '../forms/button-exportsvg'
 import { getAllSummaries } from '../db'
-import { ChartBase, day2date } from './base'
-export class ChartDateYear extends ChartBase {
+import { ChartBase, getSummaryProp } from './base'
+
+export class ChartPropYear extends ChartBase {
 	static get properties() {
 		return {
 			species_id: { type: String },
@@ -12,9 +13,12 @@ export class ChartDateYear extends ChartBase {
 	
 	async fetchData(){
 		this.summaries = await getAllSummaries()
-		this.requestUpdate()
 	}
-
+	willUpdate(){
+		super.willUpdate()
+		const currentSpecies = this.getSpeciesName()
+		this.header = `${translate(this.type)}${currentSpecies ? ` ${currentSpecies}` : ''}, Änderung von Jahr zu Jahr`
+	}
 	getPlot(){
 		if(!(this.summaries && this.type)) return ''
 		const table = this.summaries
@@ -22,39 +26,41 @@ export class ChartDateYear extends ChartBase {
 			return (
 				(!this.species_id || (key.species_id == this.species_id)) &&
 				key.occupancy == 1 &&
-				value[this.type]
+				getSummaryProp(this.type, value)
 			)
 		})
 		.map(({key, value}) => {
-			const dayOfTheYear = value[this.type]
 			return {
 				year: key.year,
-				date: day2date(dayOfTheYear)
+				[translate(this.type)]: getSummaryProp(this.type, value)
 			}
 		})
+		const x = {
+			grid: true,
+			inset: 6,
+		}
+		if(this.type == 'layingStart' || this.type == 'breedingStart' || this.type == 'hatchDate'){
+			x.tickFormat = date => date.toLocaleString(undefined, {
+				month: "numeric",
+				day: "numeric"
+			})
+		}
 		return Plot.plot({
 			marginLeft: 50,
 			marginRight: 50,
-			x: {
-				grid: true,
-				inset: 6,
-				tickFormat: date => date.toLocaleString(undefined, {
-					month: "numeric",
-					day: "numeric"
-				})
-			},
+			x,
 			y: {
 				tickFormat: "d" 
 			},
 			marks: [
 				Plot.boxX(table, {
-					x: "date",
+					x: translate(this.type),
 					y: "year",
 				}),
 				Plot.text(table, Plot.groupY(
 					{x: "max"}, // Reducer: calculate the max 'x' value for each group
 					{
-						x: "date",
+						x: translate(this.type),
 						y: "year",
 						text: d => `n=${d.length}`, // Use the group's length for the text label
 						dx: 10,           // Offset text to the right
@@ -67,4 +73,4 @@ export class ChartDateYear extends ChartBase {
 	
 }
 
-customElements.define('chart-date-year', ChartDateYear)
+customElements.define('chart-prop-year', ChartPropYear)

@@ -97,7 +97,10 @@ export class PageAnalysis extends LitElement {
 			:head > select > option {
 				direction: ltr;
 			}
-			
+			.page_failure select-item,
+			.page_species select-item {
+				display: none;
+			}
     `
   }
 	
@@ -118,7 +121,7 @@ export class PageAnalysis extends LitElement {
 	}
 	render() {
 		return html`
-			<div class="head">
+			<div class="head page_${this.page}">
 				<select .value=${this.page} @change=${this.selectChartCb}>
 					${pages.map(({id}, idx) => html`
 						<option ?selected=${this.page==id} value=${id}>${translate(id)}</option>`)

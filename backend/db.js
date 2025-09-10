@@ -6,12 +6,10 @@ import PouchDB from 'pouchdb'
 
 import inspections from './views/inspections.js'
 import summaries from './views/summaries.js'
-import stats_by_state_year_species from './views/stats_by_state_year_species.js'
-import stats_by_species_year_state from './views/stats_by_species_year_state.js'
+import stats from './views/stats.js'
 import outcome from './views/outcome.js'
 import boxes from './views/boxes.js'
 import perpetrators from './views/perpetrators.js'
-import { clutchSize, nestlings, nestlingsBanded, hatchDate, layingStart, breedingStart  } from './views/stats.js'
 
 const {
 	DATABASE_PROTOCOL,
@@ -53,7 +51,7 @@ export async function ensureDesignDocument(db) {
 		"views": {
 			inspections,
 			summaries,
-			stats_by_state_year_species,
+			stats,
 			boxes,
 			outcome,
 			perpetrators,

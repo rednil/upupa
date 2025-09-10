@@ -15,13 +15,9 @@ export class ChartIncubationSpecies extends ChartBase {
 	
 	
 	async fetchData(){
-		this.species = await mcp.getByType('species')
 		this.summaries = await getAllSummaries()
 		this.boxes = await mcp.getByType('box')
 	}
-	
-
-	
 	
 	getPlot(){
 		if(!(this.summaries)) return ''
@@ -29,7 +25,7 @@ export class ChartIncubationSpecies extends ChartBase {
 		.map(({key, value}) => {
 			const {hatchDate, breedingStart} = value
 			const {year,species_id,box_id} = key
-			const species = this.species.find(({_id}) => _id == species_id).name
+			const species = this.getSpeciesName(species_id)
 			const incubation = hatchDate && breedingStart ? hatchDate - breedingStart : 0
 			if(incubation > 0 && (incubation < 10 || incubation > 20)) {
 				const boxName = this.boxes.find(box => box._id == box_id)?.name

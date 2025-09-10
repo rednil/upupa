@@ -188,7 +188,7 @@ export class PageStart extends LitElement {
 	
 	async fetchStatistics(){
 		const response = await mcp.db()
-		.query('upupa/stats_by_state_year_species', {
+		.query('upupa/stats', {
 			group: true,
 			group_level: 1
 		})
