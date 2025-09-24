@@ -140,7 +140,7 @@ export class AppShell extends LitElement {
   }
 	
 	renderTopBar(){
-		const userCtx = mcp.project.session.userCtx
+		const userCtx = mcp.project.session?.userCtx
 		return html`
 			<div class="top ${userCtx?'logged-in':'logged-out'} route-${this.route.path.slice(2)}">
 				<select-route selected=${this.route.path}></select-route>

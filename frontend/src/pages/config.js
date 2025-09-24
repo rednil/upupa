@@ -195,7 +195,8 @@ export class PageConfig extends LitElement {
 	}
 	async submit(){
 		if(!this.copy.name) return this.shadowRoot.querySelector('#missing-prop').open = true
-		const items = [this.copy] 
+		this.copy.type = this.type
+		const items = [this.copy]
 		if(this.item._id && !this.copy._id) {
 			this.item.validUntil = this.copy.validFrom
 			items.push(this.item)

@@ -1,6 +1,7 @@
 import { html, css, LitElement } from 'lit'
 import { mcp } from '../mcp'
 import '../components/view-db'
+import '../forms/button-upload'
 
 export class PageDatabase extends LitElement {
   
@@ -50,8 +51,11 @@ export class PageDatabase extends LitElement {
       ${['localDB', 'remoteDB', 'userDB'].map(db => html`
         <view-db .db=${mcp.project[db]} label=${db} .deletable=${db!='remoteDB'} @delete=${this.deleteCb}></view-db>
       `)}
+      <a href="/api/download" download><button>Export</button></a>
+      <button-upload></button-upload>
     `
   }
+  
   async deleteCb(evt){
     const {label, db, info} = evt.target
     //console.log(evt.target.label, db)

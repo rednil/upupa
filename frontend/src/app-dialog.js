@@ -5,6 +5,8 @@ export class AppDialog extends LitElement {
 		return {
 			open: {type: Boolean},
 			primary: {type: String},
+			primary_disabled: {type: Boolean},
+			secondary_disabled: {type: Boolean},
 			secondary: {type: String},
 			discard: {type: String},
 			head: {type: String}
@@ -84,8 +86,8 @@ export class AppDialog extends LitElement {
 					<div class="content">
 						<slot></slot>
 						<div class="buttons">
-							<button @click=${this._secondaryCb}>${this.secondary}</button>
-							<button @click=${this._primaryCb}>${this.primary}</button>
+							<button @click=${this._secondaryCb} ?disabled=${this.secondary_disabled}>${this.secondary}</button>
+							<button @click=${this._primaryCb} ?disabled=${this.primary_disabled}>${this.primary}</button>
 						</div>
 					</div>
 				</div>

@@ -37,6 +37,19 @@ export const auth = {
 
 export const db = new PouchDB(DB_URL, { auth })
 
+export const designDoc = {
+	"_id": "_design/upupa",
+	"views": {
+		inspections,
+		summaries,
+		stats,
+		boxes,
+		outcome,
+		perpetrators,
+		
+	}
+}
+
 export async function ensureDesignDocument(db) {
 	/*
 	await db.createIndex({
@@ -45,40 +58,27 @@ export async function ensureDesignDocument(db) {
 		},
 	})
 	*/
-  const designDocId = "_design/upupa";
-  const newDesignDoc = {
-    "_id": "_design/upupa",
-		"views": {
-			inspections,
-			summaries,
-			stats,
-			boxes,
-			outcome,
-			perpetrators,
-			
-		}
-  };
 
   try {
-    const existingDoc = await db.get(designDocId);
-		
+    const existingDoc = await db.get(designDoc._id);
 		const copy = { ...existingDoc }
 		delete copy._rev
-		console.log('existingDesignDoc', existingDoc)
-		console.log('newDesignDoc', newDesignDoc)
-		console.log('existing == new', JSON.stringify(copy) == JSON.stringify(newDesignDoc))
-    // If the design document exists, update it with the new content
-    // and preserve the _rev
-    await db.put({
-      ...newDesignDoc,
-      _rev: existingDoc._rev,
-    });
-    console.log("Design document 'upupa' updated.");
+		if(JSON.stringify(copy) != JSON.stringify(designDoc)){
+			console.log('Design document changed, updating it')
+			await db.put({
+				...designDoc,
+				_rev: existingDoc._rev,
+			})
+    	console.log("Design document updated.")
+		}
+		else {
+			console.log('Design document is up-to-date')
+		}
   } catch (error) {
     if (error.status === 404) {
-      // Design document doesn't exist, create it
-      await db.put(newDesignDoc);
-      console.log("Design document 'upupa' created.");
+      console.log("Design document doesn't exist, creating it")
+      await db.put(designDoc)
+      console.log("Design document created.")
     } else {
       // Other error, re-throw
       throw error;
