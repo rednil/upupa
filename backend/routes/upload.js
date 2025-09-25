@@ -4,36 +4,35 @@ import zlib from 'zlib'
 import { pipeline } from 'stream/promises'
 import { Writable } from 'stream'
 import fs from 'fs'
-import { designDoc } from '../db.js'
+import { DB_ADDRESS, designDoc } from '../db.js'
+import path from 'path'
 
 var router = express.Router()
 
 // Multer-Konfiguration für Dateiuploads
 const upload = multer({ dest: 'uploads/' })
 
-const COUCHDB_URL = 'http://localhost:8000/api/couch/dev' // Passe die URL deiner CouchDB an
-
 const removeTrailingComma = str => {
 	return (str.slice(-1) == ',') ? str.slice(0,-1) : str
 }
 
-async function destroyDB(cookie){
+async function destroyDB(url, cookie){
 	try {
-    let r = await fetch(`${COUCHDB_URL}`, {
+    let r = await fetch(`${url}`, {
       method: 'DELETE',
       headers: {
         cookie: cookie
       }
     })
 		console.log(`Database deletion response:`, r.status, r.statusText)
-		r = await fetch(`${COUCHDB_URL}`, {
+		r = await fetch(`${url}`, {
       method: 'PUT',
       headers: {
         cookie: cookie
       }
     })
     console.log(`Database creation response`, r.status, r.statusText)
-		r = await fetch(`${COUCHDB_URL}/${designDoc._id}`, {
+		r = await fetch(path.join(url, designDoc._id), {
       method: 'PUT',
       headers: {
         cookie: cookie
@@ -47,8 +46,8 @@ async function destroyDB(cookie){
   }
 }
 
-async function bulkImportDocs(docs, cookie) {
-  const response = await fetch(`${COUCHDB_URL}/_bulk_docs`, {
+async function bulkImportDocs(url, docs, cookie) {
+  const response = await fetch(path.join(url, '_bulk_docs'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -60,18 +59,19 @@ async function bulkImportDocs(docs, cookie) {
 	return response
 }
 
-router.post('/', upload.single('zipFile'), async (req, res, next) => {
-	const path = req.file?.path
-	if(!path) {
-		return res.status(500).json({ message: 'IMPORT_FAILED', detail: 'FILE_MISSING' })
+router.post('/:target', upload.single('zipFile'), async (req, res, next) => {
+	let { target } = req.params
+	if(!target.startsWith('http')) target = path.join(DB_ADDRESS, target)
+	const source = req.file?.path
+	if(!source) {
+		return res.status(400).json({ message: 'IMPORT_FAILED', detail: 'SOURCE_MISSING' })
 	}
   try {
 		const { cookie } = req.headers
-    
-		await destroyDB(cookie)
+		await destroyDB(target, cookie)
 
     const gunzip = zlib.createGunzip()
-    const source = fs.createReadStream(path)
+    const readStream = fs.createReadStream(source)
     
 		let nDocsImported = 0
 		let info = {}
@@ -111,7 +111,7 @@ router.post('/', upload.single('zipFile'), async (req, res, next) => {
 					})
 					if(docsToImport.length > 1000){
 						nDocsImported += docsToImport.length
-						const response = await bulkImportDocs(docsToImport, cookie)
+						const response = await bulkImportDocs(target, docsToImport, cookie)
 						docsToImport = []
 						callback(response.status == 201 ? undefined : response)
 					}
@@ -128,12 +128,12 @@ router.post('/', upload.single('zipFile'), async (req, res, next) => {
 			},
 			async final(callback) {
 				nDocsImported += docsToImport.length
-				const response = await bulkImportDocs(docsToImport, cookie)
+				const response = await bulkImportDocs(target, docsToImport, cookie)
 				callback(response.status == 201 ? undefined : response)
 			}
 		})
 
-    await pipeline(source, gunzip, collectStream)
+    await pipeline(readStream, gunzip, collectStream)
     console.log(`Imported ${nDocsImported} documents`)
     res.status(200).json({ message: 'IMPORT_SUCCESSFULL', count: nDocsImported })
 
@@ -142,7 +142,7 @@ router.post('/', upload.single('zipFile'), async (req, res, next) => {
     res.status(500).json({ message: 'IMPORT_FAILED', detail: error })
   } finally {
  		// Temporäre Datei löschen
-    fs.unlinkSync(path)
+    fs.unlinkSync(source)
 	}
 })
 

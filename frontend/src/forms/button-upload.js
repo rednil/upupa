@@ -4,7 +4,7 @@ import { translate } from '../translator'
 export class ButtonUpload extends LitElement {
 	static get properties() {
 		return {
-			href: { type: String },
+			url: { type: String },
 			state: { type: String }
 		}
 	}
@@ -72,7 +72,7 @@ export class ButtonUpload extends LitElement {
 				<div>Alle in der Datenbank vorhandenen Daten werden überschrieben!</div>
 				
 				<form>
-					<input @change=${this.fileCb} id="input" type="file" class="form-control-file" name="zipFile">
+					<input @change=${this.fileCb} type="file" class="form-control-file" name="zipFile">
 				</form>
 				${this.file.name ? this.renderFileInfo() : ''}
 				<div class="warning">${this.error}</div>
@@ -89,6 +89,8 @@ export class ButtonUpload extends LitElement {
 	}
 	firstUpdated(){
 		this.form = this.shadowRoot.querySelector('form')
+		this.dialog = this.shadowRoot.querySelector('app-dialog')
+		this.input = this.shadowRoot.querySelector('input')
 	}
 	clear(){
 		this.error = ''
@@ -97,8 +99,8 @@ export class ButtonUpload extends LitElement {
 	}
 	importCb(){
 		this.clear()
-		this.shadowRoot.querySelector('input').value = ''
-		this.shadowRoot.querySelector('app-dialog').open = true
+		this.input.value = ''
+		this.dialog.open = true
 	}
 	fileCb(evt){
 		console.log('value', evt.target.value)
@@ -109,18 +111,22 @@ export class ButtonUpload extends LitElement {
 		this.state = this.file.name ? 'STATE_READY' : 'STATE_INIT'
 	}
 	async okCb(){
+		if(this.state == 'STATE_SUCCESS'){
+			return this.dialog.open = false
+		}
 		this.state = 'STATE_PROGRESS'
 		try{
-			let response = await fetch("/api/upload", {
+			let response = await fetch(`/api/upload/${encodeURIComponent(this.url)}`, {
 				method: "POST",
 				body: this.formData,
 			})
 			if(response.status == 200) this.state = 'STATE_SUCCESS'
 			else {
-				this.state = 'STATE_ERROR'
+				
 				const result = await response.json()
 				this.error = result.message
-				console.log(result)
+				this.state = 'STATE_ERROR'
+				console.log(this.error, result)
 			}
 		}
 		catch(e){

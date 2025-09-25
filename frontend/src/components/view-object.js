@@ -1,6 +1,8 @@
 
 import { LitElement, html, css } from 'lit'
 
+const urlRegExp = /(?<protocol>\w+):\/\/(?<name>[\w\-\.]+)(:(?<port>\d+))?(?<path>.*)/
+
 export class ViewObject extends LitElement {
 	static get properties() {
 		return {
@@ -35,6 +37,10 @@ export class ViewObject extends LitElement {
 	renderObject(obj){
 		return Object.entries(obj).map(([key, value]) => {
 			const keyStr = this.prefix ? `${this.prefix}.${key}` : key
+			if(typeof value == 'string'){
+				const urlMatch = value.match(urlRegExp)
+				if(urlMatch) value = urlMatch.groups
+			}
 			switch(typeof value){
 				case 'object':
 					return html`

@@ -1,6 +1,9 @@
 
 import { LitElement, html, css } from 'lit'
 import './view-object'
+import '../forms/button-download'
+import '../forms/button-upload'
+
 import { translate } from '../translator'
 const formatter = (key, value) => {
 	let result = value
@@ -46,11 +49,9 @@ export class ViewDb extends LitElement {
 			html`
 				<div>
 					<label>${this.label}</label>
-					${
-						this.info.adapter == 'indexeddb'
-						? html`<button @click=${this.deleteCb}>Delete</button>` 
-						: html`<button @click=${this.logoutCb}>Logout</button>` 
-					}
+					<div>
+						${this.renderButtons()}
+					</div>
 				</div>
 			`,
 			this.renderEntry('db_name', this.info.db_name),
@@ -58,6 +59,25 @@ export class ViewDb extends LitElement {
 			this.renderEntry('doc_count', this.info.doc_count),
 			this.renderDetails()
 		]
+	}
+	renderButtons(){
+		return this.info.adapter == 'indexeddb'
+		? this.renderLocalButtons() 
+		: this.renderRemoteButtons()
+	}
+	renderLocalButtons(){
+		return html`
+			<button @click=${this.deleteCb}>Delete</button>
+		` 
+	}
+	renderRemoteButtons(){
+		const { host } = this.info
+		if(!host) return
+		return html`
+			<button @click=${this.logoutCb}>Logout</button>
+			<button-download url=${host}></button-download>
+    	<button-upload url=${host}></button-upload>
+		`
 	}
 	renderEntry(key, value){
 		return value ? html`
@@ -91,12 +111,6 @@ export class ViewDb extends LitElement {
 		if(this.db.info){
 			try{
 				this.info = await this.db.info()
-				//this.name = this.info.db_name
-				const hostMatch = this.info.host?.match(/(\w+):\/\/([\w\-\.]+)(:(\d+))?(.*)/)
-				if(hostMatch){
-					const [all, protocol, name, allPort, port, path] = hostMatch
-					this.info.host = {protocol, name, port, path }
-				}
 			}catch(error){
 				this.info = error
 			}

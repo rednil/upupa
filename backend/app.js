@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url'
 import path from 'path'
 import couch from './routes/couch.js'
 import { db, ensureDesignDocument } from './db.js'
+import dbProxy from './routes/dbProxy.js'
 import download from './routes/download.js'
 import upload from './routes/upload.js'
 await ensureDesignDocument(db)
@@ -14,6 +15,7 @@ await ensureDesignDocument(db)
 var app = express()
 if(environment != 'test') app.use(morgan('dev'))
 app.use('/api/couch', couch)
+app.use('/api/db', dbProxy)
 app.use('/api/download', download)
 app.use('/api/upload', upload)
 app.use(express.json())

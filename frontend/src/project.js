@@ -6,11 +6,11 @@ export class Project {
 		this.localDB = new PouchDB(this.localDbName, {adapter: 'indexeddb'})
 		this.initialized = false
 		if(this.remoteDbName){
-			const remoteURL = `${window.location.origin}/api/couch/${this.remoteDbName}`
+			const remoteURL = `${window.location.origin}/api/db/${this.remoteDbName}`
 			this.remoteDB = new PouchDB(remoteURL, {
 				skip_setup: true
 			})
-			this.userDB = new PouchDB(window.location.origin + '/api/couch/_users', {
+			this.userDB = new PouchDB(window.location.origin + '/api/db/_users', {
 				skip_setup: true
 			})
 		}
