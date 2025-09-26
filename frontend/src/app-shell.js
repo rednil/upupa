@@ -9,7 +9,6 @@ import './forms/select-route'
 import './forms/select-year'
 import './forms/select-item'
 import './pages/overview'
-import './forms/button-logout'
 import './pages/inspection.js'
 import './pages/config.js'
 import './components/error-display.js'
@@ -17,12 +16,13 @@ import './pages/analysis.js'
 import './pages/start'
 import { getRoute, getUrlParams, setUrlParams } from './router.js'
 
+
 export class AppShell extends LitElement {
   static get properties() {
     return {
       error: { type: Object },
 			route: { type: Object },
-			params: { type: Object }
+			params: { type: Object },
     }
   }
 
@@ -47,10 +47,7 @@ export class AppShell extends LitElement {
 			.user > * {
 				margin: auto;
 			}
-			button-logout {
-				display: flex;
-				padding-left: 0.5em;
-			}
+			
 			.top {
 				display: flex;
 				flex-direction: row;
@@ -102,6 +99,7 @@ export class AppShell extends LitElement {
 			this.error = evt.detail
 		})
 		this.error = ''
+		
   }
 	navigate(){
 		this.route = getRoute()
@@ -147,7 +145,13 @@ export class AppShell extends LitElement {
 				${this.renderYearSelector()}
 				<div>
 					<project-status @change=${this.statusChangeCb}></project-status>
-					<select-item class="borderless" autoselect @change=${this.projectChangeCb} type="project"></select-item>
+					<select-item 
+						class="borderless"
+						autoselect
+						@change=${this.projectChangeCb}
+						type="project"
+						value=${mcp.projectID}
+					></select-item>
 			
 				</div>
 			</div>
@@ -180,7 +184,6 @@ export class AppShell extends LitElement {
 		`
 	}
   statusChangeCb(evt){
-		console.log('statusChangeCb', evt.target.state)
 		const {state} = evt.target
 		if(state == STATE_ERROR || state == STATE_READY){
 			if(!this.dbReadyOrError) {
@@ -198,7 +201,7 @@ export class AppShell extends LitElement {
 		this.requestUpdate()
 	}
 	projectChangeCb(evt){
-		console.log('projectChangeCb not implemented')
+		mcp.selectProject(evt.target.value)
 	}
 	
 }

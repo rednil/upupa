@@ -51,7 +51,6 @@ export class ChartPerpetratorsDate extends ChartBase {
 				count: value.count
 			}
 		})
-		console.log('perpetrator table', table)
 		return Plot.plot({
 			color: {legend: true},
 			marginLeft: 50,

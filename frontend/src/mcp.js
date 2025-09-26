@@ -1,5 +1,7 @@
 import { Project } from "./project"
 
+const PROJECT_ID = 'PROJECT_ID'
+
 class MasterControlProgram {
 	constructor(){
 		try{
@@ -7,7 +9,7 @@ class MasterControlProgram {
 		} catch(error){
 			this.error = error
 		}
-		
+		this.projectID = localStorage.getItem(PROJECT_ID)
 		this.init()
 	}
 	_prepareForChange(){
@@ -18,23 +20,25 @@ class MasterControlProgram {
 	async init(){
 		this._prepareForChange()
 		try{
-			let response = await this._db.allDocs()
-			//console.log('created project in database', response)
-			if(!response.total_rows){
-				this.projectID = `project-${this.uuid()}`
-				await this._db.put({
-					_id: this.projectID,
-					name: 'Upupa',
-					type: 'project',
-					remoteDB: 'upupa'
-				})
-				console.log('proxy: No projects configured, created "upupa" from scratch')
-				//console.log('writeResponse', writeResponse)
-				//response = await db.allDocs({include_docs: true})
-				
-			}
-			else {
-				this.projectID = response.rows[0].id
+			if(!this.projectID || !this._db.get(this.projectID)){
+				let response = await this._db.allDocs()
+				//console.log('created project in database', response)
+				if(!response.total_rows){
+					this.projectID = `project-${this.uuid()}`
+					await this._db.put({
+						_id: this.projectID,
+						name: 'Upupa',
+						type: 'project',
+						remoteDB: 'upupa'
+					})
+					console.log('proxy: No projects configured, created "upupa" from scratch')
+					//console.log('writeResponse', writeResponse)
+					//response = await db.allDocs({include_docs: true})
+					
+				}
+				else {
+					this.projectID = response.rows[0].id
+				}
 			}
 			await this.createProject()
 		} catch(error) {
@@ -45,15 +49,18 @@ class MasterControlProgram {
 	
 	
 	async selectProject(id){
+		localStorage.setItem(PROJECT_ID, id)
+		location.reload()
+		/*
 		this._prepareForChange()
 		this.projectID = id
 		await this.createProject()
 		return this.project
+		*/
 	}
 	async createProject(){
 		const config = await this._db.get(this.projectID)
 		this.project = await Project.create(config)
-		console.log('ready')
 		this._readyResolve()
 	}
 	uuid(length = 10){

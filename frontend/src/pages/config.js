@@ -143,8 +143,8 @@ export class PageConfig extends LitElement {
 		setUrlParams({type: this.type})
 	}
 	async changeItemCb(evt){
-		this.item = evt.target.item
 		this._id = evt.target.value
+		this.item = await mcp.db(this.type).get(this._id)
 		this.updateHistory()
 	}
 	renderConfig(){
@@ -176,7 +176,7 @@ export class PageConfig extends LitElement {
 		this.shadowRoot.querySelector('#delete-dialog').open = false
 		const response = await mcp.db(item.type).remove(this.item)
 		if(response?.deletedCount){
-			this.shadowRoot.querySelector('select-item').fetchData()
+			this.shadowRoot.querySelector('select-item').fetchOptions()
 		}
 	}
 	cancel(){

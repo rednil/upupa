@@ -29,9 +29,6 @@ export class ProjectEdit extends LitElement {
 		return [
 			this.renderInput('name'),
 			this.renderInput('remoteDB'),
-			//this.renderInput('username'),
-			//this.item.remoteDB ? this.renderCheckbox('cache') : '',
-			this.renderButtons(),
 			this.renderNote()
 		]
 	}
@@ -51,15 +48,7 @@ export class ProjectEdit extends LitElement {
 			</div>
 		`
 	}
-	renderButtons(){
-		return html`
-			<div>
-				<button @click=${()=>mcp.project.login()}>Login</button>
-				<button @click=${()=>mcp.project.logout()}>Logout</button>
-				<button @click=${()=>mcp.project.resync()}>Resync</button>
-			</div>
-		`
-	}
+	
 	renderNote(){
 		return html`
 			<div class="note">

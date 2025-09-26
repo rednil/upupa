@@ -14,7 +14,6 @@ export class Project {
 				skip_setup: true
 			})
 		}
-		console.log('Project created', config)
 	}
 	static async create(config){
 		const project = new Project(config)

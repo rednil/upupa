@@ -1,6 +1,5 @@
 import { LitElement, html, css } from 'lit'
 import { translate } from '../translator.js'
-import '../forms/select-item.js'
 import './id-resolver.js'
 
 export class InspectionDisplay extends LitElement {
@@ -44,9 +43,6 @@ export class InspectionDisplay extends LitElement {
 			}
 			button {
 				width: 100%;
-			}
-			select-item {
-				justify-content: center;
 			}
 		`
 	}
