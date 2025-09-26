@@ -12,7 +12,7 @@ const formatter = (key, value) => {
 			result = new Date(Number(value+'000')).toLocaleString()
 			break
 	}
-	if(result.toString().length > 20) result = result.toString().slice(0, 20) + ' ...' 
+	if(result && result.toString().length > 20) result = result.toString().slice(0, 20) + ' ...' 
 	return result
 }
 

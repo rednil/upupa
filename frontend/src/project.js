@@ -2,15 +2,17 @@ export class Project {
 	constructor(config){
 		this._config = config
 		this.localDbName = config.remoteDB || config._id
-		this.remoteDbName = config.remoteDB
+		this.remoteDbUrl = config.remoteDB
+		this.remoteDbName = this.remoteDbUrl.split('/').pop()
 		this.localDB = new PouchDB(this.localDbName, {adapter: 'indexeddb'})
 		this.initialized = false
-		if(this.remoteDbName){
-			const remoteURL = `${window.location.origin}/api/db/${this.remoteDbName}`
-			this.remoteDB = new PouchDB(remoteURL, {
+	
+		if(this.remoteDbUrl){
+			const proxyUrl = `${window.location.origin}/api/db/${this.remoteDbUrl}`
+			this.remoteDB = new PouchDB(proxyUrl, {
 				skip_setup: true
 			})
-			this.userDB = new PouchDB(window.location.origin + '/api/db/_users', {
+			this.userDB = new PouchDB(proxyUrl.replace(this.remoteDbName, '_users'), {
 				skip_setup: true
 			})
 		}
