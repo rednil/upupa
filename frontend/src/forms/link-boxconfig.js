@@ -18,7 +18,7 @@ export class LinkBoxconfig extends LitElement {
 	}
 	render() {
 		return html`
-			<a href="#/boxconfig?box_id=${this.box_id}">
+			<a href="#/config?type=box&id=${this.box_id}">
 				${unsafeSVG(settings)}
 			</a>
 		`

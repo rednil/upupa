@@ -77,7 +77,6 @@ export class BoxEdit extends LitElement {
 		`
 	}
 	renderArchitecture(){
-		console.log('renderArch', this.item)
 		return html`
 			<div>
 				<label for="architecture_id">${translate('ARCHITECTURE')}</label>

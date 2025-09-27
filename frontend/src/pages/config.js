@@ -13,7 +13,8 @@ import { setUrlParams } from '../router.js'
 export class PageConfig extends LitElement {
 	static get properties() {
 		return {
-			_id: { type: String },
+			id: { type: String },
+			item: { type: Object },
 			copy: { type: Object},
 			type: { type: String },
 			tainted: { type: Boolean },
@@ -49,17 +50,11 @@ export class PageConfig extends LitElement {
 	constructor(){
 		super()
 		this.type = 'box'
-		this._item = {}
+		this.item = {}
 		this.copy = {}
 		this.tainted = false
 	}
-	set item(item = {}){
-		this._item = item
-		this.copy = {...item}
-	}
-	get item(){
-		return this._item
-	}
+	
 	render() {
 		return html`
 			<app-dialog
@@ -100,8 +95,8 @@ export class PageConfig extends LitElement {
 		return [
 			this.renderTypeSelector(),
 			this.type == 'box' ? this.renderBoxSelector() : this.renderItemSelector(),
-			(this.item && !this.item._id) ? html`<span>Neuer Eintrag</span>` : '' ,
-			html`<button .disabled=${this.tainted} @click=${this.addCb}>+</button>`
+			(this.item && !this.item._id && !this.fetching) ? html`<span>Neuer Eintrag</span>` : '' ,
+			html`<button .disabled=${this.tainted || this.fetching} @click=${this.addCb}>+</button>`
 		]
 	}
 	renderTypeSelector(){
@@ -121,7 +116,7 @@ export class PageConfig extends LitElement {
 			<select-item 
 				style=${(this.item && !this.item._id) ? 'display:none' : ''}
 				.type=${this.type} 
-				.value=${this._id} 
+				.value=${this.id} 
 				autoselect
 				@change=${this.changeItemCb}
 			></select-item>
@@ -131,7 +126,7 @@ export class PageConfig extends LitElement {
 		return html`
 			<select-box 
 				style=${(this.item && !this.item._id) ? 'display:none' : ''}
-				.value=${this._id}
+				.value=${this.id}
 				.year=${this.year}
 				autoselect
 				@change=${this.changeItemCb}
@@ -142,9 +137,17 @@ export class PageConfig extends LitElement {
 		this.type = evt.target.value
 		setUrlParams({type: this.type})
 	}
+	willUpdate(changed){
+		if(changed.has('id')) this.fetchItem()
+	}
+	async fetchItem(){
+		this.fetching = true
+		this.item = await mcp.db(this.type).get(this.id)
+		this.copy = {...this.item}
+		this.fetching = false
+	}
 	async changeItemCb(evt){
-		this._id = evt.target.value
-		this.item = await mcp.db(this.type).get(this._id)
+		this.id = evt.target.value
 		this.updateHistory()
 	}
 	renderConfig(){
@@ -167,7 +170,7 @@ export class PageConfig extends LitElement {
 		} 
 	}
 	updateTainted(){
-		this.tainted = (JSON.stringify(this._item) != JSON.stringify(this.copy))
+		this.tainted = (JSON.stringify(this.item) != JSON.stringify(this.copy))
 	}
 	confirmDeletion(){
 		this.shadowRoot.querySelector('#delete-dialog').open = true
@@ -190,7 +193,7 @@ export class PageConfig extends LitElement {
 	updateHistory(){
 		setUrlParams({
 			type: this.type,
-			_id: this._id
+			id: this.id
 		})
 	}
 	async submit(){
@@ -203,7 +206,7 @@ export class PageConfig extends LitElement {
 		}
 		const response = await mcp.db(this.type).bulkDocs(items.map(item => mcp.finalize(item)))
 		if(response[0].ok){
-			this._id=response[0].id
+			this.id=response[0].id
 			this.updateHistory()
 		}
 		this.shadowRoot.querySelector('select-item').fetchOptions()
