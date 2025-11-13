@@ -1,4 +1,5 @@
 import { LitElement, html, css } from 'lit'
+import {unsafeHTML} from 'lit/directives/unsafe-html.js'
 import { mcp } from './mcp.js'
 import { STATE_READY, STATE_ERROR, STATE_UNAUTHENTICATED } from './components/project-status.js'
 import './components/sync-progress.js'
@@ -124,7 +125,7 @@ export class AppShell extends LitElement {
   updated(){
 		setUrlParams({year: this.selectedYear})
 		this.params.year = this.selectedYear
-		const page = this.shadowRoot.querySelector('#page')
+		const page = this.shadowRoot.querySelector(this.getPageComponent())
 		if(page) Object.assign(page, this.params)
   }
 
@@ -140,8 +141,8 @@ export class AppShell extends LitElement {
 	renderTopBar(){
 		const userCtx = mcp.project.session?.userCtx
 		return html`
-			<div class="top ${userCtx?'logged-in':'logged-out'} route-${this.route.path.slice(2)}">
-				<select-route selected=${this.route.path}></select-route>
+			<div class="top ${userCtx?'logged-in':'logged-out'} route-${this.route.id}">
+				<select-route selected=${this.route.id}></select-route>
 				${this.renderYearSelector()}
 				<div>
 					<project-status @change=${this.statusChangeCb}></project-status>
@@ -164,10 +165,18 @@ export class AppShell extends LitElement {
 	}
 	renderMain(){
 		return this.dbReadyOrError
-		? html`<main>${this.route.render(this.params)}</main>`
+		? html`<main>${this.renderRoute()}</main>`
 		: this.renderSyncProgress()
 	}
+	getPageComponent(){
+		return `page-${this.route.id}`
+	}
+	renderRoute(){
+		const component = this.getPageComponent()
+		return unsafeHTML(`<${component}></${component}>`)
+	}
 	renderSyncProgress(){
+		if(!mcp.project.syncHandler) return ''
 		return html`
 			<div id="sync-progress">
 				<div>

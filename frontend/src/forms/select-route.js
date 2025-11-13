@@ -30,14 +30,15 @@ export class SelectRoute extends LitElement {
   }
 	
 	nav(evt){
-		window.location.hash = this.selected = evt.target.value
+		this.selected = evt.target.value
+		window.location.hash = `#/${this.selected}`
 	}
 	
   render() {
     return html`
       <select @change=${this.nav}>
-				${routes.filter(({menu}) => menu).map(({path}) => html`
-					<option value="${path}">${translate(path)}</option>
+				${routes.filter(({menu}) => menu).map(({id}) => html`
+					<option value="${id}">${translate(`MENU_${id}`)}</option>
 				`)}
 			</select>
     `

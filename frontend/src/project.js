@@ -3,7 +3,7 @@ export class Project {
 		this._config = config
 		this.localDbName = config.remoteDB || config._id
 		this.remoteDbUrl = config.remoteDB
-		this.remoteDbName = this.remoteDbUrl.split('/').pop()
+		this.remoteDbName = this.remoteDbUrl?.split('/').pop()
 		this.localDB = new PouchDB(this.localDbName, {adapter: 'indexeddb'})
 		this.initialized = false
 	

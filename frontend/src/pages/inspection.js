@@ -12,6 +12,7 @@ import { INSPECTION_STATES } from '../forms/select-state.js'
 
 const bandingStartAge = 7
 const bandingEndAge = 12
+const currentYear = new Date().getFullYear()
 
 const formatDateForInput = date => date ? new Date(date).toISOString().split('T')[0] : null
 const dateToArr = date => formatDateForInput(date).split('-').map(x => Number(x))
@@ -87,16 +88,14 @@ export class PageInspection extends LitElement {
 	
 	constructor(){
 		super()
-		this.year = new Date().getFullYear()
+		this.year = currentYear
 		this.previousInspection = {}
-		this.createInspection()
 		this.mode = 'MODE_CREATE'
-		this.summary = {}
 		this.maxOccupancy = 0
-		//this.date = formatDateForInput(new Date())
 	}
 	render() {
 		const i = this.inspection
+		if(!i) return
 		return html`
 			<div class="${this.inspection.state} ${this.mode} ${this.inspection.scope}">
 				${[
@@ -531,7 +530,6 @@ export class PageInspection extends LitElement {
 	}
 	cancel(){
 		history.back()
-		//this.inspection = {...this.initialInspection}
 	}
 	confirmDeletion(){
 		this.shadowRoot.querySelector('#delete-dialog').open = true
@@ -555,18 +553,9 @@ export class PageInspection extends LitElement {
 		`
 	}
 	
-	updated(changedProps){
-		if(changedProps.has('year')){
-			this.createInspection(`${this.year}-12-31`)
-		}
-		if(
-			(changedProps.has('inspection_id') && this.inspection._id != this.inspection_id) ||
-			(changedProps.has('box_id') && this.inspection.box_id != this.box_id) ||
-			(changedProps.has('year'))
-		){
-			this.fetchInspection()
-		}
-		this.updateTainting()
+	updated(changed){
+		if(changed.has('inspection_id')) this.initEdit() 
+		if(changed.has('box_id')) this.initCreate()
 	}
 	updateTainting(){
 		let somethingTainted = false
@@ -575,6 +564,7 @@ export class PageInspection extends LitElement {
 		this.shadowRoot
 		.querySelectorAll('.tainted')
 		.forEach(form => form.classList.remove('tainted'))
+		if(!this.inspection) return
 		// extrakt *all* keys, some might be missing in one or the other
 		new Set([
 			...Object.keys(this.inspection),
@@ -590,42 +580,51 @@ export class PageInspection extends LitElement {
 		})
 		this.shadowRoot.querySelector('#save').disabled = !somethingTainted && this.mode == 'MODE_EDIT'
 	}
-	async fetchInspection(){
-		delete this.previousInspection
-		delete this.summary
-		this.maxOccupancy = 0
-		//if(this.inspection_id && (this.inspection_id == this.inspection._id)) return
-		const existingInspection = this.inspection_id ? 
-			await mcp.db().get(this.inspection_id) : await this.getInspectionByDate()
-			
-		console.log('existingInspection',existingInspection)
-		if(existingInspection){
-			this.initInspection(existingInspection)
-			this.inspection_id = this.inspection._id
-			this.box_id = this.inspection.box_id
-			//this.date = this.inspection.date
-			this.mode = 'MODE_EDIT'
+	async initEdit(){
+		const existingInspection = await mcp.db().get(this.inspection_id)
+		this.initInspection(existingInspection)
+		this.mode = 'MODE_EDIT'
+		this.updateTainting()
+	}
+	async initCreate(){
+		if(!this.year || this.year == currentYear){
+			const existingInspection = await this.getInspectionByDate()
+			if(existingInspection){
+				this.initInspection(existingInspection)
+				this.mode = 'MODE_EDIT'
+			}
+			else{
+				this.createInspection()
+			}
+		}
+		else{
+			this.createInspection(`${this.year}-12-31`)
 		}
 		await this.fetchPreviousInspection()
+		this.updateTainting()
 	}
-	async getInspectionByDate(){
+	
+	async getInspectionByDate(date = new Date()){
 		const response = await mcp.db()
 		.query('upupa/inspections', {
 			reduce: false,
 			key: [
-				new Date(this.inspection.date).getFullYear(),
+				new Date(date).getFullYear(),
 				this.box_id,
-				...dateToArr(this.inspection.date).slice(1)
+				...dateToArr(date).slice(1)
 			]
 		})
 		return response.rows[0]?.value
 	}
+
 	initInspection(source){
 		this.initialInspection = source
 		this.inspection = {...source}
 	}
 
 	async fetchPreviousInspection(){
+		delete this.previousInspection
+		this.maxOccupancy = 0
 		const date = new Date(this.inspection.date)
 		const dayBeforeArr = dateToArr(date.setDate(date.getDate()-1))
 		const previousInspections = (
@@ -651,7 +650,7 @@ export class PageInspection extends LitElement {
 		
 		if(this.inspection_id) return
 		let date = new Date(this.inspection.date)
-		if(this.year != new Date().getFullYear() && this.previousInspection){
+		if(this.year != currentYear && this.previousInspection){
 			date = incDate(this.previousInspection.date, 7)
 		}
 		if(this.previousInspection && !isFinished(this.previousInspection)){
@@ -698,23 +697,7 @@ export class PageInspection extends LitElement {
 		this.mode = value
 		this.requestUpdate()
 	}
-	boxSelectCb(evt){
-		this.box_id = evt.target.value
-		this.inspection_id = null
-		/*
-		this.inspection = {
-			date: this.inspection.date,
-			box_id: this.box_id
-		}
-		*/
-		setUrlParams({
-			box_id: this.box_id
-		})
-	}
-	
-	
-	
-	
+		
 	renderInput(prop, type){
 		return html`
 			<div>

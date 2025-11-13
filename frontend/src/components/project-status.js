@@ -92,6 +92,10 @@ export class ProjectStatus extends LitElement {
 				this.error = error
 			})
 		}
+		else {
+			// during constructor, events are not sent (or received by app-shell)
+			setTimeout(() => this.setState(STATE_READY))
+		}
 		this.requestUpdate()
 	}
 

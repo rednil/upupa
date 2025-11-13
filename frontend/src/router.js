@@ -42,72 +42,46 @@ export function getRoute(){
 	const hash = window.location.hash
 	let route
 	if(hash){
-		route = routes.find(candidate => hash.search(candidate.path) == 0)
+		route = routes.find(candidate => hash.search(candidate.id) == 2)
 		if(!route) console.error(`Unknown route: ${hash}`)
 	}
 	if(!route) {
 		route = routes.find(candidate => candidate.default == true)
-		window.location.hash = route.path
+		window.location.hash = `#/${route.id}` 
 	}
 	return route
 }
 export const routes = [
 			{
-				path: '#/start',
+				id: 'start',
 				menu: true,
 				default: true,
-				
-				render: () => html`
-					<page-start id="page"></page-start>
-				`
 			},
 			{
-				path: '#/overview',
+				id: 'overview',
 				menu: true,
-				render: () => {
-					return html`
-					<page-overview id="page"></page-overview>
-				`}
 			},
 			{
-				path: '#/status',
+				id: 'status',
 				menu: true,
-				render: () => html`
-					<page-status id="page"></page-status>
-				`
 			},
 			{
-				path: '#/calendar',
+				id: 'calendar',
 				menu: true,
-				render: () => html`
-					<page-calendar id="page"></page-calendar>
-				`
 			},
 			{
-				path: '#/analysis',
+				id: 'analysis',
 				menu: true,
-				render: () => html`
-					<page-analysis id="page"></page-analysis>
-				`
 			},
 			{
-				path: '#/inspection',
-				render: () => html`
-					<page-inspection id="page"></page-inspection>
-				`
+				id: 'inspection',
 			},
 			{
-				path: '#/config',
+				id: 'config',
 				menu: true,
-				render: () => html`
-					<page-config id="page"></page-config>
-				`
 			},
 			{ 
-				path: '#/database',
+				id: 'database',
 				menu: true,
-				render: () => html`
-					<page-database id="page"></page-database>
-				` 
 			}
 		]
