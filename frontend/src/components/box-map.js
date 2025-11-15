@@ -79,13 +79,17 @@ export class BoxMap extends MapBase {
   }
 	constructor(){
 		super()
+		this.storagePrefix = 'UPUPA.OVERVIEW.MAP'
 		this.boxes = []
 	}
 	
 	updated(changed){
 		super.updated(changed)
 		if(!this.boxes.length) return
-		if(changed.has('boxes')) this.createMarkers()
+		if(changed.has('boxes')) {
+			this.createMarkers()
+			this.initView()
+		}
 		if(
 			changed.has('boxes') ||
 			changed.has('info') ||
@@ -102,11 +106,13 @@ export class BoxMap extends MapBase {
 			.on('click', this.getBoxSelector(box))
 			this.markerGroup.addLayer(box.marker)
 		})
+	}
+	initView(){
 		if(this.box_id){
-			const box = boxes.find(box => box._id == this.box_id)
-			this.map.setView([box.lat, box.lon],17)
+			const box = this.boxes.find(box => box._id == this.box_id)
+			this.map.setView([box.lat, box.lon], 19)
 		}
-    else{
+    else if(!this._viewInitializedFromStorage){
 			const coors = boxes.map(box => [box.lat, box.lon])
 			this.map.fitBounds(coors)
 		}

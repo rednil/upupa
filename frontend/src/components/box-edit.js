@@ -1,14 +1,13 @@
 import { LitElement, html, css } from 'lit'
-import './select-location.js'
+import '../forms/select-location.js'
 import '../forms/select-item.js'
 import { translate } from '../translator.js' 
 // live directive is needed because user can edit the value of the input.
 // This tells Lit to dirty check against the live DOM value.
 import { live } from 'lit/directives/live.js'
 
-const POSITIONING_DISABLED = 'POSITIONING_DISABLED'
-const POSITIONING_CORRECTION = 'POSITIONING_CORRECTION'
-const POSITIONING_NEW_LOCATION = 'POSITIONING_NEW_LOCATION'
+const POSITIONING_ADJUST = 'POSITIONING_ADJUST'
+const POSITIONING_MOVE = 'POSITIONING_MOVE'
 
 export class BoxEdit extends LitElement {
 	static get properties() {
@@ -29,37 +28,27 @@ export class BoxEdit extends LitElement {
 			
 		`
 	}
-	constructor(){
-		super()
-		this.positioning = POSITIONING_DISABLED
-	}
+	
 	willUpdate(changedProps){
 		if(changedProps.has('item')){
-			this.positioning = this.item._id ? POSITIONING_DISABLED : POSITIONING_CORRECTION
-			// some sensitive defaults for a new box
-			this.item.lat = this.item.lat || this.backupItem?.lat || 46.832566887973776
-			this.item.lon = this.item.lon || this.backupItem?.lon || 12.824698090553285
-			// remember the position for cancel
-			this.backupItem = {...this.item}
+			this.positioningMode = null
+			this._backupItem = {...this.item}
+
 		}
 		if(!this.item._id && !this.item.validFrom){
 			this.item.validFrom = new Date().toISOString().split('T')[0]	
-		
 		}
 	}
-	updated(changedProps){
-		super.updated(changedProps)
-		
+	
+	firstUpdated(){
+		this.locationSelector = this.shadowRoot.querySelector('select-location')	
 	}
 	render() {
 		return [
 			this.renderInput('name'),
 			this.renderArchitecture(),
-			this.backupItem._id ? this.renderPositioningMode() : '',
 			this.renderInput('validFrom', 'date'),
 			this.item.validUntil ? this.renderInput('validUntil', 'date') : '',
-			this.renderInput('lat', 'number', this.positioning==POSITIONING_DISABLED),
-			this.renderInput('lon', 'number', this.positioning==POSITIONING_DISABLED),
 			this.renderMap(),
 		]
 	}
@@ -69,7 +58,7 @@ export class BoxEdit extends LitElement {
 				<label for=${prop}>${this.getLabel(prop)}</label>
 				<input
 					.disabled=${disabled}
-					type=${type}
+					.type=${type}
 					id=${prop}
 					.value=${live(this.item[prop] || '')}
 					@input=${this.changeCb}>
@@ -90,30 +79,41 @@ export class BoxEdit extends LitElement {
 		`
 	}
 	renderMap(){
-		if(!(this.item.lat && this.item.lon)) return ''
+		const newBox = !Boolean(this._backupItem._id)
+		const ancientBox = this._backupItem.validUntil
+		const moveBoxButtonRequired = !(newBox || ancientBox)
+		//if(!(this.item.lat && this.item.lon)) return ''
 		return html`
 			<select-location
-				.disabled=${this.positioning == POSITIONING_DISABLED}
+				?disabled=${moveBoxButtonRequired}
 				.value=${this.item}
-				.oldValue=${this.backupItem}
 				@change=${this.changePosCb}
 			></select-location>
+			${moveBoxButtonRequired ? html`
+				<div>
+					<button
+						?disabled=${this.positioningMode == POSITIONING_MOVE}
+						@click=${this.adjustPosition}
+					>Position korrigieren</button>
+					<button
+						?disabled=${this.positioningMode == POSITIONING_ADJUST}
+						@click=${this.moveBox}
+					>Nistkasten umhängen</button>
+				</div>
+			`:''}
+			
 			
 		`
 	}
-	renderPositioningMode(){
-		const options = [POSITIONING_DISABLED, POSITIONING_CORRECTION]
-		if(!this.item.validUntil) options.push(POSITIONING_NEW_LOCATION)
-		return html`
-			<div class="changepos">
-				<label>Position</label>
-				<select .value=${this.positioning} @change=${this.changePositioningModeCb}>
-					${options.map(option => html`
-						<option .selected=${this.positioning==option} value=${option}>${translate('BOX.'+option)}</option>
-					`)}
-				</select>
-			</div>
-		`
+
+	adjustPosition(){
+		this.positioningMode = POSITIONING_ADJUST
+		this.locationSelector.edit()
+	}
+	moveBox(){
+		delete this.item._id
+		this.positioningMode = POSITIONING_MOVE
+		this.locationSelector.edit()
 	}
 	changePosCb(evt){
 		this.item.lat = evt.target.value.lat
@@ -121,22 +121,7 @@ export class BoxEdit extends LitElement {
 		this.dispatchEvent(new CustomEvent('change'))
 		this.requestUpdate()
 	}
-	changePositioningModeCb(evt){
-		this.positioning = evt.target.value
-		this.item._id = this.backupItem._id
-		switch(this.positioning){
-			case POSITIONING_DISABLED: 
-				this.item.lat = this.backupItem.lat
-				this.item.lon = this.backupItem.lon
-				this.dispatchEvent(new CustomEvent('change'))
-				break
-			case POSITIONING_NEW_LOCATION:
-				delete this.item._id
-				
-				break
-		}
-		this.requestUpdate()
-	}
+	
 	getLabel(prop){
 		return translate(`BOX.${prop.toUpperCase()}`)
 	}

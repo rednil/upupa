@@ -83,7 +83,9 @@ export class PageConfig extends LitElement {
 					${this.renderConfig()}
 				</div>
 				<div class="bottom">
-					<button @click=${this.confirmDeletion}>Löschen</button>
+					${this.item?._id ? html`
+						<button @click=${this.confirmDeletion}>Löschen</button>
+					`:''}
 					<button .disabled=${!this.tainted} @click=${this.cancel}>Änderungen verwerfen</button>
 					<button .disabled=${!this.tainted} @click=${this.submit}>Speichern</button>
 				</div>
@@ -96,7 +98,7 @@ export class PageConfig extends LitElement {
 			this.renderTypeSelector(),
 			this.type == 'box' ? this.renderBoxSelector() : this.renderItemSelector(),
 			(this.item && !this.item._id && !this.fetching) ? html`<span>Neuer Eintrag</span>` : '' ,
-			html`<button .disabled=${this.tainted || this.fetching} @click=${this.addCb}>+</button>`
+			html`<button ?disabled=${this.tainted || this.fetching} @click=${this.addCb}>+</button>`
 		]
 	}
 	renderTypeSelector(){
@@ -113,7 +115,8 @@ export class PageConfig extends LitElement {
 	}
 	renderItemSelector(){
 		return html`
-			<select-item 
+			<select-item
+				class="itemselector"
 				style=${(this.item && !this.item._id) ? 'display:none' : ''}
 				.type=${this.type} 
 				.value=${this.id} 
@@ -124,7 +127,8 @@ export class PageConfig extends LitElement {
 	}
 	renderBoxSelector(){
 		return html`
-			<select-box 
+			<select-box
+				class="itemselector"
 				style=${(this.item && !this.item._id) ? 'display:none' : ''}
 				.value=${this.id}
 				.year=${this.year}
@@ -167,7 +171,8 @@ export class PageConfig extends LitElement {
 		this.tainted = true
 		this.item = {
 			type: this.type,
-		} 
+		}
+		this.copy = {...this.item}
 	}
 	updateTainted(){
 		this.tainted = (JSON.stringify(this.item) != JSON.stringify(this.copy))
@@ -209,7 +214,7 @@ export class PageConfig extends LitElement {
 			this.id=response[0].id
 			this.updateHistory()
 		}
-		this.shadowRoot.querySelector('select-item').fetchOptions()
+		this.shadowRoot.querySelector('.itemselector').fetchOptions()
 		this.item = {...this.copy}
 		this.updateTainted()
 	}

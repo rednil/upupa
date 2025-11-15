@@ -3,13 +3,14 @@ import { LitElement, html, css } from 'lit'
 export class AppDialog extends LitElement {
 	static get properties() {
 		return {
-			open: {type: Boolean},
-			primary: {type: String},
-			primary_disabled: {type: Boolean},
-			secondary_disabled: {type: Boolean},
-			secondary: {type: String},
-			discard: {type: String},
-			head: {type: String}
+			open: { type: Boolean },
+			primary: { type: String },
+			primary_disabled: { type: Boolean },
+			secondary_disabled: { type: Boolean },
+			secondary: { type: String },
+			discard: { type: String },
+			head: { type: String },
+			max: { type: Boolean }
 		}
 	}
 
@@ -40,9 +41,22 @@ export class AppDialog extends LitElement {
 				background-color: #ededed;
 				border-radius: 10px;
 				box-shadow: rgba(0, 0, 0, 0.4) 0px 10px 10px;
+				display: flex;
+				flex-direction: column;
+				max-width: 90%;
+				max-height: 90%;
+				padding-bottom: 1em;
+			}
+			:host([max]) .window {
+				width: 90%;
+				height: 90%;
 			}
 			.content {
-				padding: 1em;	
+				padding: 0 1em;
+				display: flex;
+				flex: 1;
+				flex-direction: column;
+				overflow-y: auto;
 			}
 			.buttons {
 				display: flex;
@@ -60,6 +74,7 @@ export class AppDialog extends LitElement {
 				padding: 0.5em;
 				text-align: center;
 				border-radius: 10px 10px 0 0;
+				margin-bottom: 1em;
 			}
 		`
 	}
@@ -67,32 +82,59 @@ export class AppDialog extends LitElement {
 		super()
 		this.open = false
 	}
-	_primaryCb(){
-		this.dispatchEvent(new CustomEvent('primary'))
-		if(this.discard == "primary") this.open = false
-	}
-	_secondaryCb(){
-		this.dispatchEvent(new CustomEvent('secondary'))
-		if(this.discard == "secondary") this.open = false
-	}
 	render() {
 		if(!this.open) return
 		return html`
 			<div class="shield"></div>
-			<div class="centerer">
+			<div class="centerer" @click=${this._outsideClick}>
 				
 				<div class="window">
 					<div class="head">${this.head}</div>
 					<div class="content">
 						<slot></slot>
-						<div class="buttons">
-							<button @click=${this._secondaryCb} ?disabled=${this.secondary_disabled}>${this.secondary}</button>
-							<button @click=${this._primaryCb} ?disabled=${this.primary_disabled}>${this.primary}</button>
-						</div>
+						${this.renderButtons()}
+						
 					</div>
 				</div>
 			</div>
 		`
+	}
+	renderButtons(){
+		if(this.primary || this.secondary) return html`
+			<div class="buttons">
+				<button @click=${this._secondaryCb} ?disabled=${this.secondary_disabled}>${this.secondary}</button>
+				<button @click=${this._primaryCb} ?disabled=${this.primary_disabled}>${this.primary}</button>
+			</div>
+		`
+	}
+	updated(changed){
+		if(changed.has('open')){
+			if(this.open) {
+				history.pushState({ popup: true }, '', '')
+				window.addEventListener('popstate', this._popStateHandler)
+			}
+			else {
+				window.removeEventListener('popstate', this._popStateHandler)
+			}
+		}
+	}
+	_popStateHandler = () => {
+		this._discard()
+	}
+	_outsideClick(evt){
+		if(evt.target.classList.contains('centerer')) this._discard()
+	}
+	_primaryCb(){
+		this.dispatchEvent(new CustomEvent('primary'))
+		if(this.discard == "primary") this._discard()
+	}
+	_secondaryCb(){
+		this.dispatchEvent(new CustomEvent('secondary'))
+		if(this.discard == "secondary") this._discard()
+	}
+	_discard(){
+		this.open = false
+		this.dispatchEvent(new Event('discard'))
 	}
 }
 

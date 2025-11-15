@@ -74,7 +74,8 @@ export class PageInspection extends LitElement {
 				display: none;
 			}
 			:host > div.SCOPE_OUTSIDE > .outside,
-			:host > div.SCOPE_OUTSIDE > .date {
+			:host > div.SCOPE_OUTSIDE > .date,
+			:host > div.SCOPE_OUTSIDE > .buttons {
 				display: flex;
 			}
 			.previousInspection {

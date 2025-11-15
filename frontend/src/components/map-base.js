@@ -17,6 +17,7 @@ const tileUrl = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
 const attribution = '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
 const leafletIconPath = 'node_modules/leaflet/dist/images'
 delete Icon.Default.prototype._getIconUrl
+const locationEnabledKey = 'UPUPA.MAPBASE.LOCATION_ENABLED'
 
 Icon.Default.mergeOptions({
   iconRetinaUrl: `${leafletIconPath}/marker-icon-2x.png`,
@@ -27,7 +28,9 @@ Icon.Default.mergeOptions({
 export class MapBase extends LitElement {
   static get properties() {
     return {
-			locationEnabled: {type: Boolean}
+			locationEnabled: { type: Boolean },
+      showLocationControls: { type: Boolean },
+      storagePrefix: { type: String }
     }
   }
 
@@ -56,26 +59,52 @@ export class MapBase extends LitElement {
 			<div id="map"></div>
     `
   }
-
+  constructor(){
+    super()
+    this.locationEnabled = localStorage.getItem(locationEnabledKey) == 'true'
+  }
 	firstUpdated(){
 		const mapContainer = this.shadowRoot.querySelector('#map')
 		this.map = map(mapContainer)
 		tileLayer(tileUrl, {
-			maxZoom: 22,
+			maxZoom: 19,
 			attribution
 		})
 		.addTo(this.map)
 		this.markerGroup = layerGroup()
 		.addTo(this.map)
-		if(navigator.geolocation) {
+		if(navigator.geolocation && this.showLocationControls) {
 			this.addLocationControl()
 			// put the location circlemarker on top of all others
 			this.map.getPane('overlayPane').style.zIndex = 1000
 		}
+    if(this.storagePrefix){
+      this.zoomKey = `${this.storagePrefix}.ZOOM`
+      this.centerKey = `${this.storagePrefix}.CENTER`
+      this.map.on('zoomend', this.zoomEndCb.bind(this))
+      this.map.on('moveend', this.moveEndCb.bind(this))
+      const zoom = localStorage.getItem(this.zoomKey)
+      const center = this.getCenterFromStorage()
+      if(zoom) this.map.setZoom(zoom)
+      if(center) {
+        this._viewInitializedFromStorage = true
+        this.map.panTo(center)
+      }
+    }
 	}
+  getCenterFromStorage(){
+    const match = localStorage.getItem(this.centerKey)?.match(/LatLng\((?<lat>.*), (?<lng>.*)\)/)
+    if(match) return [Number(match.groups.lat), Number(match.groups.lng)]
+  }
+  zoomEndCb(evt){
+    localStorage.setItem(this.zoomKey, evt.target.getZoom())
+  }
+  moveEndCb(evt){
+    localStorage.setItem(this.centerKey, evt.target.getCenter())
+  }
 	disconnectedCallback() {
     super.disconnectedCallback()
-    this.stopWatchingLocation()
+    if(this.showLocationControls) this.stopWatchingLocation()
     if (this.map) {
       this.map.remove()
     }
@@ -100,7 +129,7 @@ export class MapBase extends LitElement {
         DomEvent
 				.on(container, 'click', DomEvent.stopPropagation)
         .on(container, 'click', DomEvent.preventDefault)
-        .on(container, 'click', () => this.locationEnabled = !this.locationEnabled);
+        .on(container, 'click', this.locationEnabledCb.bind(this))
 
         return container;
       },
@@ -139,7 +168,12 @@ export class MapBase extends LitElement {
 		this.locationControl = new LocationControl({ position: 'bottomright' })
 		this.map.addControl(this.locationControl)
   }
+  locationEnabledCb(){
+    localStorage.setItem(locationEnabledKey, this.locationEnabled = !this.locationEnabled)
+  }
 	startWatchingLocation(evt) {
+    if(this.locationWatchId) return
+    this._locationInitializing = true
 		this.locationControl.getContainer().innerHTML = location_off
 		
 		this.map.addControl(this.centerMapControl)
@@ -155,7 +189,7 @@ export class MapBase extends LitElement {
       }
     )
   }
-
+  
   stopWatchingLocation() {
 		this.locationControl.getContainer().innerHTML = location_on
 		this.map.removeControl(this.centerMapControl)
@@ -172,6 +206,10 @@ export class MapBase extends LitElement {
 	handleLocationSuccess(position) {
     const { latitude, longitude } = position.coords
     const latLng = [latitude, longitude]
+    if(this._locationInitializing){
+      delete this._locationInitializing
+      this.map.flyTo(latLng)
+    }
 		this.centerMapControl.getContainer().innerHTML = my_location
     if (this.userLocationMarker) {
       this.userLocationMarker.setLatLng(latLng)
@@ -208,17 +246,21 @@ export class MapBase extends LitElement {
         message = 'An unknown error occurred.'
         break;
     }
-    console.error('Geolocation Error:', message);
+    console.error('Geolocation Error:', message)
+    this.locationEnabled = false
     this.centerMapControl.getContainer().innerHTML = location_disabled
+    this.stopWatchingLocation()
 		//alert(`Error getting your location: ${message}`);
     //this.locationEnabled = false; // Turn off the toggle on error
   }
 	updated(){
-		if (this.locationEnabled) {
-			this.startWatchingLocation()
-		} else {
-			this.stopWatchingLocation()
-		}
+    if(this.showLocationControls){
+      if (this.locationEnabled) {
+        this.startWatchingLocation()
+      } else {
+        this.stopWatchingLocation()
+      }
+    }
 	}
 	
 }

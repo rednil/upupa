@@ -90,7 +90,14 @@ export class PageOverview extends LitElement {
   render() {
     return html`
 			${this.mode == 'MAP' ? html`
-				<box-map class=${this.mode} id="map" .boxes=${this.boxes} info=${this.info} box_id=${this.box_id}></box-map>
+				<box-map
+					showLocationControls
+					class=${this.mode}
+					id="map"
+					.boxes=${this.boxes}
+					info=${this.info}
+					box_id=${this.box_id}
+				></box-map>
 			`: html`
 				<box-list class=${this.mode} id="list" .boxes=${this.boxes} info=${this.info}></box-list>
 			`}
