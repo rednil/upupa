@@ -75,6 +75,17 @@ export class BoxMap extends MapBase {
 				color: white;
 				z-index: 3;
 			}
+			.last_inspection.lt1d {
+				background-color: green;
+				color: white;
+			}
+			.last_inspection.lt7d {
+				background-color: yellow;
+			}
+			.last_inspection.gt7d {
+				background-color: red;
+				color: white;
+			}
     `])
   }
 	constructor(){

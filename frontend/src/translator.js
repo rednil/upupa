@@ -47,6 +47,7 @@ const translations = {
 	"INSPECTION.NESTLINGSAGE": "Alter der Nestlinge (Tage)",
 	"LAST_MODIFIED": "Zuletzt geändert",
 	"NAME": "Name",
+	"MOUNTING": "Befestigt an",
 	"PLEASE_WAIT": "Bitte warten",
 	"PREDATOR": "Prädator",
 	"OCCUPANCY": "Belegung",
@@ -61,7 +62,6 @@ const translations = {
 	"STATE_SUCCESS": "Erfolg",
 	"STATE_OCCUPIED": "Okkupiert",
 	"STATE_ABANDONED": "Verlassen",
-	
 	"LAST_INSPECTION": "Letzte Inspektion",
 	"PERPETRATOR": "Eindringling",
 	"PERPETRATORS": "Eindringlinge",

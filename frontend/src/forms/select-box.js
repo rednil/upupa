@@ -1,6 +1,16 @@
 import { SelectItem } from "./select-item"
 import { mcp } from "../mcp"
 
+export const getBoxLabel = box => {
+	let label = box.name
+	if(box.validUntil){
+		label += ` (${formatDate(box.validFrom)}-${formatDate(box.validUntil)})`
+	}
+	return label
+} 
+	
+const formatDate = date => `${new Date(date).getMonth()+1}/${new Date(date).getFullYear().toString().slice(-2)}`
+
 export class SelectBox extends SelectItem {
 	static get properties() {
 		return {
@@ -26,24 +36,11 @@ export class SelectBox extends SelectItem {
 		.rows.map(view => view.doc)
 	}
 	getLabel(option){
-		let label = option.name
-		
-		if(option.validUntil){
-			const validFrom = new Date(option.validFrom)
-			const validUntil = new Date(option.validUntil)
-			const fromYear = validFrom.getFullYear()
-			const toYear = validUntil.getFullYear()
-			if(fromYear == toYear) label += ` (${fromYear})`
-			else {
-				const from = `${fromYear.toString().slice(-2)}/${validFrom.getMonth()+1}`
-				const to = `${toYear.toString().slice(-2)}/${validUntil.getMonth()+1}`
-				label += ` (${from}-${to})`
-			}
-		}
-		return label
+		return getBoxLabel(option)
 	}
 	
 }
+
 
 customElements.define('select-box', SelectBox)
 

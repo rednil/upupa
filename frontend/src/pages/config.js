@@ -109,6 +109,7 @@ export class PageConfig extends LitElement {
 				<option value="architecture">${translate('ARCHITECTURE')}</option>
 				<option value="species">Vogelart</option>
 				<option value="perpetrator">Eindringling</option>
+				<option value="mounting">Anbringung</option>
 				<option value="user">Benutzer</option>
 			</select>
 		`
@@ -138,15 +139,16 @@ export class PageConfig extends LitElement {
 		`
 	}
 	changeCollectionCb(evt){
+		this.id = null
 		this.type = evt.target.value
-		setUrlParams({type: this.type})
+		this.updateHistory()
 	}
 	willUpdate(changed){
 		if(changed.has('id')) this.fetchItem()
 	}
 	async fetchItem(){
 		this.fetching = true
-		this.item = await mcp.db(this.type).get(this.id)
+		this.item = this.id ? await mcp.db(this.type).get(this.id) : {}
 		this.copy = {...this.item}
 		this.fetching = false
 	}
@@ -199,16 +201,19 @@ export class PageConfig extends LitElement {
 		setUrlParams({
 			type: this.type,
 			id: this.id
-		})
+		}, true)
 	}
 	async submit(){
 		if(!this.copy.name) return this.shadowRoot.querySelector('#missing-prop').open = true
 		this.copy.type = this.type
 		const items = [this.copy]
 		if(this.item._id && !this.copy._id) {
+			delete this.copy._rev
 			this.item.validUntil = this.copy.validFrom
 			items.push(this.item)
 		}
+		//console.log('push', items.map(item => mcp.finalize(item)))
+		//return
 		const response = await mcp.db(this.type).bulkDocs(items.map(item => mcp.finalize(item)))
 		if(response[0].ok){
 			this.id=response[0].id

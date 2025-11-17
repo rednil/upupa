@@ -3,6 +3,7 @@ import { LitElement, html, css } from 'lit'
 import '../forms/link-map'
 import '../forms/link-status'
 import '../forms/link-boxconfig'
+import { translate } from '../translator'
 
 export class BoxList extends LitElement {
   static get properties() {
@@ -100,7 +101,7 @@ export class BoxList extends LitElement {
 				<div class="thead">
 					<div class="table-row">
 						<span class="head cell left">Nistkasten</span>
-						<span class="head cell right">${this.info=='BOXES'?'':this.info}</span>
+						<span class="head cell right">${this.info=='BOXES'?'':translate(this.info)}</span>
 					</div>
 				</div>
 				<div class="tbody">
@@ -109,9 +110,9 @@ export class BoxList extends LitElement {
 							<span class="body cell left">
 								<span class="name">${box.name}</span>
 								<span class="links">
-									<link-map box_id=${box._id} .nocoor=${!(box.lat && box.lon)}></link-map>
-									<link-status box_id=${box._id} .nodata=${!box.lastInspection}></link-status>
-									<link-boxconfig box_id=${box._id} ></link-boxconfig>
+									<link-map .box_id=${box._id} .nocoor=${!(box.lat && box.lon)}></link-map>
+									<link-status .box_id=${box._id} .nodata=${!box.lastInspection}></link-status>
+									<link-boxconfig .box_id=${box._id} ></link-boxconfig>
 								</span>
 							</span>
 							<span class="body cell right ${box._info.className}">${this.info=='BOXES'?'':(box._info.text == '' ? '---' : box._info.text)}</span>

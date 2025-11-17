@@ -34,6 +34,7 @@ export function setUrlParams(params, clear){
 		params = Object.assign(getUrlParams(), params)
 	}
 	const paramStr = Object.entries(params)
+	.filter(([,value]) => value!=null)
 	.map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
 	.join('&')
 	history.replaceState({},null,`${route}?${paramStr}`)

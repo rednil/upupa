@@ -3,7 +3,11 @@ import { mcp } from '../mcp'
 import '../components/box-map'
 import '../components/box-list'
 import {translate} from '../translator'
+import { setUrlParams } from '../router'
+import { getBoxLabel } from '../forms/select-box'
 
+const msPerDay = 1000 * 60 * 60 * 24
+const currentYear = new Date().getFullYear()
 const INFO = 'OVERVIEW.INFO'
 const MODE = 'OVERVIEW.MODE'
 const infoOptions = [
@@ -118,7 +122,7 @@ export class PageOverview extends LitElement {
   }
 	changeModeCb(evt){
 		localStorage.setItem(MODE, this.mode = evt.target.value)
-		
+		setUrlParams({mode: this.mode})
 	}
 	infoChangeCb(evt){
 		localStorage.setItem(INFO, this.info = evt.target.value)
@@ -166,7 +170,7 @@ export class PageOverview extends LitElement {
 		var className = ''
 		switch (this.info){
 			case 'BOXES':
-				text = box.name
+				text = getBoxLabel(box)
 				break
 			case 'SPECIES':
 				if(
@@ -197,7 +201,7 @@ export class PageOverview extends LitElement {
 						
 					){
 						const now = new Date()
-						const daysRemaining = (new Date(lastInspection.bandingWindowEnd).getTime() - now.getTime()) / 86400000
+						const daysRemaining = Math.round((new Date(lastInspection.bandingWindowEnd).getTime() - now.getTime()) / msPerDay)
 						if(now > new Date(lastInspection.bandingWindowStart)){
 							className = 'banding'
 							if(daysRemaining < 0) {
@@ -232,8 +236,18 @@ export class PageOverview extends LitElement {
 				}
 				break
 			case 'LAST_INSPECTION':
+				className = 'last_inspection'
 				if(!lastInspection) text = 'Keine'
-				else text = new Date(lastInspection.date).toLocaleDateString()
+				else {
+					const daysPassed = Math.round((new Date().getTime() - new Date(lastInspection.date).getTime()) / msPerDay)
+					if(!this.year || this.year == currentYear){
+						text = `${daysPassed}d`
+						if(daysPassed < 1) className += ' lt1d'
+						else if(daysPassed < 7) className += ' lt7d'
+						else className += ' gt7d'
+					}
+					else text = new Date(lastInspection.date).toLocaleDateString()
+				}
 				break
 			case 'BAND_STATUS_PARENTS':
 				if(lastInspection?.occupancy) { 

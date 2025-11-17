@@ -1,7 +1,9 @@
 import { LitElement, html, css } from 'lit'
 import '../forms/select-location.js'
 import '../forms/select-item.js'
-import { translate } from '../translator.js' 
+import { GenericEdit } from './generic-edit.js'
+import { translate } from '../translator.js'
+
 // live directive is needed because user can edit the value of the input.
 // This tells Lit to dirty check against the live DOM value.
 import { live } from 'lit/directives/live.js'
@@ -9,31 +11,41 @@ import { live } from 'lit/directives/live.js'
 const POSITIONING_ADJUST = 'POSITIONING_ADJUST'
 const POSITIONING_MOVE = 'POSITIONING_MOVE'
 
-export class BoxEdit extends LitElement {
+export class BoxEdit extends GenericEdit {
 	static get properties() {
 		return {
 			item: { type: Object },
 		}
 	}
 	static get styles() {
-		return css`
-			:host > * {
-				display: flex;
-				justify-content: space-between;
-				padding: 0.3em 0;
-			}
-			select-location {
-				height: 20em;
-			}
-			
-		`
+		return [
+			GenericEdit.styles,
+			css`
+				:host > * {
+					display: flex;
+					justify-content: space-between;
+					
+				}
+				select-location {
+					height: 20em;
+				}
+				.movedate {
+					display: flex;
+					justify-content: space-between;
+					padding-top: 0.5em;
+				}
+			`
+		]
+	}
+	constructor(){
+		super()
+		this.type = 'box'
 	}
 	
 	willUpdate(changedProps){
 		if(changedProps.has('item')){
 			this.positioningMode = null
 			this._backupItem = {...this.item}
-
 		}
 		if(!this.item._id && !this.item.validFrom){
 			this.item.validFrom = new Date().toISOString().split('T')[0]	
@@ -46,34 +58,25 @@ export class BoxEdit extends LitElement {
 	render() {
 		return [
 			this.renderInput('name'),
-			this.renderArchitecture(),
+			this.renderItemSelector('architecture'),
 			this.renderInput('validFrom', 'date'),
+			this.renderItemSelector('mounting'),
 			this.item.validUntil ? this.renderInput('validUntil', 'date') : '',
 			this.renderMap(),
+			this.renderNote()
 		]
 	}
-	renderInput(prop, type="text", disabled=false){
+	
+	renderItemSelector(type){
+		const key = `${type}_id`
 		return html`
 			<div>
-				<label for=${prop}>${this.getLabel(prop)}</label>
-				<input
-					.disabled=${disabled}
-					.type=${type}
-					id=${prop}
-					.value=${live(this.item[prop] || '')}
-					@input=${this.changeCb}>
-			</div>
-		`
-	}
-	renderArchitecture(){
-		return html`
-			<div>
-				<label for="architecture_id">${translate('ARCHITECTURE')}</label>
+				<label for=${key}>${translate(`${this.type}.${type}`)}</label>
 				<select-item 
-					id="architecture_id"
-					type="architecture"
+					id=${key}
+					type=${type}
 					@change=${this.changeCb}
-					.value=${this.item.architecture_id}
+					.value=${this.item[key]}
 				></select-item>
 			</div>
 		`
@@ -88,7 +91,14 @@ export class BoxEdit extends LitElement {
 				?disabled=${moveBoxButtonRequired}
 				.value=${this.item}
 				@change=${this.changePosCb}
-			></select-location>
+			>
+				${this.positioningMode == POSITIONING_MOVE ? html`
+					<div class="movedate">
+						<label>Umgehängt am</label>
+						<input type="date" value=${new Date().toLocaleDateString('en-CA')}>
+					</div>
+				`: ''}
+			</select-location>
 			${moveBoxButtonRequired ? html`
 				<div>
 					<button
@@ -101,8 +111,6 @@ export class BoxEdit extends LitElement {
 					>Nistkasten umhängen</button>
 				</div>
 			`:''}
-			
-			
 		`
 	}
 
@@ -111,24 +119,18 @@ export class BoxEdit extends LitElement {
 		this.locationSelector.edit()
 	}
 	moveBox(){
-		delete this.item._id
 		this.positioningMode = POSITIONING_MOVE
 		this.locationSelector.edit()
 	}
 	changePosCb(evt){
+		if(this.positioningMode == POSITIONING_MOVE){
+			delete this.item._id
+			this.item.validFrom = this.shadowRoot.querySelector('.movedate input').value
+		}
 		this.item.lat = evt.target.value.lat
 		this.item.lon = evt.target.value.lon
 		this.dispatchEvent(new CustomEvent('change'))
 		this.requestUpdate()
-	}
-	
-	getLabel(prop){
-		return translate(`BOX.${prop.toUpperCase()}`)
-	}
-	changeCb(evt){
-		const { id, value } = evt.target
-		this.item[id] = value
-		this.dispatchEvent(new CustomEvent('change'))
 	}
 }
 

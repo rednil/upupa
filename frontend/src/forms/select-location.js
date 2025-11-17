@@ -61,7 +61,7 @@ export class SelectLocation extends LitElement {
 						showLocationControls
 						.value=${this.value}
 					></location-edit>
-				
+					<slot></slot>
 				`:''}
 					
 				
@@ -72,7 +72,6 @@ export class SelectLocation extends LitElement {
 	}
 	firstUpdated(){
 		this.dialog = this.shadowRoot.querySelector('app-dialog')
-		this.editor = this.shadowRoot.querySelector('location-edit')
 	}
 	edit(){
 		//this.editor.value = this.value
@@ -81,8 +80,11 @@ export class SelectLocation extends LitElement {
 		this.requestUpdate()
 	}
 	okCb(){
-		this.value = this.editor.value
-		this.dispatchEvent(new Event('change'))
+		const { value } = this.shadowRoot.querySelector('location-edit')
+		if(value.lat != this.value?.lat || value.lon != this.value?.lon){
+			this.value = value
+			this.dispatchEvent(new Event('change'))
+		}
 		this.dialog.open = false
 	}
 }

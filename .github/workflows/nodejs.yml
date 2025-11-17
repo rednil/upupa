@@ -1,65 +1,105 @@
-name: Node CI
+name: Automated Release and Publish
 
 on:
   push:
+    # Only run this workflow when code is pushed to the 'release' branch
     branches:
-      - main
+      - release
 
 jobs:
-  build:
-
+  release:
+    # This job handles version bumping, building, tagging, and publishing
     runs-on: ubuntu-latest
+    
+    # Define necessary permissions for committing/pushing back and publishing packages
     permissions:
-      contents: read
-      packages: write
-
-    strategy:
-      matrix:
-        node-version: [22.14.0]
+      contents: write # Needed for 'npm version' to commit and push the tag/version
+      packages: write # Needed for pushing to ghcr.io
 
     steps:
-    - uses: actions/checkout@v3
-    - name: Tag GIT with version from package.json
-      id: autotag
-      uses: butlerlogic/action-autotag@1.1.2
-      env:
-        GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-      with:
-        strategy: package
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v3
-      with:
-        node-version: ${{ matrix.node-version }}
-    - name: npm install
-      run: |
-        npm run cleaninstall
-    - name: npm build
-      run: npm run build
-      env:
-        APP_VERSION: ${{ steps.autotag.outputs.version }}
-    - name: Build Docker image
-      run: npm run docker:build
-    - name: Log in to the Container registry
-      uses: docker/login-action@v2
-      with:
-        registry: "ghcr.io"
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-    - name: Push image to github repository
-      run: |
-        IMAGE_ID=ghcr.io/${{ github.repository }}
-        # Strip git ref prefix from version
-        VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
-        # Strip "v" prefix from tag name
-        [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
-        # Use Docker `latest` tag convention
-        [ "$VERSION" == "main" ] && VERSION=latest
-        echo IMAGE_ID=$IMAGE_ID
-        echo VERSION=$VERSION
-        docker tag upupa $IMAGE_ID:${{ steps.autotag.outputs.version }}
-        docker tag upupa $IMAGE_ID:$VERSION
-        docker push $IMAGE_ID:$VERSION
-        docker push $IMAGE_ID:${{ steps.autotag.outputs.version }}
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          # IMPORTANT: Fetch all history/tags so 'npm version' can create the new tag
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }} 
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Configure Git for automated commits
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+      # -----------------------------------------------
+      # 1. VERSION BUMPING AND TAGGING
+      # -----------------------------------------------
+      - name: Auto-increment Version and Create Tag
+        id: versioning
+        run: |
+          # Increment the patch version (e.g., v1.0.0 -> v1.0.1)
+          npm version patch -m "chore(release): bump version to %s"
+          
+          # 2. Extract the new version tag name, which is the latest tag.
+          # '--tags' ensures only tags are considered; '--sort=-version:refname' sorts them so the newest is first.
+          NEW_VERSION=$(git tag --sort=-version:refname | head -n 1)
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Push the Version Commit and Tag
+        run: |
+          git push origin release
+          git push --tags
+          
+      # -----------------------------------------------
+      # 2. BUILD APPLICATION AND DOCKER IMAGE LOCALLY
+      # -----------------------------------------------
+      - name: Install dependencies and Build Node app
+        run: |
+          npm run cleaninstall
+          npm run build
+        # Expose the version to your build process via environment variable
+        env:
+          APP_VERSION: ${{ steps.versioning.outputs.new_version }}
+
+      - name: Execute Custom Docker Build Command
+        run: |
+          npm run docker:build
+
+      # -----------------------------------------------
+      # 3. TAG AND PUSH DOCKER IMAGE
+      # -----------------------------------------------
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
         
-      env:
-        CI: true
+      - name: Log in to GitHub Container Registry (ghcr.io)
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Retag and Push Docker Image
+        run: |
+          # The full repository name is e.g., "my-user/bandaid"
+          REPO_FULL=${{ github.repository }}
+          
+          IMAGE_NAME=${REPO_FULL#*/}
+          
+          IMAGE_ID=ghcr.io/${{ github.repository }}
+          VERSION=${{ steps.versioning.outputs.new_version }}
+          
+          # 1. Tag the locally built image with the final versions
+          echo "Tagging $IMAGE_NAME:local-build to $IMAGE_ID:$VERSION and $IMAGE_ID:latest"
+          
+          # NOTE: The locally built image *must* have been tagged with the extracted IMAGE_NAME
+          # in the previous step, specifically: XXX:local-build
+          docker tag ${IMAGE_NAME}:local-build $IMAGE_ID:$VERSION
+          docker tag ${IMAGE_NAME}:local-build $IMAGE_ID:latest
+          
+          # 2. Push the newly tagged images to ghcr.io
+          echo "Pushing images to ghcr.io..."
+          docker push $IMAGE_ID:$VERSION
+          docker push $IMAGE_ID:latest

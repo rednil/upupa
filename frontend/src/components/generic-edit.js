@@ -7,58 +7,65 @@ import { translate } from '../translator.js'
 
 export class GenericEdit extends LitElement {
 	static get properties() {
-			return {
-				item: { type: Object },
-				type: { type: String }
+		return {
+			item: { type: Object },
+			type: { type: String }
+		}
+	}
+	static get styles() {
+		return css`
+			:host > * {
+				display: flex;
+				justify-content: space-between;
+				padding: 0.5em 0;
 			}
-		}
-		static get styles() {
-			return css`
-				:host > * {
-					display: flex;
-					justify-content: space-between;
-				}
-				textarea {
-					width: 100%;
-					margin-top: 1em;
-				}
-			`
-		}
-		render() {
-			return [
-				this.renderInput('name'),
-				this.renderNote()
-			]
-		}
-		renderInput(prop){
-			return html`
-				<div>
-					<label for=${prop}>${this.getLabel(prop)}</label>
-					<input id=${prop} .value=${live(this.item[prop] || '')} @input=${this.changeCb}>
-				</div>
-			`
-		}
-		renderNote(){
-			return html`
-				<div class="note">
-					<textarea
-						id="note"
-						placeholder="Bemerkung"
-						.value=${this.item.note || ''}
-						@input=${this.changeCb}
-					></textarea>
-				</div>
-			`
-		}
-		getLabel(prop){
-			return translate(`${this.type}.${prop}`.toUpperCase())
-		}
-		changeCb(evt){
-			const { id, value } = evt.target
-			this.item[id] = value
-			if(value == '') delete this.item[id]
-			this.dispatchEvent(new CustomEvent('change'))
-		}
+			textarea {
+				width: 100%;
+			}
+		`
+	}
+	render() {
+		console.log('item', this.item)
+		return [
+			this.renderInput('name'),
+			this.renderNote()
+		]
+	}
+	renderInput(prop, type="text", disabled=false){
+		return html`
+			<div>
+				<label for=${prop}>${this.getLabel(prop)}</label>
+				<input
+					.disabled=${disabled}
+					.type=${type}
+					id=${prop}
+					.value=${live(this.item[prop] || '')}
+					@input=${this.changeCb}>
+			</div>
+		`
+	}
+	
+	renderNote(){
+		return html`
+			<div class="note">
+				<textarea
+					id="note"
+					placeholder="Bemerkung"
+					.value=${this.item.note || ''}
+					@input=${this.changeCb}
+				></textarea>
+			</div>
+		`
+	}
+	getLabel(prop){
+		return translate(`${this.type}.${prop}`.toUpperCase())
+	}
+	changeCb(evt){
+		const { id, value } = evt.target
+		this.item[id] = value
+		if(value == '') delete this.item[id]
+		this.dispatchEvent(new CustomEvent('change'))
+	}
 }
 
 customElements.define('generic-edit', GenericEdit)
