@@ -71,7 +71,6 @@ export class SelectItem extends LitElement {
 	}
 	_changeCb(evt){
 		if(this.value == evt.target.value) return
-		console.log('select-item change', this.value, this.value == undefined, this.value =='')
 		this.value = evt.target.value
 		if(this.value == this.emptyLabel) this.value = undefined
 		this.dispatchEvent(new Event('change'))

@@ -29,6 +29,7 @@ export class BoxEdit extends GenericEdit {
 				select-location {
 					height: 20em;
 				}
+				
 				.movedate {
 					display: flex;
 					justify-content: space-between;
@@ -45,6 +46,7 @@ export class BoxEdit extends GenericEdit {
 	willUpdate(changedProps){
 		if(changedProps.has('item')){
 			this.positioningMode = null
+			this.positionChanged = false
 			this._backupItem = {...this.item}
 		}
 		if(!this.item._id && !this.item.validFrom){
@@ -97,16 +99,16 @@ export class BoxEdit extends GenericEdit {
 						<label>Umgehängt am</label>
 						<input type="date" value=${new Date().toLocaleDateString('en-CA')}>
 					</div>
-				`: ''}
+				`:''}
 			</select-location>
 			${moveBoxButtonRequired ? html`
 				<div>
 					<button
-						?disabled=${this.positioningMode == POSITIONING_MOVE}
+						?disabled=${this.positionChanged && this.positioningMode == POSITIONING_MOVE}
 						@click=${this.adjustPosition}
 					>Position korrigieren</button>
 					<button
-						?disabled=${this.positioningMode == POSITIONING_ADJUST}
+						?disabled=${this.positionChanged && this.positioningMode == POSITIONING_ADJUST}
 						@click=${this.moveBox}
 					>Nistkasten umhängen</button>
 				</div>
@@ -117,16 +119,19 @@ export class BoxEdit extends GenericEdit {
 	adjustPosition(){
 		this.positioningMode = POSITIONING_ADJUST
 		this.locationSelector.edit()
+		this.requestUpdate()
 	}
 	moveBox(){
 		this.positioningMode = POSITIONING_MOVE
 		this.locationSelector.edit()
+		this.requestUpdate()
 	}
 	changePosCb(evt){
 		if(this.positioningMode == POSITIONING_MOVE){
 			delete this.item._id
 			this.item.validFrom = this.shadowRoot.querySelector('.movedate input').value
 		}
+		this.positionChanged = true
 		this.item.lat = evt.target.value.lat
 		this.item.lon = evt.target.value.lon
 		this.dispatchEvent(new CustomEvent('change'))
