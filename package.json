@@ -9,7 +9,7 @@
     "test:backend": "cd backend; npm run test",
     "build": "cd frontend; npm run build",
     "start": "cd frontend; npm start & cd ../backend; npm start",
-    "docker:build": "./injectVersion.sh; cp -a frontend/dist backend/public; docker build backend --tag upupa --file Dockerfile",
+    "docker:build": "./injectVersion.sh; cp -a frontend/dist backend/public; docker build backend --tag upupa:local-build --file Dockerfile",
     "docker:serve-local": "docker run -it -p 8080:80 upupa; xdg-open http://localhost:8080",
     "docker:serve-repo": "docker run -it -p 8080:80 ghcr.io/rednil/upupa:latest; xdg-open http://localhost:8080",
     "cleaninstall": "cd frontend; npm ci && cd ../backend; npm ci"
