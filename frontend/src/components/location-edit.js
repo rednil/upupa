@@ -43,8 +43,8 @@ export class LocationEdit extends MapBase {
 	
 	set value(value){
 		if(valid(value)){
-			this._value = value
-			this.oldValue = value
+			this._value = {...value}
+			this.oldValue = {...value}
 		}
 		else this._value = fallback
 	}
@@ -52,6 +52,7 @@ export class LocationEdit extends MapBase {
 		return this._value
 	}
 	render(){
+		//const { lat, lon } = this.value
 		const lat = Math.round((this.value?.lat || 0) * 1000000) / 1000000
 		const lon = Math.round((this.value?.lon || 0) * 1000000) / 1000000
 
@@ -60,11 +61,11 @@ export class LocationEdit extends MapBase {
 			<div class="inputs">
 				<div>
 					<label>Breitengrad</label>
-					<input type="number" .value=${lat}>
+					<input type="number" .value=${lat} @input=${this.latChangeCb}>
 				</div>
 				<div>
 					<label>Längengrad</label>
-					<input type="number" .value=${lon}>
+					<input type="number" .value=${lon} @input=${this.lonChangeCb}>
 				</div>
 			</div>
 			${super.render()}
@@ -76,18 +77,33 @@ export class LocationEdit extends MapBase {
 		this.map.setView(latLon2latLng(this.value), 17)
 		this.map.options.scrollWheelZoom = 'center'
 		this.map.on('move', this.move.bind(this))
-		this.map.on('moveend', this.moveend.bind(this))
+		//this.map.on('moveend', this.moveend.bind(this))
 	}
-	
+	latChangeCb(evt){
+		this._value.lat = evt.target.value
+		this.dispatchEvent(new CustomEvent('change'))
+		this.posChanged()
+	}
+	lonChangeCb(evt){
+		this._value.lon = evt.target.value
+		this.dispatchEvent(new CustomEvent('change'))
+		this.posChanged()
+	}
 	move(evt){
 		// if dragged by user, evt.originalEvent is a "MouseEvent"
 		// if moved (via animation, slow!) from a value change, it is null
 		if(evt.originalEvent) this.userMovedCenter()
 	}
-	moveend(){
+	/*
+	moveend(evt){
+		// old comment, not sure what this was about
 		// TODO: check if this works everywhere in upupa
-		this.userMovedCenter()
+		
+		// I believe this is not required anymore at all.
+		// it messes up interaction with the input fields
+		//this.userMovedCenter()
 	}
+	*/
 	userMovedCenter(){
 		this._value = latLng2latLon(this.map.getCenter())
 		this.updateMarker('value')
@@ -96,16 +112,16 @@ export class LocationEdit extends MapBase {
 	}
 	updated(changed){
 		super.updated(changed)
-		if(changed.has('value')) {
-			this.updateMarker('value')
-			if(valid(this.value)) this.map.panTo(latLon2latLng(this.value))
-			else this.map.panTo(latLon2latLng(fallback))
-		}
+		if(changed.has('value')) this.posChanged()
 		if(changed.has('oldValue')) this.updateMarker('oldValue', 0.3)
 		if(this.disabled) this.map.dragging.disable()
 		else this.map.dragging.enable()
 	}
-	
+	posChanged(){
+		this.updateMarker('value')
+		if(valid(this.value)) this.map.panTo(latLon2latLng(this.value))
+		else this.map.panTo(latLon2latLng(fallback))
+	}
 	updateMarker(prop, opacity = 1){
 		const coor = this[prop]
 		let position = this.positions[prop]

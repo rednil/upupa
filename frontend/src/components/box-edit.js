@@ -7,6 +7,8 @@ import { translate } from '../translator.js'
 // live directive is needed because user can edit the value of the input.
 // This tells Lit to dirty check against the live DOM value.
 import { live } from 'lit/directives/live.js'
+import { mcp } from '../mcp.js'
+import { confirm } from '../forms/confirm.js'
 
 const POSITIONING_ADJUST = 'POSITIONING_ADJUST'
 const POSITIONING_MOVE = 'POSITIONING_MOVE'
@@ -61,9 +63,9 @@ export class BoxEdit extends GenericEdit {
 		return [
 			this.renderInput('name'),
 			this.renderItemSelector('architecture'),
-			this.renderInput('validFrom', 'date'),
+			this.renderInput('validFrom', 'date', this.moved()),
+			this.renderInput('validUntil', 'date', this.moved()),
 			this.renderItemSelector('mounting'),
-			this.item.validUntil ? this.renderInput('validUntil', 'date') : '',
 			this.renderMap(),
 			this.renderNote()
 		]
@@ -129,6 +131,7 @@ export class BoxEdit extends GenericEdit {
 	changePosCb(evt){
 		if(this.positioningMode == POSITIONING_MOVE){
 			delete this.item._id
+			delete this.item._rev
 			this.item.validFrom = this.shadowRoot.querySelector('.movedate input').value
 		}
 		this.positionChanged = true
@@ -136,6 +139,49 @@ export class BoxEdit extends GenericEdit {
 		this.item.lon = evt.target.value.lon
 		this.dispatchEvent(new CustomEvent('change'))
 		this.requestUpdate()
+	}
+	moved(){
+		return this.positionChanged && this.positioningMode == POSITIONING_MOVE
+	}
+	async submit(){
+		const newBox = {...this.item}
+		const items = [newBox]
+		mcp.finalize(newBox)
+		if(this.moved()) {
+			const oldBox = {...this._backupItem}
+			oldBox.validUntil = newBox.validFrom
+ 			items.push(oldBox)
+			const inspections = await mcp.db('inspection').find({
+				selector: {
+					type: 'inspection',
+					box_id: oldBox._id
+				}
+			})
+			console.log('inspections', inspections)
+			const orphans = inspections.docs.filter(({date}) => {
+				date = new Date(date)
+				// inspections that happened BEFORE the move
+				if(date < new Date(newBox.validFrom)) return false
+				// for retroactive moves, exclude inspections PAST the original validUntil
+				if(newBox.validUntil && date > new Date(newBox.validUntil)) return false
+				return true
+			})
+			console.log('orphans', orphans)
+			if(orphans.length){
+				const confirmation = await confirm(`${translate('INSPECTIONS_TO_MOVE')}: ${orphans.length}`)
+				if(confirmation){
+					items.push(...orphans.map(inspection => {
+						inspection.box_id = newBox._id
+						return inspection
+					}))
+					console.log('items', items)
+				}
+				else return
+			}
+		}
+		const response = await mcp.db(this.type).bulkDocs(items)
+		console.log('response', response)
+		return response[0]
 	}
 }
 

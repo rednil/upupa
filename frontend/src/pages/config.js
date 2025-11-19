@@ -9,6 +9,7 @@ import '../components/project-edit.js'
 import '../app-dialog.js'
 import { translate } from '../translator.js'
 import { setUrlParams } from '../router.js'
+import { alert } from '../forms/alert.js'
 
 export class PageConfig extends LitElement {
 	static get properties() {
@@ -25,6 +26,7 @@ export class PageConfig extends LitElement {
 		return css`
 			:host  {
 				flex: 1;
+				overflow-y: auto;
 			}
 			:host > div {
 				min-height: 0;
@@ -66,14 +68,6 @@ export class PageConfig extends LitElement {
 				head="Löschen"
 			>
 				<div>${this.item.name || this.item.username}</div>
-      </app-dialog>
-			<app-dialog
-				id="missing-prop"
-				primary="OK"
-				discard="primary"
-				head="Fehlende Information"
-			>
-				<div>Der Eintrag braucht einen Namen!</div>
       </app-dialog>
 			<div>
 				<div class="top">
@@ -151,6 +145,7 @@ export class PageConfig extends LitElement {
 		this.item = this.id ? await mcp.db(this.type).get(this.id) : {}
 		this.copy = {...this.item}
 		this.fetching = false
+		this.updateTainted()
 	}
 	async changeItemCb(evt){
 		this.id = evt.target.value
@@ -204,7 +199,24 @@ export class PageConfig extends LitElement {
 		}, true)
 	}
 	async submit(){
-		if(!this.copy.name) return this.shadowRoot.querySelector('#missing-prop').open = true
+		if(!this.copy.name) return alert(translate('MISSING_NAME'))
+		const editor = this.shadowRoot.querySelector('.center > *:first-child')
+		let response = null
+		if(editor.submit) {
+			response = await editor.submit()
+		}
+		else {
+			response = await mcp.db(this.type).put(mcp.finalize(this.copy))
+			console.log('response', response)
+		}
+		if(response?.ok){
+			this.id = response.id
+			this.updateHistory()
+			//this.item = {...this.copy}
+			this.updateTainted()
+			this.shadowRoot.querySelector('.itemselector').fetchOptions()
+		}
+		/*
 		this.copy.type = this.type
 		const items = [this.copy]
 		if(this.item._id && !this.copy._id) {
@@ -212,16 +224,13 @@ export class PageConfig extends LitElement {
 			this.item.validUntil = this.copy.validFrom
 			items.push(this.item)
 		}
-		//console.log('push', items.map(item => mcp.finalize(item)))
-		//return
-		const response = await mcp.db(this.type).bulkDocs(items.map(item => mcp.finalize(item)))
+		
 		if(response[0].ok){
 			this.id=response[0].id
 			this.updateHistory()
 		}
-		this.shadowRoot.querySelector('.itemselector').fetchOptions()
-		this.item = {...this.copy}
-		this.updateTainted()
+		
+		*/
 	}
 }
 
