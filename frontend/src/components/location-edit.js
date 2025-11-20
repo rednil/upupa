@@ -80,12 +80,12 @@ export class LocationEdit extends MapBase {
 		//this.map.on('moveend', this.moveend.bind(this))
 	}
 	latChangeCb(evt){
-		this._value.lat = evt.target.value
+		this._value.lat = Number(evt.target.value)
 		this.dispatchEvent(new CustomEvent('change'))
 		this.posChanged()
 	}
 	lonChangeCb(evt){
-		this._value.lon = evt.target.value
+		this._value.lon = Number(evt.target.value)
 		this.dispatchEvent(new CustomEvent('change'))
 		this.posChanged()
 	}

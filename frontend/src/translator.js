@@ -15,7 +15,7 @@ const translations = {
 	"BANDINGWINDOWEND": "Beringung bis",
 	"BAND_STATUS_PARENTS": "Beringung Altvögel",
 	"BAND_STATUS_NESTLINGS": "Beringung Nestlinge",
-	"BOXES": "Nistkästen",
+	"OVERVIEW.BOX": "Nistkästen",
 	"BOX.NAME": "Beschriftung",
 	"BOX.LAT": "Breitengrad",
 	"BOX.LON": "Längengrad",

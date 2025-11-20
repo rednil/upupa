@@ -1,34 +1,36 @@
 import { html, css, LitElement } from 'lit'
-import { mcp } from '../mcp'
+
 import '../components/box-map'
 import '../components/box-list'
 import {translate} from '../translator'
 import { setUrlParams } from '../router'
-import { getBoxLabel } from '../forms/select-box'
 
-const msPerDay = 1000 * 60 * 60 * 24
-const currentYear = new Date().getFullYear()
+import { OverviewBox } from '../overview/box'
+import { OverviewArchitecture } from '../overview/architecture'
+import { OverviewMounting } from '../overview/mounting'
+import { OverviewSpecies } from '../overview/species'
+import { OverviewStatus } from '../overview/status'
+import { OverviewInspection } from '../overview/inspection'
+import { OverviewBandingNestlings } from '../overview/banding/nestlings'
+import { OverviewBandingParents } from '../overview/banding/parents'
+
 const INFO = 'OVERVIEW.INFO'
 const MODE = 'OVERVIEW.MODE'
-const infoOptions = [
-	'BOXES',
-	'ARCHITECTURES',
-	'MOUNTING',
-	'SPECIES',
-	'STATUS',
-	'LAST_INSPECTION',
-	'BAND_STATUS_NESTLINGS',
-	'BAND_STATUS_PARENTS'
-]
 
-function getShortDate(date){
-	return new Date(date).toLocaleDateString(undefined, {day: "numeric", month: "numeric"})
+const infoOptions = {
+	BOX: new OverviewBox(),
+	ARCHITECTURE: new OverviewArchitecture(),
+	MOUNTING: new OverviewMounting(),
+	SPECIES: new OverviewSpecies(),
+	STATUS: new OverviewStatus(),
+	LAST_INSPECTION: new OverviewInspection(),
+	BAND_STATUS_NESTLINGS: new OverviewBandingNestlings(),
+	BAND_STATUS_PARENTS: new OverviewBandingParents(),
 }
 
 export class PageOverview extends LitElement {
   static get properties() {
     return {
-      //boxes: { type: Array },
 			box_id: { type: String },
 			info: { type: String },
 			mode: { type: String },
@@ -80,16 +82,23 @@ export class PageOverview extends LitElement {
 			}
     `]
   }
+	
 	constructor(){
 		super()
-		//this.boxes = []
-		//this.data = {}
-		this.info = localStorage.getItem(INFO) || 'BOXES'
+		this.info = localStorage.getItem(INFO) 
+		if(!infoOptions[this.info]) this.info = 'BOX'
 		this.mode = localStorage.getItem(MODE) || 'MAP'
 	}
+
 	willUpdate(changed){
-		if(changed.has('year') || changed.has('info')) this.fetchData()	
+		if(changed.has('info')){
+			this.infoAssembler = infoOptions[this.info]
+		}
+		if(changed.has('year') || changed.has('info')){
+			this.assembleInfo()
+		}	
 	}
+
   render() {
 		if(!this.boxes) return
     return html`
@@ -106,8 +115,8 @@ export class PageOverview extends LitElement {
 			`}
 			<div class=controls>
 				<select @change=${this.infoChangeCb} .value=${this.info}>
-					${infoOptions.map(option => html`
-						<option ?selected=${option == this.info} value=${option}>${translate(option)}</option>
+					${Object.keys(infoOptions).map(option => html`
+						<option ?selected=${option == this.info} value=${option}>${translate(`OVERVIEW.${option}`)}</option>
 					`)}
 				</select>
 				<div class="mode">
@@ -119,175 +128,19 @@ export class PageOverview extends LitElement {
 			</div>
     `
   }
+	
 	changeModeCb(evt){
 		localStorage.setItem(MODE, this.mode = evt.target.value)
 		setUrlParams({mode: this.mode})
 	}
+
 	infoChangeCb(evt){
 		localStorage.setItem(INFO, this.info = evt.target.value)
 	}
-	
-	async fetch(type){
-		const response = await mcp.getByType(type)
-		return response.reduce((obj, {_id, name}) => Object.assign(obj, {[_id]: name}), {})
-	}
-	async fetchData(){
-		if(!this.boxes){
-			this.boxes = await mcp.db()
-			.query('upupa/boxes', {
-				startkey: [this.year],
-				endkey: [this.year, {}],
-				include_docs: true
-			})
-			.then(({rows}) => rows.map(view => view.doc))
-		}
-		switch(this.info){
-			case 'ARCHITECTURES':
-				this.architectures = this.architectures || await this.fetch('architecture')
-				break
-			case 'MOUNTING':
-				this.mountings = this.mountings || await this.fetch('mounting')
-				break
-			case 'SPECIES':
-				this.species = this.species || await this.fetch('species')
-				break
-			case 'STATUS':
-			case 'LAST_INSPECTION':
-			case 'BAND_STATUS_NESTLINGS':
-			case 'BAND_STATUS_PARENTS':
-				if(!this.lastInspections){
-					this.lastInspections = await mcp.db()
-					.query('upupa/inspections', {
-						group: true,
-						group_level: 2,
-						startkey: [this.year],
-						endkey: [this.year, {}],
-					})
-					.then(({rows}) => rows.map(({key, value}) => value))
-					this.boxes.forEach(box => {
-						box.lastInspection = this.lastInspections.find(lastInspection => lastInspection.box_id == box._id)
-					})
-				}
-				break
-		}
-		this.addInfo()
+
+	async assembleInfo(){
+		this.boxes = await this.infoAssembler.getInfo(this.year, this.mode)
 		this.requestUpdate()
-	}
-	speciesShouldBeKnown(state){
-		return (
-			state != 'STATE_EMPTY' &&
-			state != 'STATE_NEST_BUILDING' &&
-			state != 'STATE_NEST_READY' &&
-			state != 'STATE_OCCUPIED'
-		)
-	}
-	getInfoText(box){
-		const {lastInspection} = box
-		var text = ''
-		var className = ''
-		switch (this.info){
-			case 'BOXES':
-				text = getBoxLabel(box)
-				break
-			case 'SPECIES':
-				if(
-					lastInspection &&
-					(
-						lastInspection.species_id ||
-						this.speciesShouldBeKnown(lastInspection.state)
-					)
-				) {
-					text = this.getSpeciesName(lastInspection.species_id)
-				}
-				break
-			case 'ARCHITECTURES':
-				text = this.architectures[box.architecture_id] || ''
-				break
-			case 'MOUNTING':
-				text = this.mountings[box.mounting_id] || ''
-				break
-			case 'BAND_STATUS_NESTLINGS':
-				if(
-					lastInspection?.state == 'STATE_BREEDING' ||
-					lastInspection?.state == 'STATE_NESTLINGS'
-				){
-					if(lastInspection.nestlingsBanded > 0){
-						text = `Beringt: ${lastInspection.nestlingsBanded}`,
-						className = 'banded'
-					}
-					else if(
-						lastInspection.bandingWindowStart && 
-						lastInspection.bandingWindowStart 
-						
-					){
-						const now = new Date()
-						const daysRemaining = Math.round((new Date(lastInspection.bandingWindowEnd).getTime() - now.getTime()) / msPerDay)
-						if(now > new Date(lastInspection.bandingWindowStart)){
-							className = 'banding'
-							if(daysRemaining < 0) {
-								text = 'Verpasst'
-								className += ' overdue'
-							}
-							else if(daysRemaining < 2) {
-								className += ' urgent'
-								text = 'Dringend'
-							}
-							else if(daysRemaining < 4) {
-								className += ' required'
-								text = 'Erforderlich'
-							}
-							else {
-								className += ' possible'
-								text = 'Möglich'
-							}
-						}
-						else {
-							className += ' todo'
-							text = `${getShortDate(lastInspection.bandingWindowStart)}-${getShortDate(lastInspection.bandingWindowEnd)}`
-						}
-					}
-				}
-				break 
-			case 'STATUS':
-				if(!lastInspection) text = ''
-				else {
-					text = translate(lastInspection.state)
-					className = lastInspection.state
-				}
-				break
-			case 'LAST_INSPECTION':
-				className = 'last_inspection'
-				if(!lastInspection) text = 'Keine'
-				else {
-					const daysPassed = Math.round((new Date().getTime() - new Date(lastInspection.date).getTime()) / msPerDay)
-					if(!this.year || this.year == currentYear){
-						text = `${daysPassed}d`
-						if(daysPassed < 1) className += ' lt1d'
-						else if(daysPassed < 7) className += ' lt7d'
-						else className += ' gt7d'
-					}
-					else text = new Date(lastInspection.date).toLocaleDateString()
-				}
-				break
-			case 'BAND_STATUS_PARENTS':
-				if(lastInspection?.occupancy) { 
-					text = `M: ${lastInspection.maleBanded?'ja':'nein'}, W: ${lastInspection.femaleBanded?'ja':'nein'}`
-				}
-				break
-		}
-		return { text, className }
-	}
-	
-	getSpeciesName(id){
-		return this.species[id] || 'Unbekannt'
-	}
-	
-	addInfo(){
-		this.boxes.map(box => {
-			box._info = this.getInfoText(box)
-		})
-		// trigger an updated of map/list node
-		this.boxes = [...this.boxes]
 	}
 
 	getBoxSelector(box){
@@ -295,8 +148,8 @@ export class PageOverview extends LitElement {
 			window.location.hash = `#/overview?box_id=${box._id}`
 			window.location.hash = `#/detail?box_id=${box._id}`
 		}
-		
 	}
 }
 
 customElements.define('page-overview', PageOverview)
+

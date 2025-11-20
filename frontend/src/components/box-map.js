@@ -122,7 +122,9 @@ export class BoxMap extends MapBase {
 			this.map.setView([box.lat, box.lon], 19)
 		}
     else if(!this._viewInitializedFromStorage){
-			const coors = boxes.map(box => [box.lat, box.lon])
+			const coors = this.boxes
+			.filter(box => box.lat && box.lon)
+			.map(box => ([box.lat, box.lon]))
 			this.map.fitBounds(coors)
 		}
   }
