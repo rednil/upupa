@@ -49,7 +49,7 @@ const translations = {
 	"LAST_MODIFIED": "Zuletzt geändert",
 	"NAME": "Name",
 	"MISSING_NAME": "Der Eintrag braucht einen Namen!",
-	"MOUNTING": "Befestigt an",
+	"MOUNTING": "Befestigungspunkt",
 	"PLEASE_WAIT": "Bitte warten",
 	"PREDATOR": "Prädator",
 	"OCCUPANCY": "Belegung",
