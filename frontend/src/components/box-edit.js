@@ -157,16 +157,14 @@ export class BoxEdit extends GenericEdit {
 					box_id: oldBox._id
 				}
 			})
-			console.log('inspections', inspections)
 			const orphans = inspections.docs.filter(({date}) => {
 				date = new Date(date)
 				// inspections that happened BEFORE the move
-				if(date < new Date(newBox.validFrom)) return false
-				// for retroactive moves, exclude inspections PAST the original validUntil
-				if(newBox.validUntil && date > new Date(newBox.validUntil)) return false
+				if(date <= new Date(newBox.validFrom)) return false
+				// for retroactive moves, even IF there are boxes past the original validUntil,
+				// keep them in the newBox because they would fit even LESS into the oldBox
 				return true
 			})
-			console.log('orphans', orphans)
 			if(orphans.length){
 				const confirmation = await confirm(`${translate('INSPECTIONS_TO_MOVE')}: ${orphans.length}`)
 				if(confirmation){
@@ -174,13 +172,11 @@ export class BoxEdit extends GenericEdit {
 						inspection.box_id = newBox._id
 						return inspection
 					}))
-					console.log('items', items)
 				}
 				else return
 			}
 		}
 		const response = await mcp.db(this.type).bulkDocs(items)
-		console.log('response', response)
 		return response[0]
 	}
 }

@@ -13,6 +13,7 @@ const MODE = 'OVERVIEW.MODE'
 const infoOptions = [
 	'BOXES',
 	'ARCHITECTURES',
+	'MOUNTING',
 	'SPECIES',
 	'STATUS',
 	'LAST_INSPECTION',
@@ -27,7 +28,7 @@ function getShortDate(date){
 export class PageOverview extends LitElement {
   static get properties() {
     return {
-      boxes: { type: Array },
+      //boxes: { type: Array },
 			box_id: { type: String },
 			info: { type: String },
 			mode: { type: String },
@@ -81,17 +82,16 @@ export class PageOverview extends LitElement {
   }
 	constructor(){
 		super()
-		this.boxes = []
+		//this.boxes = []
+		//this.data = {}
 		this.info = localStorage.getItem(INFO) || 'BOXES'
 		this.mode = localStorage.getItem(MODE) || 'MAP'
 	}
-	willUpdate(changedProps){
-		if(changedProps.has('info') || changedProps.has('boxes')) this.addInfo()
-	}
-	updated(changedProps){
-		if(changedProps.has('year')) this.fetchData()
+	willUpdate(changed){
+		if(changed.has('year') || changed.has('info')) this.fetchData()	
 	}
   render() {
+		if(!this.boxes) return
     return html`
 			${this.mode == 'MAP' ? html`
 				<box-map
@@ -99,7 +99,6 @@ export class PageOverview extends LitElement {
 					class=${this.mode}
 					id="map"
 					.boxes=${this.boxes}
-					info=${this.info}
 					box_id=${this.box_id}
 				></box-map>
 			`: html`
@@ -128,33 +127,51 @@ export class PageOverview extends LitElement {
 		localStorage.setItem(INFO, this.info = evt.target.value)
 	}
 	
+	async fetch(type){
+		const response = await mcp.getByType(type)
+		return response.reduce((obj, {_id, name}) => Object.assign(obj, {[_id]: name}), {})
+	}
 	async fetchData(){
-		var [boxes, architectures, species, lastInspections=[]] = await Promise.all([
-			mcp.db()
+		if(!this.boxes){
+			this.boxes = await mcp.db()
 			.query('upupa/boxes', {
 				startkey: [this.year],
 				endkey: [this.year, {}],
 				include_docs: true
 			})
-			.then(({rows}) => rows.map(view => view.doc)),
-			mcp.getByType('architecture'),
-			mcp.getByType('species'),
-			mcp.db()
-			.query('upupa/inspections', {
-				group: true,
-				group_level: 2,
-				startkey: [this.year],
-				endkey: [this.year, {}],
-			})
-			.then(({rows}) => rows.map(({key, value}) => value))
-		])
-		this.species = species.reduce((obj, {_id, name}) => Object.assign(obj, {[_id]: name}), {})
-		this.architectures = architectures.reduce((obj, {_id, name}) => Object.assign(obj, {[_id]: name}), {})
-		this.boxes = boxes
-		.map(box => {
-			box.lastInspection = lastInspections.find(lastInspection => lastInspection.box_id == box._id)
-			return box
-		})
+			.then(({rows}) => rows.map(view => view.doc))
+		}
+		switch(this.info){
+			case 'ARCHITECTURES':
+				this.architectures = this.architectures || await this.fetch('architecture')
+				break
+			case 'MOUNTING':
+				this.mountings = this.mountings || await this.fetch('mounting')
+				break
+			case 'SPECIES':
+				this.species = this.species || await this.fetch('species')
+				break
+			case 'STATUS':
+			case 'LAST_INSPECTION':
+			case 'BAND_STATUS_NESTLINGS':
+			case 'BAND_STATUS_PARENTS':
+				if(!this.lastInspections){
+					this.lastInspections = await mcp.db()
+					.query('upupa/inspections', {
+						group: true,
+						group_level: 2,
+						startkey: [this.year],
+						endkey: [this.year, {}],
+					})
+					.then(({rows}) => rows.map(({key, value}) => value))
+					this.boxes.forEach(box => {
+						box.lastInspection = this.lastInspections.find(lastInspection => lastInspection.box_id == box._id)
+					})
+				}
+				break
+		}
+		this.addInfo()
+		this.requestUpdate()
 	}
 	speciesShouldBeKnown(state){
 		return (
@@ -185,6 +202,9 @@ export class PageOverview extends LitElement {
 				break
 			case 'ARCHITECTURES':
 				text = this.architectures[box.architecture_id] || ''
+				break
+			case 'MOUNTING':
+				text = this.mountings[box.mounting_id] || ''
 				break
 			case 'BAND_STATUS_NESTLINGS':
 				if(
@@ -263,9 +283,11 @@ export class PageOverview extends LitElement {
 	}
 	
 	addInfo(){
-		this.boxes.forEach(box => {
+		this.boxes.map(box => {
 			box._info = this.getInfoText(box)
 		})
+		// trigger an updated of map/list node
+		this.boxes = [...this.boxes]
 	}
 
 	getBoxSelector(box){

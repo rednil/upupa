@@ -7,7 +7,6 @@ export class BoxMap extends MapBase {
     return {
       boxes: { type: Array },
 			box_id: { type: String },
-			info: { type: String },
     }
   }
 
@@ -103,7 +102,6 @@ export class BoxMap extends MapBase {
 		}
 		if(
 			changed.has('boxes') ||
-			changed.has('info') ||
 			changed.has('box_id')
 		) this.createTooltips()
 		
