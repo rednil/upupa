@@ -6,7 +6,8 @@ export class Overview {
 	async getInfo(year, mode){
 		const boxes = await this.fetchBoxes(year)
 		const lastInspections = await this.fetchLastInspections(year)
-		return await this._getInfo(boxes, lastInspections, mode)
+		boxes.forEach(box => box.lastInspection = lastInspections[box._id])
+		return await this._getInfo(boxes, mode)
 	}
 	async fetchBoxes(year){
 		return await mcp.db()
@@ -35,8 +36,16 @@ export class Overview {
 		const response = await mcp.getByType(type)
 		return response.reduce((obj, {_id, name}) => Object.assign(obj, {[_id]: name}), {})
 	}
-	attachInfo(box, text='', classList=[]){
-		box._info = { text, classList }
-		return box
+	finalize(box, label='', classList=[]){
+		const { lat, lon, _id, lastInspection, name } = box
+		return {
+			_id,
+			name,
+			lat,
+			lon,
+			label,
+			classList,
+			lastInspection: lastInspection != null
+		}
 	}
 }

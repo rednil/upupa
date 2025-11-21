@@ -108,10 +108,14 @@ export class PageOverview extends LitElement {
 					class=${this.mode}
 					id="map"
 					.boxes=${this.boxes}
-					box_id=${this.box_id}
+					selected=${this.box_id}
 				></box-map>
 			`: html`
-				<box-list class=${this.mode} id="list" .boxes=${this.boxes} info=${this.info}></box-list>
+				<box-list 
+					class=${this.mode}
+					id="list"
+					.boxes=${this.boxes}
+					info=${this.info}></box-list>
 			`}
 			<div class=controls>
 				<select @change=${this.infoChangeCb} .value=${this.info}>

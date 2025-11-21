@@ -6,7 +6,7 @@ export class BoxMap extends MapBase {
   static get properties() {
     return {
       boxes: { type: Array },
-			box_id: { type: String },
+			selected: { type: String },
     }
   }
 
@@ -102,7 +102,7 @@ export class BoxMap extends MapBase {
 		}
 		if(
 			changed.has('boxes') ||
-			changed.has('box_id')
+			changed.has('selected')
 		) this.createTooltips()
 		
 	}
@@ -117,8 +117,8 @@ export class BoxMap extends MapBase {
 		})
 	}
 	initView(){
-		if(this.box_id){
-			const box = this.boxes.find(box => box._id == this.box_id)
+		if(this.selected){
+			const box = this.boxes.find(box => box._id == this.selected)
 			this.map.setView([box.lat, box.lon], 19)
 		}
     else if(!this._viewInitializedFromStorage){
@@ -132,20 +132,19 @@ export class BoxMap extends MapBase {
 		this.boxes
 		.filter(box => box.lat && box.lon)
 		.forEach(box => {
-			var { text, className } = box._info
-			if(!text || text=='') return box.marker.closeTooltip()
-			if(box._id == this.box_id) className += ' selected'
-			box.marker.bindTooltip(text, {
+			var { label, classList } = box
+			if(!label || label=='') return box.marker.closeTooltip()
+			if(box._id == this.selected) classList = [ ...classList, 'selected']
+			box.marker.bindTooltip(label, {
 				permanent: true,
 				interactive: true,
-				className
+				className: classList.join(' ')
 			})
 			.openTooltip()
 		})
 	}
 	getBoxSelector(box){
 		return () => {
-			console.log('click', box, this)
 			window.location.hash = `#/overview?box_id=${box._id}`
 			window.location.hash = `#/status?box_id=${box._id}`
 		}

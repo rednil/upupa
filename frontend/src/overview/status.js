@@ -1,15 +1,15 @@
 import { Overview } from "./base"
 
 export class OverviewStatus extends Overview {
-	async _getInfo(boxes, lastInspections){
+	async _getInfo(boxes){
 		return boxes.map(box => {
-			let text, classList
-			const lastInspection = lastInspections[box._id]
+			let label, classList
+			const lastInspection = box.lastInspection
 			if(lastInspection) {
-				text = translate(lastInspection.state)
+				label = translate(lastInspection.state)
 				classList = [lastInspection.state]
 			}
-			return this.attachInfo(box, text, classList)
+			return this.finalize(box, label, classList)
 		})
 	}
 }

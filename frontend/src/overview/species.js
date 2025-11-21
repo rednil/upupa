@@ -1,11 +1,11 @@
 import { Overview } from "./base"
 
 export class OverviewSpecies extends Overview{
-	async _getInfo(boxes, lastInspections){
+	async _getInfo(boxes){
 		const nameLookup = await this.getNameLookup('species')
 		return boxes.map(box => {
-			const lastInspection = lastInspections[box._id]
-			let text = ''
+			const lastInspection = box.lastInspection
+			let label = ''
 			if(
 				lastInspection &&
 				(
@@ -13,11 +13,11 @@ export class OverviewSpecies extends Overview{
 					this.speciesShouldBeKnown(lastInspection.state)
 				)
 			){
-				text = nameLookup[lastInspection.species_id] || 'Unbekannt'
+				label = nameLookup[lastInspection.species_id] || 'Unbekannt'
 			}
-			return this.attachInfo(
+			return this.finalize(
 				box,
-				text
+				label
 			)
 			
 		})

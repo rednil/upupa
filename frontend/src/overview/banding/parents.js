@@ -1,14 +1,14 @@
 import { Overview } from "../base"
 
 export class OverviewBandingParents extends Overview {
-	async _getInfo(boxes, lastInspections){
+	async _getInfo(boxes){
 		return boxes.map(box => {
-			let text
-			const lastInspection = lastInspections[box._id]
+			let label
+			const lastInspection = box.lastInspection
 			if(lastInspection?.occupancy) { 
-				text = `M: ${lastInspection.maleBanded?'ja':'nein'}, W: ${lastInspection.femaleBanded?'ja':'nein'}`
+				label = `M: ${lastInspection.maleBanded?'ja':'nein'}, W: ${lastInspection.femaleBanded?'ja':'nein'}`
 			}
-			return this.attachInfo(box, text)
+			return this.finalize(box, label)
 		})
 	}
 }

@@ -101,7 +101,7 @@ export class BoxList extends LitElement {
 				<div class="thead">
 					<div class="table-row">
 						<span class="head cell left">Nistkasten</span>
-						<span class="head cell right">${this.info=='BOXES'?'':translate(this.info)}</span>
+						<span class="head cell right">${this.info=='BOX'?'':translate(this.info)}</span>
 					</div>
 				</div>
 				<div class="tbody">
@@ -115,7 +115,7 @@ export class BoxList extends LitElement {
 									<link-boxconfig .box_id=${box._id} ></link-boxconfig>
 								</span>
 							</span>
-							<span class="body cell right ${box._info.className}">${this.info=='BOXES'?'':(box._info.text == '' ? '---' : box._info.text)}</span>
+							<span class="body cell right ${box.classList.join(' ')}">${this.info=='BOX'?'':(box.label == '' ? '---' : box.label)}</span>
 						</div>
 					`)}
 				</div>
