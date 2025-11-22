@@ -33,7 +33,6 @@ export class LocationShow extends MapBase {
 				this.marker = marker(latlng)
 				this.layer = this.markerGroup.addLayer(this.marker)
 			}
-			
 		}
 		else if(this.layer) {
 			this.markerGroup.removeLayer(this.layer)

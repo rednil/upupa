@@ -10,6 +10,7 @@ import '../app-dialog.js'
 import { translate } from '../translator.js'
 import { setUrlParams } from '../router.js'
 import { alert } from '../forms/alert.js'
+import { confirm } from '../forms/confirm.js'
 
 export class PageConfig extends LitElement {
 	static get properties() {
@@ -59,16 +60,7 @@ export class PageConfig extends LitElement {
 	
 	render() {
 		return html`
-			<app-dialog
-				id="delete-dialog"
-				primary="Abbrechen"
-				secondary="Löschen"
-				@secondary=${this.delete}
-				discard="primary"
-				head="Löschen"
-			>
-				<div>${this.item.name || this.item.username}</div>
-      </app-dialog>
+			
 			<div>
 				<div class="top">
 					${this.renderHead()}
@@ -78,7 +70,7 @@ export class PageConfig extends LitElement {
 				</div>
 				<div class="bottom">
 					${this.item?._id ? html`
-						<button @click=${this.confirmDeletion}>Löschen</button>
+						<button @click=${this.delete}>Löschen</button>
 					`:''}
 					<button .disabled=${!this.tainted} @click=${this.cancel}>Änderungen verwerfen</button>
 					<button .disabled=${!this.tainted} @click=${this.submit}>Speichern</button>
@@ -140,7 +132,13 @@ export class PageConfig extends LitElement {
 	willUpdate(changed){
 		if(changed.has('id')) this.fetchItem()
 	}
+	updated(changed){
+		if(changed.has('type')) {
+			this.editor = this.shadowRoot.querySelector('.center > *:first-child')
+		}
+	}
 	async fetchItem(){
+		console.log('fetchItem')
 		this.fetching = true
 		this.item = this.id ? await mcp.db(this.type).get(this.id) : {}
 		this.copy = {...this.item}
@@ -173,15 +171,23 @@ export class PageConfig extends LitElement {
 	}
 	updateTainted(){
 		this.tainted = (JSON.stringify(this.item) != JSON.stringify(this.copy))
+		if(this.tainted) console.log('tainted', this.item, this.copy)
 	}
-	confirmDeletion(){
-		this.shadowRoot.querySelector('#delete-dialog').open = true
-	}
+
 	async delete(){
-		this.shadowRoot.querySelector('#delete-dialog').open = false
-		const response = await mcp.db(item.type).remove(this.item)
-		if(response?.deletedCount){
-			this.shadowRoot.querySelector('select-item').fetchOptions()
+		let response
+		if(this.editor.delete) {
+			response = await this.editor.delete()
+		}
+		else {
+			const confirmation = await confirm(`${this.item.name || this.item.username} löschen?`)
+			if(confirmation) {
+				response = await mcp.db(this.type).remove(this.item)
+			}
+		}
+		console.log('delete response', response)
+		if(response?.ok){
+			this.shadowRoot.querySelector('.itemselector').fetchOptions()
 		}
 	}
 	cancel(){
@@ -200,20 +206,23 @@ export class PageConfig extends LitElement {
 	}
 	async submit(){
 		if(!this.copy.name) return alert(translate('MISSING_NAME'))
-		const editor = this.shadowRoot.querySelector('.center > *:first-child')
 		let response = null
-		if(editor.submit) {
-			response = await editor.submit()
+		if(this.editor.submit) {
+			response = await this.editor.submit()
 		}
 		else {
 			response = await mcp.db(this.type).put(mcp.finalize(this.copy))
-			console.log('response', response)
 		}
+		console.log('response', response)
 		if(response?.ok){
-			this.id = response.id
-			this.updateHistory()
-			//this.item = {...this.copy}
-			this.updateTainted()
+			if(response.id == this.id){
+				await this.fetchItem()
+				this.updateTainted()
+			}
+			else {
+				this.id = response.id // this will trigger fetchItem and updateTaintet
+				this.updateHistory()
+			}
 			this.shadowRoot.querySelector('.itemselector').fetchOptions()
 		}
 		/*

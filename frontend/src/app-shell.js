@@ -1,7 +1,7 @@
 import { LitElement, html, css } from 'lit'
 import {unsafeHTML} from 'lit/directives/unsafe-html.js'
 import { mcp } from './mcp.js'
-import { STATE_READY, STATE_ERROR, STATE_UNAUTHENTICATED } from './components/project-status.js'
+import { STATE_READY, STATE_ERROR, STATE_UNAUTHENTICATED, STATE_SYNCING } from './components/project-status.js'
 import './components/sync-progress.js'
 import './pages/database'
 import './pages/status'
@@ -100,7 +100,6 @@ export class AppShell extends LitElement {
 			this.error = evt.detail
 		})
 		this.error = ''
-		
   }
 	navigate(){
 		this.route = getRoute()
@@ -164,9 +163,8 @@ export class AppShell extends LitElement {
 		: ''
 	}
 	renderMain(){
-		return this.dbReadyOrError
-		? html`<main>${this.renderRoute()}</main>`
-		: this.renderSyncProgress()
+		if(this.dbReadyOrError) return html`<main>${this.renderRoute()}</main>`
+		if(this.state==STATE_SYNCING) this.renderSyncProgress()
 	}
 	getPageComponent(){
 		return `page-${this.route.id}`

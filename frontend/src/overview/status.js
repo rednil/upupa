@@ -1,3 +1,4 @@
+import { translate } from "../translator"
 import { Overview } from "./base"
 
 export class OverviewStatus extends Overview {

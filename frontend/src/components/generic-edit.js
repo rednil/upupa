@@ -25,7 +25,6 @@ export class GenericEdit extends LitElement {
 		`
 	}
 	render() {
-		console.log('item', this.item)
 		return [
 			this.renderInput('name'),
 			this.renderNote()

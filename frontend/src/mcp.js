@@ -1,3 +1,4 @@
+import { alert } from "./forms/alert"
 import { Project } from "./project"
 
 const PROJECT_ID = 'PROJECT_ID'
@@ -6,6 +7,7 @@ class MasterControlProgram {
 	constructor(){
 		try{
 			this._db = new PouchDB('projects',{adapter: 'indexeddb'})
+			setTimeout(this.check.bind(this), 1000)
 		} catch(error){
 			this.error = error
 		}
@@ -17,12 +19,18 @@ class MasterControlProgram {
 			this._readyResolve = resolve
 		})
 	}
+	async check(){
+		// sometimes on android, the indexeddb becomes unresponsive, i.e. asynchronous
+		// requests never return without any exceptions being thrown.
+		if(!this.projectID) {
+			await alert('Die Browser-Datenbank ("indexeddb") ist nicht mehr ansprechbar. Bitte den Browser schließen und neu öffnen.')
+		}
+	}
 	async init(){
 		this._prepareForChange()
 		try{
-			if(!this.projectID || !this._db.get(this.projectID)){
+			if(!this.projectID || !(await this._db.get(this.projectID))){
 				let response = await this._db.allDocs()
-				//console.log('created project in database', response)
 				if(!response.total_rows){
 					this.projectID = `project-${this.uuid()}`
 					await this._db.put({
@@ -32,9 +40,6 @@ class MasterControlProgram {
 						remoteDB: 'upupa'
 					})
 					console.log('proxy: No projects configured, created "upupa" from scratch')
-					//console.log('writeResponse', writeResponse)
-					//response = await db.allDocs({include_docs: true})
-					
 				}
 				else {
 					this.projectID = response.rows[0].id

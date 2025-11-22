@@ -53,7 +53,7 @@ export class SelectLocation extends LitElement {
 				@primary=${this.okCb}
 				@discard=${() => this.requestUpdate()}
 				discard="secondary"
-				head="Position festlegen"
+				head=${this.head || "Position festlegen"}
 			>
 				${this.dialog?.open ? html`
 					<location-edit
@@ -73,7 +73,8 @@ export class SelectLocation extends LitElement {
 	firstUpdated(){
 		this.dialog = this.shadowRoot.querySelector('app-dialog')
 	}
-	edit(){
+	edit(head){
+		this.head = head
 		//this.editor.value = this.value
 		this.dialog.open = true
 		//setTimeout(() => this.editor.map.invalidateSize())

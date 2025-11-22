@@ -9,6 +9,8 @@ import { translate } from '../translator.js'
 import { live } from 'lit/directives/live.js'
 import { mcp } from '../mcp.js'
 import { confirm } from '../forms/confirm.js'
+import { alert } from '../forms/alert.js'
+import { getBoxLabel } from '../forms/select-box.js'
 
 const POSITIONING_ADJUST = 'POSITIONING_ADJUST'
 const POSITIONING_MOVE = 'POSITIONING_MOVE'
@@ -108,11 +110,11 @@ export class BoxEdit extends GenericEdit {
 					<button
 						?disabled=${this.positionChanged && this.positioningMode == POSITIONING_MOVE}
 						@click=${this.adjustPosition}
-					>Position korrigieren</button>
+					>${translate('ADJUST_POSITION')}</button>
 					<button
 						?disabled=${this.positionChanged && this.positioningMode == POSITIONING_ADJUST}
 						@click=${this.moveBox}
-					>Nistkasten umhängen</button>
+					>${translate('MOVE_BOX')}</button>
 				</div>
 			`:''}
 		`
@@ -120,12 +122,12 @@ export class BoxEdit extends GenericEdit {
 
 	adjustPosition(){
 		this.positioningMode = POSITIONING_ADJUST
-		this.locationSelector.edit()
+		this.locationSelector.edit(`${translate('ADJUST_POSITION')}: ${this.item.name}`)
 		this.requestUpdate()
 	}
 	moveBox(){
 		this.positioningMode = POSITIONING_MOVE
-		this.locationSelector.edit()
+		this.locationSelector.edit(`${translate('MOVE_BOX')}: ${this.item.name}`)
 		this.requestUpdate()
 	}
 	changePosCb(evt){
@@ -143,6 +145,14 @@ export class BoxEdit extends GenericEdit {
 	moved(){
 		return this.positionChanged && this.positioningMode == POSITIONING_MOVE
 	}
+	fetchInspections(box_id){
+		return mcp.db('inspection').find({
+			selector: {
+				type: 'inspection',
+				box_id
+			}
+		})
+	}
 	async submit(){
 		const newBox = {...this.item}
 		const items = [newBox]
@@ -151,12 +161,7 @@ export class BoxEdit extends GenericEdit {
 			const oldBox = {...this._backupItem}
 			oldBox.validUntil = newBox.validFrom
  			items.push(oldBox)
-			const inspections = await mcp.db('inspection').find({
-				selector: {
-					type: 'inspection',
-					box_id: oldBox._id
-				}
-			})
+			const inspections = await this.fetchInspections(oldBox._id)
 			const orphans = inspections.docs.filter(({date}) => {
 				date = new Date(date)
 				// inspections that happened BEFORE the move
@@ -178,6 +183,18 @@ export class BoxEdit extends GenericEdit {
 		}
 		const response = await mcp.db(this.type).bulkDocs(items)
 		return response[0]
+	}
+	async delete(){
+		const inspections = await this.fetchInspections(this.item._id)
+		if(inspections?.docs?.length){
+			console.log('inspections', inspections)
+			await alert('Es sind Inspektionen für diesen Nistkasten eingetragen, er kann daher nicht gelöscht werden. Bitte entweder nur ein Abhängedatum eintragen oder alle Inspektionen löschen / verschieben.')
+			return
+		}
+		const confirmation = await confirm(`${getBoxLabel(this.item)} löschen?`)
+		if(confirmation){
+			return await mcp.db('box').remove(this.item)
+		}
 	}
 }
 

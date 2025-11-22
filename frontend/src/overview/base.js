@@ -7,7 +7,7 @@ export class Overview {
 		const boxes = await this.fetchBoxes(year)
 		const lastInspections = await this.fetchLastInspections(year)
 		boxes.forEach(box => box.lastInspection = lastInspections[box._id])
-		return await this._getInfo(boxes, mode)
+		return await this._getInfo(boxes, { year, mode })
 	}
 	async fetchBoxes(year){
 		return await mcp.db()
