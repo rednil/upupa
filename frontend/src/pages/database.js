@@ -1,6 +1,6 @@
 import { html, css, LitElement } from 'lit'
 import { mcp } from '../mcp'
-import '../components/view-db'
+import '../components/view/db'
 
 export class PageDatabase extends LitElement {
   
@@ -48,7 +48,13 @@ export class PageDatabase extends LitElement {
     if(!mcp.project) return ''
     return html`
       ${['localDB', 'remoteDB', 'userDB'].map(db => html`
-        <view-db .db=${mcp.project[db]} label=${db} .deletable=${db!='remoteDB'} @delete=${this.deleteCb}></view-db>
+        <view-db 
+          .db=${mcp.project[db]}
+          label=${db}
+          .deletable=${db!='remoteDB'}
+          @delete=${this.deleteCb}
+          @logout=${this.logoutCb}
+        ></view-db>
       `)}
       
     `
@@ -71,6 +77,9 @@ export class PageDatabase extends LitElement {
       })
     }
     window.location.reload()
+  }
+  logoutCb(){
+    mcp.project.logout()
   }
   async cleanupViews(){
     const response = await getLocalDb().viewCleanup()

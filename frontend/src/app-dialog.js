@@ -122,7 +122,7 @@ export class AppDialog extends LitElement {
 		this._discard()
 	}
 	_outsideClick(evt){
-		if(evt.target.classList.contains('centerer')) this._discard()
+		//if(evt.target.classList.contains('centerer')) this._discard()
 	}
 	_primaryCb(){
 		this.dispatchEvent(new CustomEvent('primary'))

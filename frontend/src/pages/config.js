@@ -138,7 +138,6 @@ export class PageConfig extends LitElement {
 		}
 	}
 	async fetchItem(){
-		console.log('fetchItem')
 		this.fetching = true
 		this.item = this.id ? await mcp.db(this.type).get(this.id) : {}
 		this.copy = {...this.item}
@@ -171,7 +170,6 @@ export class PageConfig extends LitElement {
 	}
 	updateTainted(){
 		this.tainted = (JSON.stringify(this.item) != JSON.stringify(this.copy))
-		if(this.tainted) console.log('tainted', this.item, this.copy)
 	}
 
 	async delete(){
@@ -185,7 +183,6 @@ export class PageConfig extends LitElement {
 				response = await mcp.db(this.type).remove(this.item)
 			}
 		}
-		console.log('delete response', response)
 		if(response?.ok){
 			this.shadowRoot.querySelector('.itemselector').fetchOptions()
 		}
@@ -213,7 +210,6 @@ export class PageConfig extends LitElement {
 		else {
 			response = await mcp.db(this.type).put(mcp.finalize(this.copy))
 		}
-		console.log('response', response)
 		if(response?.ok){
 			if(response.id == this.id){
 				await this.fetchItem()

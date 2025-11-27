@@ -1,33 +1,33 @@
 import { LitElement, html, css } from 'lit'
 import { unsafeSVG } from 'lit/directives/unsafe-svg.js'
+import { live } from 'lit/directives/live.js'
+import { 
+	AUTH_AUTHENTICATED,
+	AUTH_ERROR,
+	AUTH_UNAUTHENTICATED,
+	SYNC_ACTIVE,
+	SYNC_COMPLETE,
+	SYNC_ERROR
+} from '../project'
 import { mcp } from '../mcp'
 import { translate } from '../translator'
 import { sync_disabled, sync_problem, sync, published_with_changes, cloud_off } from '../icons'
 
-export const 
-	STATE_INIT = 'STATE_INIT',
-	STATE_READY = 'STATE_READY',
-	STATE_ERROR = 'STATE_ERROR',
-	STATE_UNAUTHENTICATED = 'STATE_UNAUTHENTICATED',
-	STATE_SYNCING = 'STATE_SYNCING'
-
 const stateIcon = {
-	[STATE_READY]: published_with_changes,
-	[STATE_SYNCING]: sync,
-	[STATE_ERROR]: sync_problem
+	[SYNC_COMPLETE]: published_with_changes,
+	[SYNC_ACTIVE]: sync,
+	[SYNC_ERROR]: sync_problem
 }
 
 export class ProjectStatus extends LitElement {
-
-  static get properties() {
+	static get properties() {
     return {
-			//state: { type: String }
+      state: { type: Object },
     }
   }
-
   static get styles() {
     return css`
-			:host{
+			:host, :host > *{
 				display: flex;
 			}
 			svg {
@@ -44,69 +44,28 @@ export class ProjectStatus extends LitElement {
 			}
     `
   }
+
 	constructor(){
 		super()
 		this.progress = {
 			push: 0,
 			pull: 0
 		}
-		this.state = STATE_INIT
 		this.loginError = ''
-		this.subscribe()
-		window.addEventListener('online', () => {
-			this.requestUpdate()
-		})
-		window.addEventListener('offline', () => {
-			this.requestUpdate()
-		})
-	}
-
-	subscribe(){
-		if(mcp.project.syncHandler){
-			mcp.project.syncHandler
-			.on('complete', () => {
-				console.log('sync complete')
-				this.setState(STATE_READY)
-			})
-			.on('error', error => {
-				console.log('sync error', JSON.stringify(error))
-				if(error.status == 401) {
-					this.setState(STATE_UNAUTHENTICATED)
-				}
-				else{
-					this.error = error
-					this.setState(STATE_ERROR)
-				}
-			})
-			.on('paused', error => {
-				if(!error) this.setState(STATE_READY)
-				console.log('sync paused', error)
-			})
-			.on('active', () => {
-				console.log('sync active')
-				this.setState(STATE_SYNCING)
-			})
-			.on('denied', error => {
-				console.log('sync denied', error)
-				this.setState(STATE_ERROR)
-				this.error = error
-			})
-		}
-		else {
-			// during constructor, events are not sent (or received by app-shell)
-			setTimeout(() => this.setState(STATE_READY))
-		}
-		this.requestUpdate()
+		window.addEventListener('online', () => this.requestUpdate())
+		window.addEventListener('offline', () => this.requestUpdate())
 	}
 
   render() {
     return html`
 			<app-dialog
+				.open=${live(this.state.auth == AUTH_UNAUTHENTICATED || this.state.auth == AUTH_ERROR)}
 				id="login-dialog"
 				primary="Login"
 				secondary="Abbrechen"
 				@primary=${this.login}
-				discard="primary"
+				discard="secondary"
+				@discard=${() => mcp.project.cancelLogin()}
 				head="Login"
 			>
 				<div>
@@ -120,6 +79,7 @@ export class ProjectStatus extends LitElement {
 				</div>
       </app-dialog>
 			<app-dialog
+				?open=${mcp.state.sync == SYNC_ERROR}
 				id="error-dialog"
 				primary="OK"
 				discard="primary"
@@ -129,38 +89,31 @@ export class ProjectStatus extends LitElement {
 					${JSON.stringify(this.error)}
 				</div>
       </app-dialog>
-			${unsafeSVG(navigator.onLine ? stateIcon[this.state] : cloud_off)}
+			<div @click=${this.clickCb}>
+				${unsafeSVG(this.getIcon())}
+			</div>
     `
   }
-	
+	getIcon(){
+		if(!navigator.onLine) return cloud_off
+		if(mcp.state.auth != AUTH_AUTHENTICATED) return sync_disabled
+		return stateIcon[mcp.state.sync] 
+	}
 	firstUpdated(){
 		this.loginDialog = this.shadowRoot.querySelector('#login-dialog')
 		this.errorDialog = this.shadowRoot.querySelector('#error-dialog')
 	}
 	
-	setState(state){
-		switch(state){
-			case STATE_UNAUTHENTICATED:
-				this.loginDialog.open = true
-				break
-			case STATE_ERROR:
-				this.errorDialog.open = true
-				break
-		}
-		this.state = state
-		this.dispatchEvent(new CustomEvent('change'))
-		this.requestUpdate()
+	clickCb(evt){
+		this.loginDialog.open = true
+
 	}
-	
-	// this must be the only place where we log in,
-	// otherwise we won't realize there is a new syncHandler
 	async login(){
 		this.loginError = ''
 		const username = this.shadowRoot.querySelector('#username').value
 		const password = this.shadowRoot.querySelector('#password').value
 		try{
 			await mcp.project.login(username, password)
-			this.subscribe()
 		}catch(error){
 			if(error.status == 401) {
 				this.loginError = error.message

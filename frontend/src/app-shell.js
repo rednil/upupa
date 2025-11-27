@@ -1,7 +1,7 @@
 import { LitElement, html, css } from 'lit'
-import {unsafeHTML} from 'lit/directives/unsafe-html.js'
+import { unsafeHTML } from 'lit/directives/unsafe-html.js'
+import { SYNC_ACTIVE, INIT_DONE } from './project.js'
 import { mcp } from './mcp.js'
-import { STATE_READY, STATE_ERROR, STATE_UNAUTHENTICATED, STATE_SYNCING } from './components/project-status.js'
 import './components/sync-progress.js'
 import './pages/database'
 import './pages/status'
@@ -15,6 +15,7 @@ import './pages/config.js'
 import './components/error-display.js'
 import './pages/analysis.js'
 import './pages/start'
+import './components/project-status.js'
 import { getRoute, getUrlParams, setUrlParams } from './router.js'
 
 
@@ -92,7 +93,6 @@ export class AppShell extends LitElement {
     super()
 		this.selectedYear = new Date().getFullYear()
 		this.firstYear = new Date().getFullYear()
-    this.dbReadyOrError = false
 		this.params = {}
     window.onpopstate = this.navigate.bind(this)
     this.addEventListener('error', evt => {
@@ -100,11 +100,14 @@ export class AppShell extends LitElement {
 			this.error = evt.detail
 		})
 		this.error = ''
+		mcp.addEventListener('change', () => this.requestUpdate())
   }
+
 	navigate(){
 		this.route = getRoute()
 		this.params = getUrlParams()
 	}
+
   connectedCallback(){
 		super.connectedCallback()
 		this._init()
@@ -115,12 +118,12 @@ export class AppShell extends LitElement {
 		// navigate triggers an update via params
 		this.navigate()
 		if(this.params.year) this.selectedYear = Number(this.params.year)
-		//this.requestUpdate()
-		
 	}
+
 	shouldUpdate(){
 		return this.route
 	}
+
   updated(){
 		setUrlParams({year: this.selectedYear})
 		this.params.year = this.selectedYear
@@ -128,7 +131,6 @@ export class AppShell extends LitElement {
 		if(page) Object.assign(page, this.params)
   }
 
-	
   render() {
 		return [
 			this.renderTopBar(),
@@ -138,13 +140,13 @@ export class AppShell extends LitElement {
   }
 	
 	renderTopBar(){
-		const userCtx = mcp.project.session?.userCtx
+		const userCtx = mcp.project?.session?.userCtx
 		return html`
 			<div class="top ${userCtx?'logged-in':'logged-out'} route-${this.route.id}">
 				<select-route selected=${this.route.id}></select-route>
 				${this.renderYearSelector()}
 				<div>
-					<project-status @change=${this.statusChangeCb}></project-status>
+					<project-status .state=${mcp.state}></project-status>
 					<select-item 
 						class="borderless"
 						autoselect
@@ -157,24 +159,28 @@ export class AppShell extends LitElement {
 			</div>
     `
 	}
+
 	renderYearSelector(){
-		return this.dbReadyOrError
+		return (mcp.state.init == INIT_DONE)
 		? html`<select-year value=${this.selectedYear} @change=${this.selectYearCb}></select-year>`
 		: ''
 	}
+
 	renderMain(){
-		if(this.dbReadyOrError) return html`<main>${this.renderRoute()}</main>`
-		if(this.state==STATE_SYNCING) this.renderSyncProgress()
+		if(mcp.state.init == INIT_DONE) return html`<main>${this.renderRoute()}</main>`
+		if(mcp.state.sync == SYNC_ACTIVE) return this.renderSyncProgress()
 	}
+
 	getPageComponent(){
 		return `page-${this.route.id}`
 	}
+
 	renderRoute(){
 		const component = this.getPageComponent()
 		return unsafeHTML(`<${component}></${component}>`)
 	}
+
 	renderSyncProgress(){
-		if(!mcp.project.syncHandler) return ''
 		return html`
 			<div id="sync-progress">
 				<div>
@@ -185,28 +191,18 @@ export class AppShell extends LitElement {
 			</div>
 		`
 	}
+
 	renderBottomBar(){
 		return html`
 			<error-display class="bottom error" .error=${this.error}></error-display>
 		`
 	}
-  statusChangeCb(evt){
-		const {state} = evt.target
-		if(state == STATE_ERROR || state == STATE_READY){
-			if(!this.dbReadyOrError) {
-				this.dbReadyOrError = true
-				this.requestUpdate()
-			}
-		}
-		if(this.state == STATE_UNAUTHENTICATED && state != STATE_UNAUTHENTICATED) {
-			this.requestUpdate()
-		}
-		this.state = state
-	}
+
   selectYearCb(evt){
 		this.selectedYear = Number(evt.target.value)
 		this.requestUpdate()
 	}
+
 	projectChangeCb(evt){
 		mcp.selectProject(evt.target.value)
 	}

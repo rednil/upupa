@@ -1,24 +1,28 @@
 import { alert } from "./forms/alert"
-import { Project } from "./project"
+import { INIT_ERROR, INIT_INIT, Project } from "./project"
 
 const PROJECT_ID = 'PROJECT_ID'
 
-class MasterControlProgram {
+
+
+class MasterControlProgram extends EventTarget {
 	constructor(){
+		super()
+		this.projectChangeCb = this.projectChangeCb.bind(this)
 		try{
 			this._db = new PouchDB('projects',{adapter: 'indexeddb'})
-			setTimeout(this.check.bind(this), 1000)
+			setTimeout(this.check.bind(this), 3000)
 		} catch(error){
 			this.error = error
 		}
 		this.projectID = localStorage.getItem(PROJECT_ID)
+		this.state = {
+			init: INIT_INIT
+		}
 		this.init()
+		
 	}
-	_prepareForChange(){
-		this.initComplete = new Promise(resolve => {
-			this._readyResolve = resolve
-		})
-	}
+	
 	async check(){
 		// sometimes on android, the indexeddb becomes unresponsive, i.e. asynchronous
 		// requests never return without any exceptions being thrown.
@@ -26,8 +30,14 @@ class MasterControlProgram {
 			await alert('Die Browser-Datenbank ("indexeddb") ist nicht mehr ansprechbar. Bitte den Browser schließen und neu öffnen.')
 		}
 	}
+	setState(state){
+		this.state = {
+			...this.state,
+			...state
+		}
+		this.dispatchEvent(new Event('change'))
+	}
 	async init(){
-		this._prepareForChange()
 		try{
 			if(!this.projectID || !(await this._db.get(this.projectID))){
 				let response = await this._db.allDocs()
@@ -45,28 +55,28 @@ class MasterControlProgram {
 					this.projectID = response.rows[0].id
 				}
 			}
-			await this.createProject()
+			this._initProject(this.projectID)
 		} catch(error) {
-			this.error = error
+			this.setState({
+				init: INIT_ERROR,
+				error
+			})
 			console.log('MasterControlProgram init error', error)
 		}
 	}
 	
-	
 	async selectProject(id){
 		localStorage.setItem(PROJECT_ID, id)
 		location.reload()
-		/*
-		this._prepareForChange()
-		this.projectID = id
-		await this.createProject()
-		return this.project
-		*/
 	}
-	async createProject(){
-		const config = await this._db.get(this.projectID)
-		this.project = await Project.create(config)
-		this._readyResolve()
+	
+	async _initProject(id){
+		const config = await this._db.get(id)
+		this.project = new Project(config)
+		this.project.addEventListener('change', this.projectChangeCb)
+	}
+	projectChangeCb(evt){
+		this.setState(evt.target.state)
 	}
 	uuid(length = 10){
 		const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
