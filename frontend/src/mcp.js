@@ -1,9 +1,9 @@
-import { alert } from "./forms/alert"
+import { alert } from "./app/alert"
 import { Project } from "./project"
 
 const PROJECT_ID = 'PROJECT_ID'
 
-
+const userPrefix = 'org.couchdb.user'
 
 class MasterControlProgram extends EventTarget {
 	constructor(){

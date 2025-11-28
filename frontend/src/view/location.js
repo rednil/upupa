@@ -1,11 +1,11 @@
-import { MapBase } from './map-base'
+import { MapBase } from '../map/base'
 import { marker } from 'leaflet/dist/leaflet-src.esm.js'
 
 const fallback = {
 	lat: 46.79892,
 	lon: 12.78289
 }
-export class LocationShow extends MapBase {
+export class ViewLocation extends MapBase {
   static get properties() {
     return {
       value: { type: Object },
@@ -46,4 +46,4 @@ export class LocationShow extends MapBase {
 
 const latLon2latLng = ({lat, lon}) => ({lat, lng: lon})
 
-customElements.define('location-show', LocationShow)
+customElements.define('view-location', ViewLocation)

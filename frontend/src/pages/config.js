@@ -2,15 +2,16 @@ import { LitElement, html, css } from 'lit'
 import { mcp } from '../mcp.js'
 import '../forms/select-item.js'
 import '../forms/select-box.js'
-import '../components/box-edit.js'
-import '../components/generic-edit.js'
-import '../components/user-edit.js'
-import '../components/project-edit.js'
-import '../app-dialog.js'
+import '../config/box.js'
+import '../config/base.js'
+import '../config/user.js'
+import '../config/project.js'
+import '../app/dialog.js'
 import { translate } from '../translator.js'
 import { setUrlParams } from '../router.js'
-import { alert } from '../forms/alert.js'
-import { confirm } from '../forms/confirm.js'
+import { alert } from '../app/alert.js'
+import { confirm } from '../app/confirm.js'
+import { unsafeHTML } from 'lit/directives/unsafe-html.js'
 
 export class PageConfig extends LitElement {
 	static get properties() {
@@ -134,8 +135,14 @@ export class PageConfig extends LitElement {
 	}
 	updated(changed){
 		if(changed.has('type')) {
-			this.editor = this.shadowRoot.querySelector('.center > *:first-child')
+			const editor = this.shadowRoot.querySelector('.center > *:first-child')
+			if(editor != this.editor) {
+				this.editor = editor
+				editor.addEventListener('change', this.updateTainted.bind(this))
+				this.editor.type = this.type
+			}
 		}
+		this.editor.item = this.copy
 	}
 	async fetchItem(){
 		this.fetching = true
@@ -151,13 +158,11 @@ export class PageConfig extends LitElement {
 	renderConfig(){
 		switch(this.type){
 			case 'project':
-				return html`<project-edit .item=${this.copy} @change=${this.updateTainted}></project-edit>`
 			case 'box':
-				return html`<box-edit .item=${this.copy} @change=${this.updateTainted}></box-edit>`
 			case 'user':
-				return html`<user-edit .item=${this.copy} @change=${this.updateTainted}></user-edit>`
+				return unsafeHTML(`<config-${this.type}></config-${this.type}>`)
 			default:
-				return html`<generic-edit .item=${this.copy} @change=${this.updateTainted}></generic-edit>`
+				return html`<config-base></config-base>`
 		}
 	}
 	addCb(){
@@ -173,16 +178,7 @@ export class PageConfig extends LitElement {
 	}
 
 	async delete(){
-		let response
-		if(this.editor.delete) {
-			response = await this.editor.delete()
-		}
-		else {
-			const confirmation = await confirm(`${this.item.name || this.item.username} löschen?`)
-			if(confirmation) {
-				response = await mcp.db(this.type).remove(this.item)
-			}
-		}
+		const	response = await this.editor.delete()
 		if(response?.ok){
 			this.shadowRoot.querySelector('.itemselector').fetchOptions()
 		}
@@ -202,14 +198,7 @@ export class PageConfig extends LitElement {
 		}, true)
 	}
 	async submit(){
-		if(!this.copy.name) return alert(translate('MISSING_NAME'))
-		let response = null
-		if(this.editor.submit) {
-			response = await this.editor.submit()
-		}
-		else {
-			response = await mcp.db(this.type).put(mcp.finalize(this.copy))
-		}
+		const response = await this.editor.submit()
 		if(response?.ok){
 			if(response.id == this.id){
 				await this.fetchItem()
@@ -221,21 +210,6 @@ export class PageConfig extends LitElement {
 			}
 			this.shadowRoot.querySelector('.itemselector').fetchOptions()
 		}
-		/*
-		this.copy.type = this.type
-		const items = [this.copy]
-		if(this.item._id && !this.copy._id) {
-			delete this.copy._rev
-			this.item.validUntil = this.copy.validFrom
-			items.push(this.item)
-		}
-		
-		if(response[0].ok){
-			this.id=response[0].id
-			this.updateHistory()
-		}
-		
-		*/
 	}
 }
 

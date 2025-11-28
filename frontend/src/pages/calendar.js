@@ -105,7 +105,6 @@ export class PageCalendar extends LitElement {
 		if(changedProps.has('year')) this.fetchData()
 	}
 	async fetchData(){
-		console.log('fetchData', this.year)
 		this.calendar = []
 		var [summaries, boxes] = await Promise.all([
 			mcp.db()

@@ -1,7 +1,7 @@
 import { html, css, LitElement } from 'lit'
 
-import '../components/box-map'
-import '../components/box-list'
+import '../view/box-map'
+import '../view/box-list'
 import {translate} from '../translator'
 import { setUrlParams } from '../router'
 

@@ -1,6 +1,6 @@
 import { LitElement, html } from 'lit'
 import { translate } from '../translator'
-import '../app-dialog'
+import './dialog'
 
 export class PopupAlert extends LitElement {
 	static get properties() {

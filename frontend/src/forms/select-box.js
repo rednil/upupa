@@ -22,9 +22,9 @@ export class SelectBox extends SelectItem {
 		this.type = 'box'
 		this.autoselect = true
 	}
-	updated(changedProps){
-		super.updated(changedProps)
-		if(!changedProps.has('type') && changedProps.has('year')) this.fetchOptions()
+	willUpdate (changed){
+		super.willUpdate(changed)
+		if(!changed.has('type') && changed.has('year')) this.fetchOptions()
 	}
 	
 	async fetchOptions(){

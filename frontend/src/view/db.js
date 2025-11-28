@@ -1,10 +1,10 @@
 
 import { LitElement, html, css } from 'lit'
-import '../view-object'
-import '../../forms/button-download'
-import '../../forms/button-upload'
+import './object'
+import '../forms/button-download'
+import '../forms/button-upload'
 
-import { translate } from '../../translator'
+import { translate } from '../translator'
 const formatter = (key, value) => {
 	let result = value
 	switch(key){

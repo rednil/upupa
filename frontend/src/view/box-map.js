@@ -1,5 +1,5 @@
 import { css } from 'lit'
-import { MapBase } from './map-base'
+import { MapBase } from '../map/base'
 import { marker } from 'leaflet/dist/leaflet-src.esm.js'
 
 export class BoxMap extends MapBase {

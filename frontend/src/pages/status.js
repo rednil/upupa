@@ -3,8 +3,8 @@ import '../forms/select-box.js'
 import { mcp } from '../mcp.js'
 import '../forms/link-map.js'
 import '../forms/link-boxconfig.js'
-import '../components/inspection-display.js'
-import '../components/summary-display.js'
+import '../view/inspection.js'
+import '../view/summary.js'
 import { setUrlParams } from '../router.js'
 
 
@@ -31,7 +31,7 @@ export class PageStatus extends LitElement {
 				flex-direction: column;
 				min-height: 0;
 			}
-			inspection-display, summary-display, .controls{
+			view-inspection, summary-display, .controls{
 				margin: 0 auto;
 				padding: 0.5em;
 				border-radius: 5px;
@@ -106,7 +106,7 @@ export class PageStatus extends LitElement {
 						<summary-display .summary=${summary} ></summary-display>
 					`)}
 					${this.inspections.map(inspection => html`
-						<inspection-display .inspection=${inspection} class=${this.getInspectionClass(inspection)}></inspection-display>
+						<view-inspection .inspection=${inspection} class=${this.getInspectionClass(inspection)}></view-inspection>
 					`)}
 				</div>
 			</div>

@@ -4,12 +4,14 @@ import { LitElement, html, css } from 'lit'
 // This tells Lit to dirty check against the live DOM value.
 import {live} from 'lit/directives/live.js'
 import { translate } from '../translator.js' 
+import { confirm } from '../app/confirm.js'
 import { mcp } from '../mcp.js'
-export class ProjectEdit extends LitElement {
+
+export class ConfigBase extends LitElement {
 	static get properties() {
 		return {
 			item: { type: Object },
-			
+			type: { type: String }
 		}
 	}
 	static get styles() {
@@ -17,34 +19,30 @@ export class ProjectEdit extends LitElement {
 			:host > * {
 				display: flex;
 				justify-content: space-between;
+				padding: 0.5em 0;
 			}
 			textarea {
 				width: 100%;
-				margin-top: 1em;
 			}
 		`
 	}
-	
 	render() {
 		return [
 			this.renderInput('name'),
-			this.renderInput('remoteDB'),
 			this.renderNote()
 		]
 	}
-	renderInput(prop){
+	renderInput(prop, options = {}){
 		return html`
 			<div>
 				<label for=${prop}>${this.getLabel(prop)}</label>
-				<input id=${prop} .value=${live(this.item[prop] || '')} @input=${this.changeCb}>
-			</div>
-		`
-	}
-	renderCheckbox(prop){
-		return html`
-			<div>
-				<label for=${prop}>${this.getLabel(prop)}</label>
-				<input type="checkbox" id=${prop} .checked=${this.item[prop]} @input=${this.checkboxCb}>
+				<input
+					.disabled=${options.disabled}
+					.type=${options.type || 'text'}
+					placeholder=${options.placeholder}
+					id=${prop}
+					.value=${live(this.item[prop] || '')}
+					@input=${this.changeCb}>
 			</div>
 		`
 	}
@@ -62,7 +60,7 @@ export class ProjectEdit extends LitElement {
 		`
 	}
 	getLabel(prop){
-		return translate(`PROJECT.${prop}`.toUpperCase())
+		return translate(`${this.type}.${prop}`.toUpperCase())
 	}
 	changeCb(evt){
 		const { id, value } = evt.target
@@ -70,11 +68,16 @@ export class ProjectEdit extends LitElement {
 		if(value == '') delete this.item[id]
 		this.dispatchEvent(new CustomEvent('change'))
 	}
-	checkboxCb(evt){
-		const { id, checked } = evt.target
-		this.item[id] = checked
-		this.dispatchEvent(new CustomEvent('change'))
+	async delete(){
+		const confirmation = await confirm(`${this.item.name || this.item.username} löschen?`)
+		if(confirmation) {
+			return await mcp.db(this.type).remove(this.item)
+		}
+	}
+	async submit(){
+		if(!this.item.name) return alert(translate('MISSING_NAME'))
+		return await mcp.db(this.type).put(mcp.finalize(this.item))
 	}
 }
 
-customElements.define('project-edit', ProjectEdit)
+customElements.define('config-base', ConfigBase)

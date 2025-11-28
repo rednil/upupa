@@ -1,7 +1,7 @@
 import { html, css, LitElement } from 'lit'
-import '../components/location-show'
-import '../components/location-edit'
-import '../app-dialog'
+import '../view/location'
+import '../edit/location'
+import '../app/dialog'
 
 
 export class SelectLocation extends LitElement {
@@ -21,11 +21,11 @@ export class SelectLocation extends LitElement {
 			:host(:not(.valid)) {
 				height: fit-content !important;
 			}
-			location-show {
+			view-location {
 				flex: 1
 			}
 			
-			location-edit {
+			edit-location {
 				width: 100%;
 				height: 100%; 
 			}
@@ -40,7 +40,7 @@ export class SelectLocation extends LitElement {
 		else this.classList.remove('valid')
 		return html`
 			${validPos ? html`
-				<location-show .value=${this.value}></location-show>
+				<view-location .value=${this.value}></view-location>
 			`:''}
 			${this.disabled ? '': html`
 				<button @click=${this.edit}>Ort bearbeiten</button>
@@ -56,11 +56,11 @@ export class SelectLocation extends LitElement {
 				head=${this.head || "Position festlegen"}
 			>
 				${this.dialog?.open ? html`
-					<location-edit
+					<edit-location
 						class="edit"
 						showLocationControls
 						.value=${this.value}
-					></location-edit>
+					></edit-location>
 					<slot></slot>
 				`:''}
 					
@@ -81,7 +81,7 @@ export class SelectLocation extends LitElement {
 		this.requestUpdate()
 	}
 	okCb(){
-		const { value } = this.shadowRoot.querySelector('location-edit')
+		const { value } = this.shadowRoot.querySelector('edit-location')
 		if(value.lat != this.value?.lat || value.lon != this.value?.lon){
 			this.value = value
 			this.dispatchEvent(new Event('change'))

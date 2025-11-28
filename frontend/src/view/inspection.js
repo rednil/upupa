@@ -1,8 +1,8 @@
 import { LitElement, html, css } from 'lit'
 import { translate } from '../translator.js'
-import './id-resolver.js'
+import './id.js'
 
-export class InspectionDisplay extends LitElement {
+export class ViewInspection extends LitElement {
 	static get properties() {
 		return {
 			inspection: { type: Object },
@@ -111,4 +111,4 @@ export function getStateLabel({state, eggs, nestlings}){
 	} 
 }
 
-customElements.define('inspection-display', InspectionDisplay)
+customElements.define('view-inspection', ViewInspection)

@@ -1,6 +1,6 @@
 import { html, css, LitElement } from 'lit'
 import { mcp } from '../mcp'
-import '../components/view/db'
+import '../view/db'
 
 export class PageDatabase extends LitElement {
   

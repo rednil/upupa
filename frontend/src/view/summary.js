@@ -1,7 +1,7 @@
 import { LitElement, html, css } from 'lit'
 import { translate } from '../translator.js'
-import './id-resolver.js'
-import { getStateLabel } from './inspection-display.js'
+import './id.js'
+import { getStateLabel } from './inspection.js'
 
 function getDateValue(date){
 	return (date || '').split('T')[0]

@@ -75,9 +75,9 @@ export class SelectItem extends LitElement {
 		if(this.value == this.emptyLabel) this.value = undefined
 		this.dispatchEvent(new Event('change'))
 	}
-	updated(changedProps){
-		if(changedProps.has('type')) this.fetchOptions()
-		if(changedProps.has('options') && this.options.length) this._optionsChanged()
+	willUpdate(changed){
+		if(changed.has('type')) this.fetchOptions()
+		if(changed.has('options') && this.options.length) this._optionsChanged()
 	}
 	async fetchOptions(){
 		this.options = await mcp.getByType(this.type)

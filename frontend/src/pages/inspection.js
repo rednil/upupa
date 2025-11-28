@@ -4,8 +4,8 @@ import { mcp } from '../mcp.js'
 import '../forms/select-item.js'
 import '../forms/select-box.js'
 import '../forms/select-state.js'
-import '../components/inspection-display.js'
-import '../components/id-resolver.js'
+import '../view/inspection.js'
+import '../view/id.js'
 import { incDate } from './calendar.js'
 import { setUrlParams } from '../router.js'
 import { INSPECTION_STATES } from '../forms/select-state.js'
@@ -549,7 +549,7 @@ export class PageInspection extends LitElement {
 		return html`
 			<div class="previousInspection">
 				<label>Vorherige Inspektion</label>
-				<inspection-display .inspection=${this.previousInspection}></inspection-display>
+				<view-inspection .inspection=${this.previousInspection}></view-inspection>
 			</div>
 		`
 	}

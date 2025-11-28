@@ -1,29 +1,25 @@
 import { LitElement, html, css } from 'lit'
 import '../forms/select-location.js'
 import '../forms/select-item.js'
-import { GenericEdit } from './generic-edit.js'
+import { ConfigBase } from './base.js'
 import { translate } from '../translator.js'
 
 // live directive is needed because user can edit the value of the input.
 // This tells Lit to dirty check against the live DOM value.
 import { live } from 'lit/directives/live.js'
 import { mcp } from '../mcp.js'
-import { confirm } from '../forms/confirm.js'
-import { alert } from '../forms/alert.js'
+import { confirm } from '../app/confirm.js'
+import { alert } from '../app/alert.js'
 import { getBoxLabel } from '../forms/select-box.js'
 
 const POSITIONING_ADJUST = 'POSITIONING_ADJUST'
 const POSITIONING_MOVE = 'POSITIONING_MOVE'
 
-export class BoxEdit extends GenericEdit {
-	static get properties() {
-		return {
-			item: { type: Object },
-		}
-	}
+export class EditBox extends ConfigBase {
+	
 	static get styles() {
 		return [
-			GenericEdit.styles,
+			ConfigBase.styles,
 			css`
 				:host > * {
 					display: flex;
@@ -65,8 +61,8 @@ export class BoxEdit extends GenericEdit {
 		return [
 			this.renderInput('name'),
 			this.renderItemSelector('architecture'),
-			this.renderInput('validFrom', 'date', this.moved()),
-			this.renderInput('validUntil', 'date', this.moved()),
+			this.renderInput('validFrom', {type: 'date', disabled: this.moved()}),
+			this.renderInput('validUntil', {type: 'date', disabled: this.moved()}),
 			this.renderItemSelector('mounting'),
 			this.renderMap(),
 			this.renderNote()
@@ -198,4 +194,4 @@ export class BoxEdit extends GenericEdit {
 	}
 }
 
-customElements.define('box-edit', BoxEdit)
+customElements.define('config-box', EditBox)

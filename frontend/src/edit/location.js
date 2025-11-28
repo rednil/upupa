@@ -1,5 +1,5 @@
 import { html, css } from 'lit'
-import { MapBase } from './map-base'
+import { MapBase } from '../map/base'
 import { marker } from 'leaflet/dist/leaflet-src.esm.js'
 
 const fallback = {
@@ -7,7 +7,7 @@ const fallback = {
 	lon: 12.78289
 }
 
-export class LocationEdit extends MapBase {
+export class EditLocation extends MapBase {
   static get properties() {
     return {
       value: { type: Object },
@@ -147,4 +147,4 @@ const valid = pos => pos?.lat && pos?.lon
 const latLon2latLng = ({lat, lon}) => ({lat, lng: lon})
 const latLng2latLon = ({lat, lng}) => ({lat, lon: lng})
 
-customElements.define('location-edit', LocationEdit)
+customElements.define('edit-location', EditLocation)
