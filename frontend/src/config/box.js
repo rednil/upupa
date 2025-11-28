@@ -11,6 +11,7 @@ import { mcp } from '../mcp.js'
 import { confirm } from '../app/confirm.js'
 import { alert } from '../app/alert.js'
 import { getBoxLabel } from '../forms/select-box.js'
+import { finalize } from '../db.js'
 
 const POSITIONING_ADJUST = 'POSITIONING_ADJUST'
 const POSITIONING_MOVE = 'POSITIONING_MOVE'
@@ -152,7 +153,7 @@ export class EditBox extends ConfigBase {
 	async submit(){
 		const newBox = {...this.item}
 		const items = [newBox]
-		mcp.finalize(newBox)
+		finalize(newBox)
 		if(this.moved()) {
 			const oldBox = {...this._backupItem}
 			oldBox.validUntil = newBox.validFrom

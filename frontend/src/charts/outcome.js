@@ -1,3 +1,4 @@
+import { getByType } from '../db'
 import { mcp } from '../mcp'
 import { translate } from '../translator'
 import { ChartBase } from './base'
@@ -12,7 +13,7 @@ export class ChartOutcome extends ChartBase {
 	}
 	
 	async fetchData(){
-		this.perpetrators = await mcp.getByType('perpetrator')
+		this.perpetrators = await getByType('perpetrator')
 		this.outcome = await mcp.db().query('upupa/outcome', {
 			group: true,
 			group_level: 1

@@ -1,25 +1,12 @@
-import { mcp } from '../mcp'
-import { getStatsBySpeciesYearState } from '../db'
-import { translate } from '../translator'
+import { getByType, getStatsBySpeciesYearState } from '../db'
 import { ChartBase } from './base'
 
-
-
 export class ChartSpeciesRelative extends ChartBase {
-	static get properties() {
-		return {
-			
-		}
-	}
-	
-	
+
 	async fetchData(){
-		this.species = await mcp.getByType('species')
+		this.species = await getByType('species')
 		this.stats = await getStatsBySpeciesYearState()
 	}
-	
-
-	
 	
 	getPlot(){
 		if(!(this.stats && this.species)) return ''

@@ -55,7 +55,7 @@ export class ViewInspection extends LitElement {
 		return [
 			this.renderHead(),
 			this.detail=='LONG' ? this.renderDetails() : '',
-			html`<div>Bemerkung: ${note}</div>`,
+			note ? html`<div>Bemerkung: ${note}</div>` : '',
 			this.detail=='LONG' ? this.renderEditButton() : ''
 		]	
 	}

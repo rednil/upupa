@@ -6,6 +6,7 @@ import '../forms/link-boxconfig.js'
 import '../view/inspection.js'
 import '../view/summary.js'
 import { setUrlParams } from '../router.js'
+import { getByType } from '../db.js'
 
 
 export class PageStatus extends LitElement {
@@ -127,7 +128,7 @@ export class PageStatus extends LitElement {
 		setUrlParams({box_id: this.box_id})
 	}
 	async _fetchBoxes(){
-		this.boxes = await mcp.getByType('box')
+		this.boxes = await getByType('box')
 	}
 	async _fetchData(){
 		this.inspections = await this._fetchInspections()

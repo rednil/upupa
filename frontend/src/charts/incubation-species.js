@@ -1,6 +1,4 @@
-import { mcp } from '../mcp'
-import { getAllSummaries } from '../db'
-import { translate } from '../translator'
+import { getAllSummaries, getByType } from '../db'
 import '../forms/button-exportsvg'
 import { ChartBase, day2date } from './base'
 
@@ -16,7 +14,7 @@ export class ChartIncubationSpecies extends ChartBase {
 	
 	async fetchData(){
 		this.summaries = await getAllSummaries()
-		this.boxes = await mcp.getByType('box')
+		this.boxes = await getByType('box')
 	}
 	
 	getPlot(){

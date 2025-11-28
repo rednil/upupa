@@ -13,7 +13,7 @@ export class PageStart extends LitElement {
       }
       :host > div:first-child {
 				width: 100%;
-				max-width: 20em;
+				max-width: 40em;
 				flex-direction: column;
 				margin-bottom: 4em;
       }

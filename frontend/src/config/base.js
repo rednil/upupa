@@ -6,6 +6,7 @@ import {live} from 'lit/directives/live.js'
 import { translate } from '../translator.js' 
 import { confirm } from '../app/confirm.js'
 import { mcp } from '../mcp.js'
+import { finalize } from '../db.js'
 
 export class ConfigBase extends LitElement {
 	static get properties() {
@@ -76,7 +77,7 @@ export class ConfigBase extends LitElement {
 	}
 	async submit(){
 		if(!this.item.name) return alert(translate('MISSING_NAME'))
-		return await mcp.db(this.type).put(mcp.finalize(this.item))
+		return await mcp.db(this.type).put(finalize(this.item))
 	}
 }
 

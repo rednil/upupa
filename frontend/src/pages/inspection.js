@@ -9,6 +9,7 @@ import '../view/id.js'
 import { incDate } from './calendar.js'
 import { setUrlParams } from '../router.js'
 import { INSPECTION_STATES } from '../forms/select-state.js'
+import { finalize } from '../db.js'
 
 const bandingStartAge = 7
 const bandingEndAge = 12
@@ -106,7 +107,7 @@ export class PageInspection extends LitElement {
 					this.inspection_id ? this.renderBox() : '',
 					this.inspection_id ? this.renderDate('date') : '',
 					this.renderScope(),
-					i.state ? this.renderState() : '',
+					this.renderState(),
 					this.renderNumber('occupancy'),
 					this.renderSpecies(),
 					this.renderNumber('eggs'),
@@ -307,7 +308,6 @@ export class PageInspection extends LitElement {
 	}
 	genericChangeCb(evt){
 		const {id: key, value} = evt.target
-		console.log('change', key, value)
 		this.inspection[key] = value
 		this.postProcess(key)
 		
@@ -541,7 +541,7 @@ export class PageInspection extends LitElement {
 		if(response?.ok) history.back()
 	}
 	async save(){
-		const response = await mcp.db().put(mcp.finalize(this.inspection))
+		const response = await mcp.db().put(finalize(this.inspection))
 		if(response.ok) history.back()
 	}
 	renderPreviousInspection(){
@@ -624,7 +624,7 @@ export class PageInspection extends LitElement {
 	}
 
 	async fetchPreviousInspection(){
-		delete this.previousInspection
+		this.previousInspection = null
 		this.maxOccupancy = 0
 		const date = new Date(this.inspection.date)
 		const dayBeforeArr = dateToArr(date.setDate(date.getDate()-1))
@@ -643,7 +643,6 @@ export class PageInspection extends LitElement {
 			this.previousInspection = previousInspections[0]
 			this.maxOccupancy = Math.max(...previousInspections.map(i => i.occupancy || 0))
 		}
-		console.log('previousInspection', this.previousInspection, this.maxOccupancy)
 		this.updateInspection()
 	}
 
@@ -676,7 +675,6 @@ export class PageInspection extends LitElement {
 			scope: 'SCOPE_INSIDE',
 			date: new Date(date).toISOString()
 		})
-		console.log('createInspection', this.inspection)
 	}
 	changeModeCb(evt){
 		const {value} = evt.target

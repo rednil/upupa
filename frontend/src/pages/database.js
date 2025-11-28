@@ -23,7 +23,7 @@ export class PageDatabase extends LitElement {
         display: flex;
         flex-direction: column;
         width: 100%;
-        max-width: 30em;
+        max-width: 40em;
       }
       
       view-db {

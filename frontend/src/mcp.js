@@ -1,9 +1,9 @@
 import { alert } from "./app/alert"
 import { Project } from "./project"
+import { uuid } from "./db"
 
 const PROJECT_ID = 'PROJECT_ID'
 
-const userPrefix = 'org.couchdb.user'
 
 class MasterControlProgram extends EventTarget {
 	constructor(){
@@ -32,7 +32,7 @@ class MasterControlProgram extends EventTarget {
 			if(!this.projectID || !(await this._db.get(this.projectID))){
 				let response = await this._db.allDocs()
 				if(!response.total_rows){
-					this.projectID = `project-${this.uuid()}`
+					this.projectID = `project-${uuid()}`
 					await this._db.put({
 						_id: this.projectID,
 						name: 'Upupa',
@@ -68,15 +68,7 @@ class MasterControlProgram extends EventTarget {
 		this.dispatchEvent(new Event('projectChange'))
 		return this.project
 	}
-	uuid(length = 10){
-		const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-		let result = ''
-		const charactersLength = characters.length
-		for (let i = 0; i < length; i++) {
-			result += characters.charAt(Math.floor(Math.random() * charactersLength))
-		}
-		return result
-	}
+	
 	db(type){
 		switch(type){
 			case 'user': return this.project.userDB
@@ -89,61 +81,7 @@ class MasterControlProgram extends EventTarget {
 		return this._handleResponse(await this.db.allDocs(options), options)
 	}
 	*/
-	async _idStartsWith(str, options){
-		options.startkey = str
-		options.endkey = str + '\ufff0' 
-		if(options.descending) {
-			options.startkey = options.endkey
-			options.endkey = str
-		}
-		return await this.project.localDB.allDocs(options)
-	}
-	async getByType(type){
-		switch(type){
-			case 'user': return await this._getUsers()
-			case 'project': return await this.getProjects()
-			default: {
-				return (await this._idStartsWith(`${type}-`, {
-					include_docs: true
-				}))
-				.rows.map(row => row.doc)
-				.sort((a,b) => ('' + a.name).localeCompare(b.name))
-			}
-		}
-	}
-	async getProjects(){
-		return (
-			await this._db
-			.allDocs({include_docs: true})
-		)
-		.rows.map(row => row.doc)
-	}
-	async _getUsers(){
-		return (
-			await this.project.userDB.allDocs({
-				startkey: userPrefix,
-				endkey: userPrefix + '\ufff0', 
-				include_docs: true,
-			})
-		)
-		.rows.map(row => row.doc)
-	}
-	finalize(item){
-		const now = new Date()
-		if(!item.type) throw('MISSING_TYPE')
-		if(item._id) {
-			item.changedAt = now
-		}
-		else {
-			item._id = item.type == 'user'
-			? `${userPrefix}:${user.name}`
-			: `${item.type}-${this.uuid()}`
-			item.createdAt = now
-		}
-		if(item.type == 'user' && !user.roles) user.roles = []
-		item.user_id = this.project.session.userCtx.name
-		return item
-	}
+	
 }
 
 

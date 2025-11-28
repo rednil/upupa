@@ -1,5 +1,6 @@
 import { html, css, LitElement } from 'lit'
 import { mcp } from '../mcp'
+import { getByType } from '../db'
 
 function formatDate(date){
 	return date.toLocaleString(window.navigator.language,{
@@ -116,7 +117,7 @@ export class PageCalendar extends LitElement {
 				descending: true
 			})
 			.then(({rows}) => rows.map(({key, value}) => value)),
-			mcp.getByType('box')
+			getByType('box')
 		])
 		const events = summaries
 		.filter(summary => (

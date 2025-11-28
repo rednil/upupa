@@ -1,26 +1,13 @@
-import { mcp } from '../mcp'
-import { getAllSummaries } from '../db'
-import { translate } from '../translator'
+import { getAllSummaries, getByType } from '../db'
 import '../forms/button-exportsvg'
 import { ChartBase, day2date } from './base'
 
-
-
 export class ChartClutchSizeSpecies extends ChartBase {
-	static get properties() {
-		return {
-			
-		}
-	}
-	
 	
 	async fetchData(){
-		this.species = await mcp.getByType('species')
+		this.species = await getByType('species')
 		this.summaries = await getAllSummaries()
 	}
-	
-
-	
 	
 	getPlot(){
 		if(!(this.summaries)) return ''
