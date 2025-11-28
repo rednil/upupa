@@ -1,5 +1,5 @@
 import { alert } from "./forms/alert"
-import { INIT_ERROR, INIT_INIT, Project } from "./project"
+import { Project } from "./project"
 
 const PROJECT_ID = 'PROJECT_ID'
 
@@ -8,17 +8,13 @@ const PROJECT_ID = 'PROJECT_ID'
 class MasterControlProgram extends EventTarget {
 	constructor(){
 		super()
-		this.projectChangeCb = this.projectChangeCb.bind(this)
 		try{
 			this._db = new PouchDB('projects',{adapter: 'indexeddb'})
 			setTimeout(this.check.bind(this), 3000)
 		} catch(error){
-			this.error = error
+			this.reportError(error)
 		}
 		this.projectID = localStorage.getItem(PROJECT_ID)
-		this.state = {
-			init: INIT_INIT
-		}
 		this.init()
 		
 	}
@@ -30,13 +26,7 @@ class MasterControlProgram extends EventTarget {
 			await alert('Die Browser-Datenbank ("indexeddb") ist nicht mehr ansprechbar. Bitte den Browser schließen und neu öffnen.')
 		}
 	}
-	setState(state){
-		this.state = {
-			...this.state,
-			...state
-		}
-		this.dispatchEvent(new Event('change'))
-	}
+	
 	async init(){
 		try{
 			if(!this.projectID || !(await this._db.get(this.projectID))){
@@ -57,26 +47,26 @@ class MasterControlProgram extends EventTarget {
 			}
 			this._initProject(this.projectID)
 		} catch(error) {
-			this.setState({
-				init: INIT_ERROR,
-				error
-			})
-			console.log('MasterControlProgram init error', error)
+			this.reportError(error)
 		}
 	}
 	
+	reportError(msg){
+		this.error = `[MCP] ${msg}`
+	}
+
 	async selectProject(id){
 		localStorage.setItem(PROJECT_ID, id)
-		location.reload()
+		this.projectID = id
+		//location.reload()
+		return this._initProject(id)
 	}
 	
 	async _initProject(id){
 		const config = await this._db.get(id)
 		this.project = new Project(config)
-		this.project.addEventListener('change', this.projectChangeCb)
-	}
-	projectChangeCb(evt){
-		this.setState(evt.target.state)
+		this.dispatchEvent(new Event('projectChange'))
+		return this.project
 	}
 	uuid(length = 10){
 		const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'

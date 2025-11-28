@@ -1,6 +1,6 @@
 import { LitElement, html, css } from 'lit'
 import { unsafeHTML } from 'lit/directives/unsafe-html.js'
-import { SYNC_ACTIVE, INIT_DONE } from './project.js'
+import { SYNC_ACTIVE } from './project.js'
 import { mcp } from './mcp.js'
 import './components/sync-progress.js'
 import './pages/database'
@@ -12,7 +12,6 @@ import './forms/select-item'
 import './pages/overview'
 import './pages/inspection.js'
 import './pages/config.js'
-import './components/error-display.js'
 import './pages/analysis.js'
 import './pages/start'
 import './components/project-status.js'
@@ -25,6 +24,7 @@ export class AppShell extends LitElement {
       error: { type: Object },
 			route: { type: Object },
 			params: { type: Object },
+			project: { type: Object }
     }
   }
 
@@ -93,6 +93,7 @@ export class AppShell extends LitElement {
     super()
 		this.selectedYear = new Date().getFullYear()
 		this.firstYear = new Date().getFullYear()
+		this.boundUpdate = () => this.requestUpdate()
 		this.params = {}
     window.onpopstate = this.navigate.bind(this)
     this.addEventListener('error', evt => {
@@ -100,7 +101,7 @@ export class AppShell extends LitElement {
 			this.error = evt.detail
 		})
 		this.error = ''
-		mcp.addEventListener('change', () => this.requestUpdate())
+		mcp.addEventListener('projectChange', () => this.projectChangeCb())
   }
 
 	navigate(){
@@ -124,11 +125,15 @@ export class AppShell extends LitElement {
 		return this.route
 	}
 
-  updated(){
+  updated(changed){
 		setUrlParams({year: this.selectedYear})
 		this.params.year = this.selectedYear
 		const page = this.shadowRoot.querySelector(this.getPageComponent())
 		if(page) Object.assign(page, this.params)
+		if(changed.has('project')){
+			if(changed.get('project')) this.unsubscribe(changed.get('project'))
+			if(this.project) this.subscribe()
+		}
   }
 
   render() {
@@ -138,7 +143,15 @@ export class AppShell extends LitElement {
 			this.renderBottomBar()
 		]
   }
-	
+	projectChangeCb(){
+		this.project = mcp.project
+	}
+	subscribe(){
+		this.project.addEventListener('syncStateChange', this.boundUpdate)
+	}
+	unsubscribe(project){
+		project.removeEventListener('syncStateChange', this.boundUpdate)
+	}
 	renderTopBar(){
 		const userCtx = mcp.project?.session?.userCtx
 		return html`
@@ -146,11 +159,11 @@ export class AppShell extends LitElement {
 				<select-route selected=${this.route.id}></select-route>
 				${this.renderYearSelector()}
 				<div>
-					<project-status .state=${mcp.state}></project-status>
+					<project-status .project=${mcp.project} .state=${mcp.state}></project-status>
 					<select-item 
 						class="borderless"
 						autoselect
-						@change=${this.projectChangeCb}
+						@change=${this.projectSelectCb}
 						type="project"
 						value=${mcp.projectID}
 					></select-item>
@@ -161,14 +174,14 @@ export class AppShell extends LitElement {
 	}
 
 	renderYearSelector(){
-		return (mcp.state.init == INIT_DONE)
+		return (mcp.project?.initComplete)
 		? html`<select-year value=${this.selectedYear} @change=${this.selectYearCb}></select-year>`
 		: ''
 	}
 
 	renderMain(){
-		if(mcp.state.init == INIT_DONE) return html`<main>${this.renderRoute()}</main>`
-		if(mcp.state.sync == SYNC_ACTIVE) return this.renderSyncProgress()
+		if(mcp.project?.initComplete) return html`<main>${this.renderRoute()}</main>`
+		if(mcp.project?.syncState == SYNC_ACTIVE) return this.renderSyncProgress()
 	}
 
 	getPageComponent(){
@@ -186,7 +199,7 @@ export class AppShell extends LitElement {
 				<div>
 					<div>Synchronisiere Datenbank ...</div>
 					<br>
-					<sync-progress .syncHandler=${mcp.project.syncHandler}></sync-progress>
+					<sync-progress .project=${this.project}></sync-progress>
 				</div>
 			</div>
 		`
@@ -194,7 +207,7 @@ export class AppShell extends LitElement {
 
 	renderBottomBar(){
 		return html`
-			<error-display class="bottom error" .error=${this.error}></error-display>
+			<div class="bottom error">${mcp.error || mcp.project?.error || this.error}</div>
 		`
 	}
 
@@ -203,7 +216,7 @@ export class AppShell extends LitElement {
 		this.requestUpdate()
 	}
 
-	projectChangeCb(evt){
+	projectSelectCb(evt){
 		mcp.selectProject(evt.target.value)
 	}
 	

@@ -20,11 +20,13 @@ const stateIcon = {
 }
 
 export class ProjectStatus extends LitElement {
+
 	static get properties() {
     return {
-      state: { type: Object },
+			project: { type: Object }
     }
   }
+
   static get styles() {
     return css`
 			:host, :host > *{
@@ -47,19 +49,20 @@ export class ProjectStatus extends LitElement {
 
 	constructor(){
 		super()
-		this.progress = {
-			push: 0,
-			pull: 0
-		}
+		this.boundUpdate = () => this.requestUpdate()
 		this.loginError = ''
-		window.addEventListener('online', () => this.requestUpdate())
-		window.addEventListener('offline', () => this.requestUpdate())
+		window.addEventListener('online', this.boundUpdate)
+		window.addEventListener('offline', this.boundUpdate)
+	}
+
+	shouldUpdate(){
+		return this.project
 	}
 
   render() {
     return html`
 			<app-dialog
-				.open=${live(this.state.auth == AUTH_UNAUTHENTICATED || this.state.auth == AUTH_ERROR)}
+				.open=${live(this.project.authState == AUTH_UNAUTHENTICATED || this.project.authState == AUTH_ERROR)}
 				id="login-dialog"
 				primary="Login"
 				secondary="Abbrechen"
@@ -79,7 +82,7 @@ export class ProjectStatus extends LitElement {
 				</div>
       </app-dialog>
 			<app-dialog
-				?open=${mcp.state.sync == SYNC_ERROR}
+				?open=${this.project.syncState == SYNC_ERROR}
 				id="error-dialog"
 				primary="OK"
 				discard="primary"
@@ -94,20 +97,40 @@ export class ProjectStatus extends LitElement {
 			</div>
     `
   }
+
 	getIcon(){
 		if(!navigator.onLine) return cloud_off
-		if(mcp.state.auth != AUTH_AUTHENTICATED) return sync_disabled
-		return stateIcon[mcp.state.sync] 
+		if(this.project.authState != AUTH_AUTHENTICATED) return sync_disabled
+		return stateIcon[this.project.syncState] 
 	}
+
 	firstUpdated(){
 		this.loginDialog = this.shadowRoot.querySelector('#login-dialog')
 		this.errorDialog = this.shadowRoot.querySelector('#error-dialog')
 	}
+
+	updated(changed){
+		if(changed.has('project')) {
+			this.unsubscribe(changed.get('project'))
+			this.subscribe()
+		}
+	}
+
+	subscribe(){
+		this.project.addEventListener('syncStateChange', this.boundUpdate)
+		this.project.addEventListener('authStateChange', this.boundUpdate)
+	}
+
+	unsubscribe(project){
+		if(!project) return
+		project.removeEventListener('syncStateChange', this.boundUpdate)
+		project.removeEventListener('authStateChange', this.boundUpdate)
+	}
 	
 	clickCb(evt){
 		this.loginDialog.open = true
-
 	}
+
 	async login(){
 		this.loginError = ''
 		const username = this.shadowRoot.querySelector('#username').value

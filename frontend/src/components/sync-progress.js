@@ -4,7 +4,7 @@ export class SyncProgress extends LitElement {
 
   static get properties() {
     return {
-			syncHandler: { type: Object }
+			project: { type: Object }
     }
   }
 
@@ -19,27 +19,46 @@ export class SyncProgress extends LitElement {
 			}
     `
   }
+	
 	constructor(){
 		super()
+		this.changeCb = this.changeCb.bind(this)
 		this.progress = {
 			push: 0,
 			pull: 0
 		}
 	}
 
-	async subscribe(){
-		if(this.syncHandler){
-			this.syncHandler
-			.on('change', ({change, direction}) => {
-				const { docs_read, pending } = change
-				this.progress[direction] = docs_read / (docs_read + pending) * 100
-				this.requestUpdate()
-			})
+	shouldUpdate(){
+		return this.project
+	}
+
+	subscribe(){
+		const { syncHandler } = this.project
+		if(syncHandler){
+			syncHandler.on('change', this.changeCb)
 		}
 	}
 
+	changeCb({change, direction}) {
+		const { docs_read, pending } = change
+		this.progress[direction] = docs_read / (docs_read + pending) * 100
+		this.requestUpdate()
+	}
+
+	unsubscribe(project){
+		project?.syncHandler?.removeListener('change', this.changeCb)
+	}
+
+	disconnectedCallback(){
+		this.unsubscribe(this.project)
+	}
+
 	updated(changed){
-		if(changed.has('syncHandler')) this.subscribe()
+		if(changed.has('project')) {
+			if(changed.get('project')) this.unsubscribe(changed.get('project'))
+			this.subscribe()
+		}
 	}
 
   render() {
