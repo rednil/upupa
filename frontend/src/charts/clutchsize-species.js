@@ -1,11 +1,12 @@
-import { getAllSummaries, getByType } from '../db'
+import { getAllSummaries } from '../db/stats'
+import { allDocsByType } from '../db/allDocsByType'
 import '../forms/button-exportsvg'
 import { ChartBase, day2date } from './base'
 
 export class ChartClutchSizeSpecies extends ChartBase {
 	
 	async fetchData(){
-		this.species = await getByType('species')
+		this.species = await allDocsByType('species')
 		this.summaries = await getAllSummaries()
 	}
 	

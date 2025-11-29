@@ -1,6 +1,6 @@
 import { translate } from '../translator'
 import '../forms/button-exportsvg'
-import { getAllSummaries } from '../db'
+import { getAllSummaries } from '../db/stats'
 import { ChartBase, getSummaryProp } from './base'
 
 export class ChartPropYear extends ChartBase {

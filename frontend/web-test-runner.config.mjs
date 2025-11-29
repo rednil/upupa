@@ -20,7 +20,19 @@ export default /** @type {import("@web/test-runner").TestRunnerConfig} */ ({
     }
     return true;
   },
-
+  plugins: [
+    {
+      name: 'ignore-leaflet-css-import in MapBase',
+      serve(context) {
+        if (context.path.endsWith('.css')) {
+          return { 
+            body: 'export default "";', 
+            type: 'js' // <--- Das ist der entscheidende Teil!
+          };
+        }
+      },
+    },
+  ],
   /** Compile JS for older browsers. Requires @web/dev-server-esbuild plugin */
   // esbuildTarget: 'auto',
 

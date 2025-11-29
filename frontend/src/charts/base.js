@@ -1,5 +1,5 @@
 import { LitElement, html, css } from "lit"
-import { getByType } from "../db"
+import { allDocsByType } from '../db/allDocsByType'
 
 export const day2date = dayOfYear => {
 	let date = new Date()
@@ -55,7 +55,7 @@ export class ChartBase extends LitElement {
 		return this.species?.find(({_id}) => _id == species_id)?.name
 	}
 	async __fetchData(){
-		this.species = await getByType('species')
+		this.species = await allDocsByType('species')
 		await this.fetchData()
 		this.requestUpdate()
 	}

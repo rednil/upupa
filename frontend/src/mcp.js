@@ -1,6 +1,6 @@
 import { alert } from "./app/alert"
 import { Project } from "./project"
-import { uuid } from "./db"
+import { uuid } from "./db/uuid"
 
 const PROJECT_ID = 'PROJECT_ID'
 

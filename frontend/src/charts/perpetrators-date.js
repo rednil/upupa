@@ -1,4 +1,5 @@
-import { getByType, parsePerpetratorsKey } from '../db'
+import { parsePerpetratorsKey } from '../db/stats'
+import { allDocsByType } from '../db/allDocsByType'
 import { mcp } from '../mcp'
 import { ChartBase, day2date } from './base'
 
@@ -12,7 +13,7 @@ export class ChartPerpetratorsDate extends ChartBase {
 	}
 	
 	async fetchData(){
-		this.perpetrators = await getByType('perpetrator'),
+		this.perpetrators = await allDocsByType('perpetrator'),
 		this.data = await	mcp.db().query('upupa/perpetrators', {
 			group: true,
 			group_level: 3

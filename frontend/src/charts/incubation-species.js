@@ -1,4 +1,5 @@
-import { getAllSummaries, getByType } from '../db'
+import { getAllSummaries } from '../db/stats'
+import { allDocsByType } from '../db/allDocsByType'
 import '../forms/button-exportsvg'
 import { ChartBase, day2date } from './base'
 
@@ -14,7 +15,7 @@ export class ChartIncubationSpecies extends ChartBase {
 	
 	async fetchData(){
 		this.summaries = await getAllSummaries()
-		this.boxes = await getByType('box')
+		this.boxes = await allDocsByType('box')
 	}
 	
 	getPlot(){

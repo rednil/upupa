@@ -1,5 +1,5 @@
 import { LitElement, html, css } from 'lit'
-import { getByType } from '../db'
+import { allDocsByType } from '../db/allDocsByType'
 
 export class SelectItem extends LitElement {
 	static get properties() {
@@ -80,7 +80,7 @@ export class SelectItem extends LitElement {
 		if(changed.has('options') && this.options.length) this._optionsChanged()
 	}
 	async fetchOptions(){
-		this.options = await getByType(this.type)
+		this.options = await allDocsByType(this.type)
 	}
 	_optionsChanged(){
 		if(

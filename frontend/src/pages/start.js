@@ -1,5 +1,6 @@
 import { html, css, LitElement } from 'lit'
-import { mcp } from '../mcp'
+import { getCurrentYearStats } from '../db/summaries'
+import { getLevel1Stats } from '../db/stats'
 
 export class PageStart extends LitElement {
 	static get styles() {
@@ -67,7 +68,7 @@ export class PageStart extends LitElement {
 				<div class="clutch">
 					<div>
 						<span>Anzahl Gelege</span>
-						<span>${this.summaries.length}</span>
+						<span>${s.clutches}</span>
 					</div>
 					<div>
 						<span>Am Legen</span>
@@ -109,41 +110,36 @@ export class PageStart extends LitElement {
 	}
 	renderTotalStats(){
 		const t = this.totalStats
-		if(!t) return ''
-		const nFailure = t.failure.clutchSize.count
-		const nSuccess = t.success.clutchSize.count
-		const nEggs = t.failure.clutchSize.sum + t.success.clutchSize.sum
-		const nSurvivors = t.success.nestlings.sum
-		const nBanded = t.failure.nestlingsBanded.sum + t.success.nestlingsBanded.sum
+		if(!t) return
 		return html`
 			<div class="paragraph">
 				<div class="head">Insgesamt</div>
 				<div class="clutch">
 					<div>
 						<span>Anzahl Gelege</span>
-						<span>${nFailure + nSuccess}</span>
+						<span>${t.nFailure + t.nSuccess}</span>
 					</div>
 					<div>
 						<span>Erfolgreich</span>
-						<span>${nSuccess}</span>
+						<span>${t.nSuccess}</span>
 					</div>
 					<div>
 						<span>Gescheitert</span>
-						<span>${nFailure}</span>
+						<span>${t.nFailure}</span>
 					</div>
 				</div>
 				<div class="total">
 					<div>
 						<span>Gelegte Eier</span>
-						<span>${nEggs}</span>
+						<span>${t.nEggs}</span>
 					</div>
 					<div>
 						<span>Nestlinge ausgeflogen</span>
-						<span>${nSurvivors}</span>
+						<span>${t.nSurvivors}</span>
 					</div>
 					<div>
 						<span>Nestlinge beringt</span>
-						<span>${nBanded}</span>
+						<span>${t.nBanded}</span>
 					</div>
 				</div>
 			</div>
@@ -154,55 +150,14 @@ export class PageStart extends LitElement {
 		super()
 		this.summaries = []
 		this.currentYearStats = {}
-		this.fetchSummaries()
-		this.fetchStatistics()
+		this.fetchData()
 	}
-	async fetchSummaries(){
-		const currentYear = new Date().getFullYear()
-		this.summaries = await mcp.db()
-		.query('upupa/summaries', {
-			startkey: [currentYear],
-			endkey: [currentYear, {}],
-			group: true,
-			group_level: 3
-		})
-		.then(({rows}) => rows.map(({key, value}) => value))
-		this.currentYearStats = this.summaries.reduce((stat, summary) => {
-			stat[summary.state] = (stat[summary.state] || 0) + 1
-			if(typeof summary.clutchSize != 'number') console.error('Wrong type', summary.clutchSize)
-			if(summary.clutchSize == 0 || summary.clutchSize > 20 || summary.clutchSize == null) console.error('Faulty clutchSize', summary)
-			stat.eggs += summary.clutchSize
-			stat.banded += summary.nestlingsBanded || 0
-			if(summary.state == 'STATE_SUCCESS') {
-				stat.survivors += summary.nestlings
-				if(isNaN(summary.nestlings)) console.error('isNaN(summary.nestlings', summary)
-			}
-			return stat
-		}, {
-			eggs: 0,
-			survivors: 0,
-			banded: 0
-		})
-		this.requestUpdate()
-	}
-	
-	async fetchStatistics(){
-		const response = await mcp.db()
-		.query('upupa/stats', {
-			group: true,
-			group_level: 1
-		})
-		.then(({rows}) => rows.map(({key, value}) => value))
-		const s = this.totalStats = {
-			failure: parseStats(response[0]),
-			success: parseStats(response[1])
-		}
+	async fetchData(){
+		this.currentYearStats = await getCurrentYearStats()
+		this.totalStats = await getLevel1Stats()
 		this.requestUpdate()
 	}
 	
 }
 
-function parseStats([clutchSize, nestlings, nestlingsBanded]){
-	return {clutchSize, nestlings, nestlingsBanded}
-}
 customElements.define('page-start', PageStart)

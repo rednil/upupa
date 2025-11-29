@@ -6,7 +6,7 @@ import {live} from 'lit/directives/live.js'
 import { translate } from '../translator.js' 
 import { confirm } from '../app/confirm.js'
 import { mcp } from '../mcp.js'
-import { finalize } from '../db.js'
+import { finalize } from '../db/finalize'
 
 export class ConfigBase extends LitElement {
 	static get properties() {

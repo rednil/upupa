@@ -1,4 +1,4 @@
-import { getStatsBySpeciesYearState } from '../db'
+import { getStatsBySpeciesYearState } from '../db/stats'
 import { translate } from '../translator'
 import { ChartBase } from './base'
 

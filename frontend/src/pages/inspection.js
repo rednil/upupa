@@ -9,7 +9,7 @@ import '../view/id.js'
 import { incDate } from './calendar.js'
 import { setUrlParams } from '../router.js'
 import { INSPECTION_STATES } from '../forms/select-state.js'
-import { finalize } from '../db.js'
+import { finalize } from '../db/finalize'
 
 const bandingStartAge = 7
 const bandingEndAge = 12

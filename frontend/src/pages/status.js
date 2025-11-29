@@ -6,7 +6,7 @@ import '../forms/link-boxconfig.js'
 import '../view/inspection.js'
 import '../view/summary.js'
 import { setUrlParams } from '../router.js'
-import { getByType } from '../db.js'
+import { allDocsByType } from '../db/allDocsByType'
 
 
 export class PageStatus extends LitElement {
@@ -128,7 +128,7 @@ export class PageStatus extends LitElement {
 		setUrlParams({box_id: this.box_id})
 	}
 	async _fetchBoxes(){
-		this.boxes = await getByType('box')
+		this.boxes = await allDocsByType('box')
 	}
 	async _fetchData(){
 		this.inspections = await this._fetchInspections()

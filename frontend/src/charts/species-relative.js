@@ -1,10 +1,11 @@
-import { getByType, getStatsBySpeciesYearState } from '../db'
+import { getStatsBySpeciesYearState } from '../db/stats'
+import { allDocsByType } from '../db/allDocsByType'
 import { ChartBase } from './base'
 
 export class ChartSpeciesRelative extends ChartBase {
 
 	async fetchData(){
-		this.species = await getByType('species')
+		this.species = await allDocsByType('species')
 		this.stats = await getStatsBySpeciesYearState()
 	}
 	

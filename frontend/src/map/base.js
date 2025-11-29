@@ -9,9 +9,9 @@ leaflet marker icons, because by default it searches them in the root folder
 */
 
 import { LitElement, html, css, unsafeCSS } from 'lit'
-import { map, tileLayer, circleMarker, marker, Icon, layerGroup, Control, DomEvent, DomUtil } from 'leaflet/dist/leaflet-src.esm.js'
+import { map, tileLayer, circleMarker, Icon, layerGroup, Control, DomEvent, DomUtil } from 'leaflet/dist/leaflet-src.esm.js'
 import leafletCSS from 'leaflet/dist/leaflet.css'
-import { location_disabled, location_off, location_on, location_searching, my_location } from '../icons'
+import { location_disabled, location_off, location_on, location_searching, my_location } from '../icons.js'
 
 const tileUrl = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
 const attribution = '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'

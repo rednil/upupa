@@ -1,4 +1,4 @@
-import { getByType } from '../db'
+import { allDocsByType } from '../db/allDocsByType'
 import { mcp } from '../mcp'
 
 export const msPerDay = 1000 * 60 * 60 * 24
@@ -34,7 +34,7 @@ export class Overview {
 		)
 	}
 	async getNameLookup(type){
-		const response = await getByType(type)
+		const response = await allDocsByType(type)
 		return response.reduce((obj, {_id, name}) => Object.assign(obj, {[_id]: name}), {})
 	}
 	finalize(box, label='', classList=[]){

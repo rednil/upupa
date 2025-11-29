@@ -11,7 +11,7 @@ import { mcp } from '../mcp.js'
 import { confirm } from '../app/confirm.js'
 import { alert } from '../app/alert.js'
 import { getBoxLabel } from '../forms/select-box.js'
-import { finalize } from '../db.js'
+import { finalize } from '../db/finalize'
 
 const POSITIONING_ADJUST = 'POSITIONING_ADJUST'
 const POSITIONING_MOVE = 'POSITIONING_MOVE'

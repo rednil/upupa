@@ -1,5 +1,5 @@
 import { mcp } from '../mcp'
-import { getAllSummaries } from '../db'
+import { getAllSummaries } from '../db/stats'
 import { translate } from '../translator'
 import '../forms/button-exportsvg'
 import { ChartBase, day2date, getSummaryProp } from './base'
