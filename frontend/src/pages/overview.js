@@ -10,7 +10,7 @@ import { OverviewArchitecture } from '../overview/architecture.js'
 import { OverviewMounting } from '../overview/mounting.js'
 import { OverviewSpecies } from '../overview/species.js'
 import { OverviewStatus } from '../overview/status.js'
-import { OverviewInspection } from '../overview/inspection.js'
+import { currentYear, OverviewInspection } from '../overview/inspection.js'
 import { OverviewBandingNestlings } from '../overview/banding/nestlings.js'
 import { OverviewBandingParents } from '../overview/banding/parents.js'
 
@@ -85,6 +85,7 @@ export class PageOverview extends LitElement {
 	
 	constructor(){
 		super()
+		this.year = currentYear
 		this.info = localStorage.getItem(INFO) 
 		if(!infoOptions[this.info]) this.info = 'BOX'
 		this.mode = localStorage.getItem(MODE) || 'MAP'
@@ -94,7 +95,7 @@ export class PageOverview extends LitElement {
 		if(changed.has('info')){
 			this.infoAssembler = infoOptions[this.info]
 		}
-		if(changed.has('year') || changed.has('info')){
+		if(changed.has('year') || changed.has('info') || changed.has('mode')){
 			this.assembleInfo()
 		}	
 	}
@@ -124,10 +125,10 @@ export class PageOverview extends LitElement {
 					`)}
 				</select>
 				<div class="mode">
-					<input type="radio" .checked=${this.mode == 'MAP'} @change=${this.changeModeCb} name="mode" value="MAP">
-					<label for="html">Karte</label>
-					<input type="radio" .checked=${this.mode == 'LIST'} @change=${this.changeModeCb} name="mode" value="LIST">
-					<label for="css">Liste</label>
+					<input id="modeMap" type="radio" .checked=${this.mode == 'MAP'} @change=${this.changeModeCb} name="mode" value="MAP">
+					<label for="modeMap">Karte</label>
+					<input id="modeList" type="radio" .checked=${this.mode == 'LIST'} @change=${this.changeModeCb} name="mode" value="LIST">
+					<label for="modeList">Liste</label>
 				</div>
 			</div>
     `

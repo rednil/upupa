@@ -1,7 +1,7 @@
 import { mcp } from "../mcp"
 
 export async function fetchLastInspections(year){
-	return await mcp.db()
+	return mcp.db()
 	.query('upupa/inspections', {
 		group: true,
 		group_level: 2,

@@ -1,7 +1,7 @@
 import { mcp } from "../mcp"
 
 export async function fetchBoxesForYear(year){
-	return await mcp.db()
+	return mcp.db()
 	.query('upupa/boxes', {
 		startkey: [year],
 		endkey: [year, {}],
