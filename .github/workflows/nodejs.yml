@@ -22,7 +22,7 @@ jobs:
       
       - name: Install dependencies
         # Assuming npm install is enough to prepare for testing
-        run: npm install 
+        run: cd frontend; npm install 
 
       - name: Run Tests
         # Executes the tests
