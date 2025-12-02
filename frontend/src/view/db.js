@@ -31,8 +31,6 @@ export class ViewDb extends LitElement {
 				justify-content: space-between;
 			}
 			label {
-				//display: flex;
-        //justify-content: center;
         font-weight: bold;
       }
 			

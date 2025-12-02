@@ -405,9 +405,9 @@ export class PageInspection extends LitElement {
 			<div class="nestlingsAge">
 				<label for="nestlingsAge">${translate('INSPECTION.NESTLINGSAGE')}</label>
 				<span>
-					<button @click=${() => this.incDate('hatchDate')}><</button>
+					<button @click=${() => this.incDate('hatchDate')}>&lt;</button>
 					<span>${value}</span>
-					<button @click=${() => this.decDate('hatchDate')}>></button>
+					<button @click=${() => this.decDate('hatchDate')}>&gt;</button>
 				</span>
 			</div>
 		`
@@ -437,9 +437,9 @@ export class PageInspection extends LitElement {
 			<div class="date ${key}">
 				<label for=${key}>${label}</label>
 				<span>
-					<button @click=${() => this.decDate(key)}><</button>
+					<button @click=${() => this.decDate(key)}>&lt;</button>
 					<input id=${key} type="date" .value=${date} @change=${this.genericChangeCb}>
-					<button @click=${() => this.incDate(key)}>></button>
+					<button @click=${() => this.incDate(key)}>&gt;</button>
 				</span>
 			</div>
 		`

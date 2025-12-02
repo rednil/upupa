@@ -5,9 +5,31 @@ on:
     # Only run this workflow when code is pushed to the 'release' branch
     branches:
       - release
+      - main
 
 jobs:
+  ## 🧪 Test Job: Runs npm test on both main and release branches
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      
+      - name: Install dependencies
+        # Assuming npm install is enough to prepare for testing
+        run: npm install 
+
+      - name: Run Tests
+        # Executes the tests
+        run: npm test
   release:
+    # Only execute this job if the push event is on the 'release' branch
+    if: github.ref == 'refs/heads/release'
     # This job handles version bumping, building, tagging, and publishing
     runs-on: ubuntu-latest
     

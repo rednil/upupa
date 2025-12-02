@@ -51,13 +51,14 @@ export default {
     /** Minify JS, compile JS to a lower language target */
     esbuild({
       minify: true,
-      target: ['chrome64', 'firefox67', 'safari11.1'],
+      target: ['chrome95', 'firefox90', 'safari15'],
     }),
 		css(),
     /** Bundle assets references via import.meta.url */
     importMetaAssets(),
     /** Minify html and css tagged template literals */
     babel({
+      babelHelpers: 'bundled',
       plugins: [
         [
           'babel-plugin-template-html-minifier',

@@ -41,7 +41,7 @@ export class SelectItem extends LitElement {
 	render() {
 		const value = (this.value == undefined) ? this.emptyLabel : this.value 
 		return html`
-			${this.buttons ? html`<button @click=${() => this.skip(-1)}><</button>`:''}
+			${this.buttons ? html`<button @click=${() => this.skip(-1)}>&lt;</button>`:''}
 			<select ?disabled=${this.disabled} .value=${value} id="select" @change=${this._changeCb}>
 				${this.autoselect ? '' : html`
 					<option ?selected=${value==this.emptyLabel} >${this.emptyLabel}</option>`
@@ -50,7 +50,7 @@ export class SelectItem extends LitElement {
 					<option ?selected=${option._id==value} value="${option._id}">${this.getLabel(option)}</option>
 				`)}
 			</select>
-			${this.buttons ? html`<button @click=${() => this.skip(1)}>></button>`:''}
+			${this.buttons ? html`<button @click=${() => this.skip(1)}>&gt;</button>`:''}
 		`
 	}
 	

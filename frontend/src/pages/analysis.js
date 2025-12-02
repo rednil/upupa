@@ -75,7 +75,6 @@ export class PageAnalysis extends LitElement {
 				justify-content: space-between;
 				width: 100%;
 				box-shadow: rgba(0, 0, 0, 0.1) 0px 6px 24px 0px;
-				//background-color: lightgrey;
 				height: 2em;
 				flex-shrink: 0;
 				
